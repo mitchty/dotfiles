@@ -1,0 +1,12 @@
+;;-*-mode: emacs-lisp; coding: utf-8;-*-
+(require 'haskell-mode)
+(require 'haskell-process)
+(require 'haskell-simple-indent)
+(require 'haskell-interactive-mode)
+(require 'haskell-font-lock)
+(require 'haskell-debug)
+(require 'sgml-mode)
+(require 'css-mode)
+(require 'helm-config)
+(helm-mode 1)
+(color-theme-solarized-light)

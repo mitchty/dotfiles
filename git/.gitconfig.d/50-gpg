@@ -1,0 +1,2 @@
+[credential]
+  helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc

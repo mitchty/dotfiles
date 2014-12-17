@@ -1,0 +1,22 @@
+# cuddled elses pls
+-ce
+# indent 2 spaces
+-i=2
+# for tokens with things like arrays, start the data next line down one indent in
+-lp
+# align closing tokens for things like arrays with the opening token
+-cti=1
+# default, but spaces between multiple entries, none with one arg
+-pt=1
+# line encoding
+-ole=unix
+# braces not on new line
+-nsbl
+# stack opening tokens, don't create a new line with one token, note no stacking of closing tokens
+-sot
+# no space before ;'s in for loops
+-nsfs
+# Make curly braces act more like the args param
+-bbt=1
+# Trim qw whitespaces
+-tqw

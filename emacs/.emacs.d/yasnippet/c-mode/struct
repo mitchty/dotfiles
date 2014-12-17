@@ -1,0 +1,7 @@
+#-*- mode: snippet; coding: utf-8 -*-
+# name: struct ... { ... }
+# key: struct/
+# --
+typedef struct {
+  ${0:some_struct_stuffs}
+} ${1:name}_s;

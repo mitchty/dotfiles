@@ -1,0 +1,5 @@
+#-*- mode: snippet; coding: utf-8 -*-
+# name: free(...);
+# key: free/
+# --
+free(${1:stuff});

@@ -1,0 +1,7 @@
+#-*- mode: snippet; coding: utf-8 -*-
+# name: typedef enum { ... } ...;
+# key: enum/
+# --
+typedef enum {
+  ${0:values_and_such}
+} ${1:name}_t;

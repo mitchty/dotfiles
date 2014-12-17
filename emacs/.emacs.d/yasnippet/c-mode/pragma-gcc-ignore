@@ -1,0 +1,12 @@
+#-*- mode: snippet; coding: utf-8 -*-
+# name: insert gcc pragma to ignore some warning
+# key: gprag/
+# --
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-W${1:somewarning}"
+#endif
+${0:some_evil_codez}
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

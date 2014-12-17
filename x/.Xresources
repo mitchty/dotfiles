@@ -1,0 +1,41 @@
+#define brightblack     #ffffff
+#define normblack       #f9f9f9
+#define normgreen       #00cc33
+#define brightgreen     #00cc99
+#define normblue        #f00033
+#define brightblue      #0099ff
+#define normcyan        #66ccff
+#define brightcyan      #66ccff
+#define normwhite       #060606
+#define brightwhite     #000000
+#define normyellow      #ffcc33
+#define brightyellow    #ffcc33
+#define normred         #ff3300
+#define brightred       #ff3300
+#define normmagenta     #ff66ff
+#define brightmagenta   #ff66ff
+
+*background:            normblack
+*foreground:            normwhite
+*fading:                40
+*fadeColor:             brightblack
+*cursorColor:           brightcyan
+*pointerColorBackground: #3f3f3f
+*pointerColorForeground: #f3f3f3
+
+*color0: #090909
+*color1: #f00000
+*color2: normgreen
+*color3: normyellow
+*color4: #0066ff
+*color5: normmagenta
+*color6: normcyan
+*color7: #c8c8c8
+*color8: #888888
+*color9: #f00033
+*color10: brightgreen
+*color11: brightyellow
+*color12: #0099ff
+*color13: brightmagenta
+*color14: brightcyan
+*color15: #f9f9f9

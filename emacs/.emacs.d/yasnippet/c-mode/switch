@@ -1,0 +1,11 @@
+#-*- mode: snippet; coding: utf-8 -*-
+# name: switch(...) {case ... : ... break; default : ...}
+# key: switch/
+# --
+switch (${1:something}){
+  case ${2:constant_expression} :
+    ${0:fill_me_in_dork}
+    break;
+  default :
+    ${3:default_thing_to_do}
+}

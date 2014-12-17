@@ -1,0 +1,5 @@
+#-*- mode: snippet; coding: utf-8 -*-
+# name: static const ... ... = ...;
+# key: sconst/
+# --
+static const ${1:int} ${2:FOO} = 1;

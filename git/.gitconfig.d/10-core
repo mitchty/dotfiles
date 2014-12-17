@@ -1,0 +1,20 @@
+[alias]
+  up = !sh -c 'git pull --rebase && git push'
+  # 1.8.4+ only for ignore-all-space
+  wsldiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space --ignore-all-space
+  wsdiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space
+  wdiff = diff --color-words
+  ci = commit
+  ciu = commit --all
+  co = checkout
+  ba = branch --all
+  st = status --short --branch
+  pak = repack -a -d -f --depth=2000 --window=2000
+  unstage = reset HEAD
+  tlog = log --graph --color=always --abbrev-commit --date=relative --pretty=oneline
+  hist = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  slog = log --oneline --decorate
+  fixup = commit --fixup
+  squash = commit --squash
+  ri = rebase --interactive --autosquash
+  ra = rebase --abort
