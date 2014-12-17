@@ -1,0 +1,14 @@
+#!/bin/sh
+message=${1:="no message"}
+title=''
+if [ "${2}" != "" ]; then
+  message="${2}"
+  title="${1}"
+fi
+notification="display notification \"${message}\""
+#if [ "${title}" != "" ]; then
+#  notification="${notification} with title \"${title}\"" 
+#fi
+[ "${title}" != "" ] && notification="${notification} with title \"${title}\"" 
+
+osascript -e "${notification}"
