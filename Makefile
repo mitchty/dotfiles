@@ -1,82 +1,60 @@
 DOTDEE=update-dotdee
 STOW=xstow
-STOWOPTS=-f
-DOTGIT=.gitconfig
-DOTPRO=.profile
-GITCONFIG=git/.gitconfig
-GITCONFIGDOTDEE=$(GITCONFIG).d
-GITCONFIGCKSUM=$(GITCONFIGDOTDEE)/.checksum
-DOTPROFILE=common/.profile
-DOTPROFILEDOTDEE=$(DOTPROFILE).d
-DOTPROFILECKSUM=$(DOTPROFILEDOTDEE)/.checksum
 PWD=$(shell pwd)
+STOWOPTS=-target $(HOME) -d $(PWD)
+DOTGITCONFIG=~/.gitconfig
+DOTPROFILE=~/.profile
 
 .PHONY: common emacs git ruby haskell perl tmux vim zsh list home osx linux ws
 
-home: dotprofile
-	$(DOTDEE) $(PWD)/../$(DOTPRO)
-
+home: $(DOTGITCONFIG) $(DOTPROFILE)
+	$(DOTDEE) $(DOTPROFILE)
 
 ws: common emacs git ruby haskell perl tmux vim zsh home
 
 all: home
 
-dotprofile: $(DOTPROFILECKSUM)
-
-gitconfig: $(GITCONFIGCKSUM)
-
-$(GITCONFIG):
-	touch $(GITCONFIG)
-
-$(GITCONFIGCKSUM): $(GITCONFIG)
-	$(DOTDEE) $(GITCONFIG)
-
-list:
-	echo common emacs git ruby haskell perl tmux vim zsh
+$(DOTGITCONFIG):
+	touch $(DOTGITCONFIG)
+	$(DOTDEE) $(DOTGITCONFIG)
 
 clean:
-	$(STOW) -D common emacs git ruby haskell perl tmux vim zsh osx
-	-rm $(GITCONFIG) $(GITCONFIGCKSUM) $(DOTPROFILE) $(DOTPROFILECKSUM)
-
-gitconfig: $(GITCONFIG)
+	$(STOW) $(STOWOPTS) -D common emacs git ruby haskell perl tmux vim zsh osx
 
 $(DOTPROFILE):
 	touch $(DOTPROFILE)
-
-$(DOTPROFILECKSUM): $(DOTPROFILE)
 	$(DOTDEE) $(DOTPROFILE)
 
-common: $(DOTPROFILECKSUM)
+common:
 	$(STOW) $(STOWOPTS) common
 
 # Specific stows, nothing special
-git: gitconfig
-	$(STOW) git
-	$(DOTDEE) $(PWD)/../$(DOTGIT)
+git:
+	$(STOW) $(STOWOPTS) git
 
 emacs:
-	$(STOW) emacs # $@?
+	$(STOW) $(STOWOPTS) emacs # $@?
 
 osx:
-	$(STOW) osx
+	$(STOW) $(STOWOPTS) osx
 
 linux:
-	$(STOW) linux
+	$(STOW) $(STOWOPTS) linux
 
 x:
-	$(STOW) x
+	$(STOW) $(STOWOPTS) x
 
 ruby:
-	$(STOW) ruby
+	$(STOW) $(STOWOPTS) ruby
 
 zsh:
-	$(STOW) zsh
+	$(STOW) $(STOWOPTS) zsh
 
 vim:
-	$(STOW) vim
+	$(STOW) $(STOWOPTS) vim
 
 haskell:
-	$(STOW) haskell
+	$(STOW) $(STOWOPTS) haskell
 
 perl:
-	$(STOW) perl
+	$(STOW) $(STOWOPTS) perl
