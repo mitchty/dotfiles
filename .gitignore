@@ -1,2 +1,4 @@
 .vagrant
 .checksum
+common/.profile
+git/.gitconfig

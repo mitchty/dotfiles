@@ -13,9 +13,9 @@ PWD=$(shell pwd)
 
 .PHONY: common emacs git ruby haskell perl tmux vim zsh list home osx linux ws
 
-home: gitconfig dotprofile
-	$(DOTDEE) ../$(DOTPRO)
-	$(DOTDEE) ../$(DOTGIT)
+home: dotprofile
+	$(DOTDEE) $(PWD)/../$(DOTPRO)
+
 
 ws: common emacs git ruby haskell perl tmux vim zsh home
 
@@ -46,12 +46,13 @@ $(DOTPROFILE):
 $(DOTPROFILECKSUM): $(DOTPROFILE)
 	$(DOTDEE) $(DOTPROFILE)
 
-common: $(DOTFILECKSUM)
+common: $(DOTPROFILECKSUM)
 	$(STOW) $(STOWOPTS) common
 
 # Specific stows, nothing special
 git: gitconfig
 	$(STOW) git
+	$(DOTDEE) $(PWD)/../$(DOTGIT)
 
 emacs:
 	$(STOW) emacs # $@?
