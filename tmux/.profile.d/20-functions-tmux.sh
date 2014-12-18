@@ -1,5 +1,5 @@
 # tmux/.profile.d/20-functions-tmux.sh
-t
+t()
 {
   if [ -z "$1" ]; then
     echo "Supply a tmux session name to connect to/create"

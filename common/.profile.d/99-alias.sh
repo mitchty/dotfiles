@@ -6,7 +6,6 @@ alias a=ag
 alias n=noglob
 alias l=ls
 alias L='ls -dal'
-alias tl='tmux ls'
 alias cleandir="find . -type f \( -name '*~' -o -name '#*#' -o -name '.*~' -o -name '.#*#' -o -name 'core' -o -name 'dead.letter*' \) | grep -v auto-save-list | xargs -t rm"
 which less > /dev/null 2>&1
 [ $? = 0 ] && alias T='less -f +F' || alias T='tail -f'

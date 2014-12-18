@@ -50,6 +50,9 @@ ruby:
 zsh:
 	$(STOW) $(STOWOPTS) zsh
 
+tmux:
+	$(STOW) $(STOWOPTS) tmux
+
 vim:
 	$(STOW) $(STOWOPTS) vim
 
