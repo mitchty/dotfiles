@@ -7,5 +7,11 @@ alias n=noglob
 alias l=ls
 alias L='ls -dal'
 alias cleandir="find . -type f \( -name '*~' -o -name '#*#' -o -name '.*~' -o -name '.#*#' -o -name 'core' -o -name 'dead.letter*' \) | grep -v auto-save-list | xargs -t rm"
+
+# Prefer less for paging duties.
 which less > /dev/null 2>&1
-[ $? = 0 ] && alias T='less -f +F' || alias T='tail -f'
+if [ $? -eq 0 ]; then
+  alias T="\$(which less) -f +F"
+else
+  alias T="\$(which tail) -f"
+fi
