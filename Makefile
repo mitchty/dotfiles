@@ -5,12 +5,12 @@ STOWOPTS=-target $(HOME) -d $(PWD)
 DOTGITCONFIG=~/.gitconfig
 DOTPROFILE=~/.profile
 
-.PHONY: common emacs git ruby haskell perl tmux vim zsh list home osx linux ws
+.PHONY: mosh common emacs git ruby haskell perl tmux vim zsh list home osx linux ws
 
 home: $(DOTGITCONFIG) $(DOTPROFILE)
 	$(DOTDEE) $(DOTPROFILE)
 
-ws: common emacs git ruby haskell perl tmux vim zsh home
+ws: common mosh emacs git ruby haskell perl tmux vim zsh home
 
 all: home
 
@@ -19,7 +19,7 @@ $(DOTGITCONFIG):
 	$(DOTDEE) $(DOTGITCONFIG)
 
 clean:
-	$(STOW) $(STOWOPTS) -D common emacs git ruby haskell perl tmux vim zsh osx
+	$(STOW) $(STOWOPTS) -D mosh common emacs git ruby haskell perl tmux vim zsh osx
 
 $(DOTPROFILE):
 	touch $(DOTPROFILE)
@@ -46,6 +46,9 @@ x:
 
 ruby:
 	$(STOW) $(STOWOPTS) ruby
+
+mosh:
+	$(STOW) $(STOWOPTS) mosh
 
 zsh:
 	$(STOW) $(STOWOPTS) zsh
