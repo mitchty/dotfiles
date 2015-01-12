@@ -80,3 +80,10 @@ login_shell()
 {
   [ "$-" = "*i*" ]
 }
+
+# Yeah, sick of using the web browser for this crap
+# Use is NUM FROM TO and boom get the currency converted from goggle.
+cconv()
+{
+  curl -L --silent "https://www.google.com/finance/converter?a=$1&from=$2&to=$3" | grep converter_result | perl -pe 's|[<]\w+ \w+[=]\w+[>]||g;' -pe 's|[<][/]span[>]||'
+}
