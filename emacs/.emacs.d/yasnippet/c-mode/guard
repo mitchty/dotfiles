@@ -1,8 +1,0 @@
-#-*- mode: snippet; coding: utf-8 -*-
-# name: #ifndef XXX; #define XXX; #endif
-# key: guard/
-# --
-#ifndef ${1:_`(upcase (file-name-nondirectory (file-name-sans-extension (buffer-file-name))))`_H_}
-#define $1
-${0:some_header_guarded_stuff}
-#endif /* $1 */
