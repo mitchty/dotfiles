@@ -10,7 +10,7 @@ DOTPROFILE=~/.profile
 home: $(DOTGITCONFIG) $(DOTPROFILE)
 	$(DOTDEE) $(DOTPROFILE)
 
-ws: common mosh emacs git ruby haskell perl tmux vim zsh home
+ws: common mosh git ruby haskell perl tmux vim zsh home
 
 all: home
 
