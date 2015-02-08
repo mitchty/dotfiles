@@ -133,6 +133,7 @@ Like the startup screen and the echo hooey.
 #+name: startup
 #+BEGIN_SRC emacs-lisp
 (customize-set-variable 'inhibit-startup-screen t)
+(customize-set-variable 'inhibit-startup-message t)
 (customize-set-variable 'inhibit-startup-echo-area-message t)
 #+END_SRC
 ** temporary files
@@ -151,6 +152,98 @@ Update files in open buffers as they're changed on disk, freaking annoying witho
 
 #+BEGIN_SRC emacs-lisp
 (customize-set-variable 'global-auto-revert-mode t)
+#+END_SRC
+
+** desktop-save
+
+Desktop saving of session information handy to keep the same buffers between sessions.
+
+#+BEGIN_SRC emacs-lisp
+(require 'desktop)
+
+(desktop-save-mode 1)
+
+(setq desktop-restore-eager 5)
+(setq desktop-path           '("/var/tmp"))
+(setq desktop-dirname        "/var/tmp")
+(setq desktop-base-file-name "emacs.desktop")
+
+(defun local-desktop-save ()
+  (interactive)
+  (if (eq (desktop-owner) (emacs-pid))
+      (desktop-save desktop-dirname)))
+
+(add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
+#+END_SRC
+** misc text related
+
+Not sure what to categorize this crap as tbh.
+
+*** encoding
+
+utf8 is the best. Default to it.
+
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables '(locale-coding-system 'utf-8))
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(set-selection-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+#+END_SRC
+
+*** text selection
+
+If I selected text, delete the selection, I probably meant it emacs.
+
+#+BEGIN_SRC emacs-lisp
+(delete-selection-mode 1)
+#+END_SRC
+*** line width
+
+80 char line columns not 72.
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables '(fill-column 80))
+
+#+END_SRC
+
+*** we aren't banging rocks on typewriters anymore emacs
+
+Double spacing after a line isn't needed.
+
+#+BEGIN_SRC emacs-lisp
+(set-default 'sentence-end-double-space nil)
+#+END_SRC
+
+*** sentence end
+
+Semi related to the above, make the sentence endings a bit more code-ish.
+
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables '(sentence-end "[.?!][]\"')]*\\($\\|\t\\| \\)[ \t\n]*"))
+(custom-set-variables '(sentence-end-double-space nil))
+#+END_SRC
+
+*** default tab-width
+
+Two seems sensible, cause well, tabs are evil incarnate.
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables '(default-tab-width 2))
+#+END_SRC
+
+** modeline
+
+Display line and column always in the modeline.
+
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables '(line-number-mode t))
+(custom-set-variables '(column-number-mode t))
+#+END_SRC
+** always remove trailing whitespace
+
+Trailing whitespace is not normally useful. Remove it always on save in the *before-save-hook*.
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 #+END_SRC
 
 * global key bindings
