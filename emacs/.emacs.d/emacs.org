@@ -136,6 +136,9 @@ Like the startup screen and the echo hooey.
 (setq inhibit-startup-echo-area-message t)
 #+END_SRC
 ** temporary files
+
+Keep temporary stuff isolated from everyone else. It infects everything otherwise. As bad as the .DS_Store files on osx.
+
 #+BEGIN_SRC emacs-lisp
 (setq temporary-file-directory "/tmp")
 (setq backup-directory-alist `((".*" . ,temporary-file-directory)))
@@ -146,24 +149,35 @@ Like the startup screen and the echo hooey.
 
 Update files in open buffers as they're changed on disk, freaking annoying without this on.
 
-#+name: autorevert
 #+BEGIN_SRC emacs-lisp
 (setq global-auto-revert-mode t)
 #+END_SRC
 
 * global key bindings
+
+Global key bindings.
+
 #+name: global-keys
 #+BEGIN_SRC emacs-lisp
-;;(global-set-key (kbd "C-,") 'kill-whole-line)
+(global-set-key (kbd "C-,") 'kill-whole-line)
 #+END_SRC
 * appearance
+
+Solarized light is decent. I'll just use that.
+
 #+BEGIN_SRC emacs-lisp
   (use-package solarized-theme
    :ensure t
    :init (load-theme 'solarized-light 't))
 #+END_SRC
 * packages
+
+All the packages I use.
+
 ** Helm
+
+By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
+
 #+BEGIN_SRC emacs-lisp
   (use-package helm
     :ensure t
@@ -182,7 +196,7 @@ Update files in open buffers as they're changed on disk, freaking annoying witho
 #+END_SRC
 ** helm-descbinds
 
-Its nice being able to describe helm stuff you know?
+Its nice being able to describe helm things you know?
 
 #+BEGIN_SRC emacs-lisp
   (use-package helm-descbinds
@@ -192,7 +206,7 @@ Its nice being able to describe helm stuff you know?
 #+END_SRC
 ** helm-ag
 
-Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher)]] so much nicer than regular searching.
+Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher)]] so much nicer than regular searching in helm imo.
 
 #+name: packages
 #+BEGIN_SRC emacs-lisp
@@ -200,6 +214,9 @@ Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher
     :ensure t)
 #+END_SRC
 ** Magit
+
+Make git not ass to use. At least in emacs. magit is the best git interface... in the world.
+
 #+BEGIN_SRC emacs-lisp
   (use-package magit
     :ensure t
