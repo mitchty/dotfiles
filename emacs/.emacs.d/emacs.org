@@ -82,7 +82,7 @@ Add a save hook to always tangle and byte compile emacs.org file when we save it
 Not having to start *emacs* with *--debug-init* is useful.
 
 #+BEGIN_SRC emacs-lisp
-(setq debug-on-error t)
+(customize-set-variable 'debug-on-error t)
 #+END_SRC
 ** emacs server
 
@@ -132,25 +132,25 @@ Like the startup screen and the echo hooey.
 
 #+name: startup
 #+BEGIN_SRC emacs-lisp
-(setq inhibit-startup-screen t)
-(setq inhibit-startup-echo-area-message t)
+(customize-set-variable 'inhibit-startup-screen t)
+(customize-set-variable 'inhibit-startup-echo-area-message t)
 #+END_SRC
 ** temporary files
 
 Keep temporary stuff isolated from everyone else. It infects everything otherwise. As bad as the .DS_Store files on osx.
 
 #+BEGIN_SRC emacs-lisp
-(setq temporary-file-directory "/tmp")
-(setq backup-directory-alist `((".*" . ,temporary-file-directory)))
-(setq auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
-(setq create-lockfiles nil)
+(customize-set-variable 'temporary-file-directory "/tmp")
+(customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
+(customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+(customize-set-variable 'create-lockfiles nil)
 #+END_SRC
 ** auto revert
 
 Update files in open buffers as they're changed on disk, freaking annoying without this on.
 
 #+BEGIN_SRC emacs-lisp
-(setq global-auto-revert-mode t)
+(customize-set-variable 'global-auto-revert-mode t)
 #+END_SRC
 
 * global key bindings
