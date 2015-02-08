@@ -230,14 +230,6 @@ Two seems sensible, cause well, tabs are evil incarnate.
 (custom-set-variables '(default-tab-width 2))
 #+END_SRC
 
-** modeline
-
-Display line and column always in the modeline.
-
-#+BEGIN_SRC emacs-lisp
-(custom-set-variables '(line-number-mode t))
-(custom-set-variables '(column-number-mode t))
-#+END_SRC
 ** always remove trailing whitespace
 
 Trailing whitespace is not normally useful. Remove it always on save in the *before-save-hook*.
@@ -255,6 +247,7 @@ Global key bindings.
 (global-set-key (kbd "C-,") 'kill-whole-line)
 #+END_SRC
 * appearance
+** theme
 
 Solarized light is decent. I'll just use that.
 
@@ -262,6 +255,61 @@ Solarized light is decent. I'll just use that.
   (use-package solarized-theme
    :ensure t
    :init (load-theme 'solarized-light 't))
+#+END_SRC
+** modeline
+
+Display line and column always in the modeline.
+
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables '(line-number-mode t))
+(custom-set-variables '(column-number-mode t))
+(custom-set-variables '(mode-line-format
+      (list
+       '(:eval (propertize "%b " 'face 'font-lock-keyword-face
+                           'help-echo (buffer-file-name)))
+       (propertize "%02l" 'face 'font-lock-type-face) ","
+       (propertize "%02c" 'face 'font-lock-type-face)
+       " ["
+       '(:eval (propertize "%m" 'face 'font-lock-string-face
+                           'help-echo buffer-file-coding-system))
+       minor-mode-alist
+       "] "
+       "["
+       '(:eval (propertize (if overwrite-mode "Ovr" "Ins")
+                           'face 'font-lock-preprocessor-face
+                           'help-echo (concat "Buffer is in "
+                                              (if overwrite-mode "overwrite" "insert") " mode")))
+       '(:eval (when (buffer-modified-p)
+                 (concat ","  (propertize "Mod"
+                                          'face 'font-lock-warning-face
+                                          'help-echo "Buffer has been modified"))))
+       '(:eval (when buffer-read-only
+                 (concat ","  (propertize "RO"
+                                          'face 'font-lock-type-face
+                                          'help-echo "Buffer is read-only"))))        "] "
+       '(:eval (propertize (format-time-string "%H:%M:%S")
+                           'help-echo
+                           (concat (format-time-string "%c; ")
+                                   (emacs-uptime "Uptime:%hh"))))
+       " --"
+       "%-"
+       )))
+#+END_SRC
+** whitespace
+
+Customize whitespace mode to make tabs obvious as boxes, and to highlight lines over 80 characters in length.
+#+BEGIN_SRC emacs-lisp
+(require 'whitespace)
+
+(setq whitespace-style '(face tabs trailing))
+
+(set-face-attribute 'whitespace-tab nil
+                    :foreground "#2075c7"
+                    :background "lightgrey")
+
+(set-face-attribute 'whitespace-line nil
+                    :foreground "#2075c7"
+                    :background "lightgrey")
 #+END_SRC
 * packages
 
