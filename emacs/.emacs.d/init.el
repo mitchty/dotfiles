@@ -22,4 +22,4 @@
 	     :ensure org-plus-contrib)
 
 (require 'org)
-(org-babel-load-file "~/.emacs.d/init.org")
+(org-babel-load-file "~/.emacs.d/emacs.org")

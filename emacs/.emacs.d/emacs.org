@@ -1,6 +1,89 @@
-#+TITLE: Emacs org-mode configuration setup
+#+BABEL: :cache yes
+#+PROPERTY: header-args :tangle yes :comments org
+#+TITLE: Emacs Configuration
+#+AUTHOR: Mitch Tishmack
 
-* Startup
+* readme
+
+This is my emacs configuration file. I don't encourage anyone to use this verbatim,
+but if you wanted to this is how you would do so:
+
+** Clone this repo
+#+BEGIN_SRC sh :tangle no
+git clone https://github.com/mitchty/dotfiles
+#+END_SRC
+
+** Preferably backup your emacs configuration
+
+Always good to back things up, just in case you hate how I did things.
+
+#+BEGIN_SRC sh :tangle no
+tar cvf ~/.emacs-backup.tar ~/.emacs.d ~/.emacs
+
+#+END_SRC
+
+** Remove/move your old configuration
+
+This is up to you to do right, just an example.
+
+#+BEGIN_SRC sh :tangle no
+rm -fr ~/.emacs.d ~/.emacs
+#+END_SRC
+
+** Lastly copy necessary files
+#+BEGIN_SRC sh :tangle no
+mkdir ~/.emacs.d
+cp dotfiles/init.el dotfiles/emacs.org ~/.emacs.d
+#+END_SRC
+
+* init.el copy
+
+Just to be sure we get use-package, its not a full copy mind, just what makes sense.
+
+Seems OK...ish given how small init.el is.
+
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+(package-initialize)
+
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
+
+;; Install use-package for later use and to install org mode.
+(unless (package-installed-p 'use-package)
+  (progn
+    (package-refresh-contents)
+    (package-install 'use-package)
+    (package-initialize)))
+
+(require 'use-package)
+#+END_SRC
+* basics
+** always babel tangle and byte compile emacs.org
+   
+Add a save hook to always tangle and byte compile emacs.org file when we save it.
+
+#+BEGIN_SRC emacs-lisp
+   (defun tangle-init ()
+     "If the current buffer is 'emacs.org' the code-blocks are
+   tangled, and the tangled file is compiled."
+     (when (equal (buffer-file-name)
+                  (expand-file-name (concat user-emacs-directory "emacs.org")))
+       ;; Avoid running hooks when tangling.
+       (let ((prog-mode-hook nil))
+         (org-babel-tangle)
+         (byte-compile-file (concat user-emacs-directory "emacs.el")))))
+
+   (add-hook 'after-save-hook 'tangle-init)
+#+END_SRC
+** debug on error
+
+Not having to start *emacs* with *--debug-init* is useful.
+
+#+BEGIN_SRC emacs-lisp
+(setq debug-on-error t)
+#+END_SRC
 ** emacs server
 
 Start up the emacs server if it isn't running.
@@ -10,15 +93,17 @@ Start up the emacs server if it isn't running.
 (load "server")
 (unless (server-running-p) (server-start))
 #+END_SRC
-** OS specific
+** os detection
+
 Make it easier to determine what os we're running on.
+
 #+name: os-specific
 #+BEGIN_SRC emacs-lisp
-(defvar mswindows-p (string-match "windows" (symbol-name system-type))
+(defvar on-mswindows (string-match "windows" (symbol-name system-type))
   "Am I running under windows?")
-(defvar osx-p (string-match "darwin" (symbol-name system-type))
+(defvar on-osx (string-match "darwin" (symbol-name system-type))
   "Am I running under osx?")
-(defvar linux-p (string-match "gnu/linux" (symbol-name system-type))
+(defvar on-linux (string-match "gnu/linux" (symbol-name system-type))
   "Am I running under linux?")
 #+END_SRC
 *** Mac OS X Gui emacs PATH setup
@@ -39,51 +124,101 @@ however.
     (setenv "PATH" path-from-shell)
     (setq exec-path (split-string path-from-shell path-separator))))
 
-(if osx-p (set-exec-path-from-shell-PATH))
+(if on-osx (set-exec-path-from-shell-PATH))
 #+END_SRC
-** Disable pointless startup stuff
+** disable pointless startup stuff
+
+Like the startup screen and the echo hooey.
+
 #+name: startup
 #+BEGIN_SRC emacs-lisp
 (setq inhibit-startup-screen t)
-(setq inhibit-startup-screen t)
 (setq inhibit-startup-echo-area-message t)
 #+END_SRC
-* Global key bindings
-#+name: global-keys
+** temporary files
 #+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "C-,") 'kill-whole-line)
-#+END_SRC
-* Temporary files
-#+name: tempfiles
-#+BEGIN_SRC emacs-lisp
+(setq temporary-file-directory "/tmp")
 (setq backup-directory-alist `((".*" . ,temporary-file-directory)))
 (setq auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 (setq create-lockfiles nil)
 #+END_SRC
-* Auto revert
+** auto revert
 
-Update files in open buffers as they're changed on disk.
+Update files in open buffers as they're changed on disk, freaking annoying without this on.
+
 #+name: autorevert
 #+BEGIN_SRC emacs-lisp
 (setq global-auto-revert-mode t)
 #+END_SRC
 
-* Final configuration file
+* global key bindings
+#+name: global-keys
+#+BEGIN_SRC emacs-lisp
+;;(global-set-key (kbd "C-,") 'kill-whole-line)
+#+END_SRC
+* appearance
+#+BEGIN_SRC emacs-lisp
+  (use-package solarized-theme
+   :ensure t
+   :init (load-theme 'solarized-light 't))
+#+END_SRC
+* packages
+** Helm
+#+BEGIN_SRC emacs-lisp
+  (use-package helm
+    :ensure t
+    :diminish helm-mode
+    :bind (("M-x" . helm-M-x)
+           ("M-y" . helm-show-kill-ring)
+           ("C-x b" . helm-mini)
+           ("C-x C-b" . helm-buffers-list)
+           ("C-x C-f" . helm-find-files)
+           ("C-x C-r" . helm-recentf)
+           ("C-x c o" . helm-occur)
+           ("C-x c s" . helm-swoop))
+    :init (progn
+            (require 'helm-config)
+            (helm-mode 1))
+#+END_SRC
+** helm-descbinds
 
-This is the autogenerated emacs lisp file generated from the fragments
-defined previously.
+Its nice being able to describe helm stuff you know?
 
-#+BEGIN_SRC emacs-lisp :tangle yes :noweb no-export :exports code
-;;
-;; THIS FILE IS AUTOMATICALLY GENERATED DO NOT EDIT IT BY HAND
-;;
+#+BEGIN_SRC emacs-lisp
+  (use-package helm-descbinds
+    :ensure t
+    :bind (("C-h b" . helm-descbinds)
+           ("C-h w" . helm-descbinds)))
+#+END_SRC
+** helm-ag
 
-<<startup>>
-<<look-and-feel>>
-<<autocomplete>>
-<<packages>>
-<<programming>>
-<<other>>
-<<auto-load>>
-<<custom-settings>>
+Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher)]] so much nicer than regular searching.
+
+#+name: packages
+#+BEGIN_SRC emacs-lisp
+  (use-package helm-ag
+    :ensure t)
+#+END_SRC
+** Magit
+#+BEGIN_SRC emacs-lisp
+  (use-package magit
+    :ensure t
+    :commands (magit-init
+               magit-status
+               magit-diff
+               magit-commit)
+    :config
+    (progn
+      (defadvice magit-status (around magit-fullscreen activate)
+        (window-configuration-to-register :magit-fullscreen)
+        ad-do-it
+        (delete-other-windows))
+      
+      (defadvice magit-quit-window (around magit-restore-screen activate)
+        ad-do-it
+        (jump-to-register :magit-fullscreen))))
+
+  (use-package magit-blame
+    :ensure magit
+    :commands (magit-blame-mode))
 #+END_SRC
