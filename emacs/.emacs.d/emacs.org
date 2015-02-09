@@ -36,46 +36,29 @@ mkdir ~/.emacs.d
 cp dotfiles/init.el dotfiles/emacs.org ~/.emacs.d
 #+END_SRC
 
-* init.el copy
+* use-package-hack
 
-Just to be sure we get use-package, its not a full copy mind, just what makes sense.
-
-Seems OK...ish given how small init.el is.
+For some reason init.el doesn't always seem to get reflecte here. Weird reaserch later.
 
 #+BEGIN_SRC emacs-lisp
-(require 'package)
-(package-initialize)
-
-(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
-(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
-
-;; Install use-package for later use and to install org mode.
-(unless (package-installed-p 'use-package)
-  (progn
-    (package-refresh-contents)
-    (package-install 'use-package)
-    (package-initialize)))
-
 (require 'use-package)
 #+END_SRC
 * basics
 ** always babel tangle and byte compile emacs.org
-   
+
 Add a save hook to always tangle and byte compile emacs.org file when we save it.
 
 #+BEGIN_SRC emacs-lisp
-   (defun tangle-init ()
-     "If the current buffer is 'emacs.org' the code-blocks are
-   tangled, and the tangled file is compiled."
-     (when (equal (buffer-file-name)
-                  (expand-file-name (concat user-emacs-directory "emacs.org")))
-       ;; Avoid running hooks when tangling.
-       (let ((prog-mode-hook nil))
-         (org-babel-tangle)
-         (byte-compile-file (concat user-emacs-directory "emacs.el")))))
+  (defun tangle-init ()
+    "If the current buffer is 'emacs.org' the code-blocks are
+  tangled, and the tangled file is compiled."
+    (when (equal (buffer-file-name)
+                 (expand-file-name (concat user-emacs-directory "emacs.org")))
+      (let ((prog-mode-hook nil))
+        (org-babel-tangle)
+        (byte-compile-file (concat user-emacs-directory "emacs.el")))))
 
-   (add-hook 'after-save-hook 'tangle-init)
+  (add-hook 'after-save-hook 'tangle-init)
 #+END_SRC
 ** debug on error
 
@@ -88,7 +71,6 @@ Not having to start *emacs* with *--debug-init* is useful.
 
 Start up the emacs server if it isn't running.
 
-#+name: emacs-server
 #+BEGIN_SRC emacs-lisp
 (load "server")
 (unless (server-running-p) (server-start))
@@ -97,7 +79,6 @@ Start up the emacs server if it isn't running.
 
 Make it easier to determine what os we're running on.
 
-#+name: os-specific
 #+BEGIN_SRC emacs-lisp
 (defvar on-mswindows (string-match "windows" (symbol-name system-type))
   "Am I running under windows?")
@@ -116,7 +97,6 @@ then parse that to setup emacs exec-path.
 
 For now we restrict this only to OSX. It may be more generally useful
 however.
-#+name: osx-gui-hack
 #+BEGIN_SRC emacs-lisp
 (defun set-exec-path-from-shell-PATH ()
   (let ((path-from-shell
@@ -130,7 +110,6 @@ however.
 
 Like the startup screen and the echo hooey.
 
-#+name: startup
 #+BEGIN_SRC emacs-lisp
 (customize-set-variable 'inhibit-startup-screen t)
 (customize-set-variable 'inhibit-startup-message t)
@@ -145,6 +124,12 @@ Keep temporary stuff isolated from everyone else. It infects everything otherwis
 (customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
 (customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 (customize-set-variable 'create-lockfiles nil)
+(customize-set-variable 'make-backup-files nil)
+(customize-set-variable 'auto-save-default nil)
+(customize-set-variable 'backup-by-copying t)
+(customize-set-variable 'auto-save-list-file-prefix temporary-file-directory)
+(customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
+(customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 #+END_SRC
 ** auto revert
 
@@ -154,31 +139,86 @@ Update files in open buffers as they're changed on disk, freaking annoying witho
 (customize-set-variable 'global-auto-revert-mode t)
 #+END_SRC
 
-** desktop-save
+** dired
 
-Desktop saving of session information handy to keep the same buffers between sessions.
+Use dired-x.
 
 #+BEGIN_SRC emacs-lisp
-(require 'desktop)
+(add-hook 'dired-load-hook (function (lambda () (load "dired-x"))))
+#+END_SRC
+** ediff
 
-(desktop-save-mode 1)
+For those rare times I use it, make it a bit less derp on output.
 
-(setq desktop-restore-eager 5)
-(setq desktop-path           '("/var/tmp"))
-(setq desktop-dirname        "/var/tmp")
-(setq desktop-base-file-name "emacs.desktop")
+#+BEGIN_SRC emacs-lisp
+(setq ediff-window-setup-function 'ediff-setup-windows-plain)
+(setq ediff-split-window-function 'split-window-horizontally)
+#+END_SRC
+** tramp
 
-(defun local-desktop-save ()
-  (interactive)
-  (if (eq (desktop-owner) (emacs-pid))
-      (desktop-save desktop-dirname)))
+Tramp configuration.
 
-(add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
+Make the proxy list less weird.
+
+#+BEGIN_SRC emacs-lisp
+  (require 'tramp)
+  ;; FIXME
+  ;; (customize-variable 'tramp-default-proxies-alist
+  ;;   (quote ((".*" "\\`root\\'" "/ssh:%h:"))))
+#+END_SRC
+
+So this was originally a way to do tramp over ssh where sudo only worked with su.
+
+Its a hack, but it work(ed). Will remove it at some date in the future.
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'tramp-methods
+             '("susudo"
+               (tramp-login-program "sudo")
+               (tramp-login-args
+                (("-u" "%u")
+                 ("-H")
+                 ("-p" "Password:")
+                 ("su -c /bin/sh")))
+               (tramp-remote-sh "/bin/sh")
+               (tramp-copy-program nil)
+               (tramp-copy-args nil)
+               (tramp-copy-keep-date nil)
+               (tramp-password-end-of-line nil)))
+#+END_SRC
+** always remove trailing whitespace
+
+Trailing whitespace is not normally useful. Remove it always on save in the *before-save-hook*.
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+#+END_SRC
+
+** chmod u+x on save for scripts
+
+Because its derp to have to chmod 755 stuff after I save. Honestly, do it for me kthxbai.
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 #+END_SRC
 ** misc text related
 
 Not sure what to categorize this crap as tbh.
 
+*** wtf does this do?
+
+TOOD: find out why I added this ages ago.
+
+#+BEGIN_SRC emacs-lisp
+;;(move-text-default-bindings)
+#+END_SRC
+*** default major mode
+
+So if we don't know, call it text-mode.
+
+#+BEGIN_SRC emacs-lis
+(custom-set-variables '(default-major-mode 'text-mode))
+#+END_SRC
 *** encoding
 
 utf8 is the best. Default to it.
@@ -230,21 +270,29 @@ Two seems sensible, cause well, tabs are evil incarnate.
 (custom-set-variables '(default-tab-width 2))
 #+END_SRC
 
-** always remove trailing whitespace
+** uncategorized
 
-Trailing whitespace is not normally useful. Remove it always on save in the *before-save-hook*.
+I have no idea how to label these.
+
+Highlight parens.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
+(show-paren-mode)
+#+END_SRC
+
+Typing out *yes* or *no* is stupid.
+
+#+BEGIN_SRC emacs-lisp
+(defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
 * global key bindings
 
 Global key bindings.
 
-#+name: global-keys
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-,") 'kill-whole-line)
+(global-set-key (kbd "C-]") 'er/expand-region)
 #+END_SRC
 * appearance
 ** theme
@@ -258,42 +306,58 @@ Solarized light is decent. I'll just use that.
 #+END_SRC
 ** modeline
 
+Updat the time every ~3 seconds in the mode line.
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables '(display-time-default-load-average nil))
+  (custom-set-variables '(display-time-format "%T"))
+  (custom-set-variables '(display-time-interval 3))
+  (display-time-mode)
+#+END_SRC
+
 Display line and column always in the modeline.
 
 #+BEGIN_SRC emacs-lisp
-(custom-set-variables '(line-number-mode t))
-(custom-set-variables '(column-number-mode t))
-(custom-set-variables '(mode-line-format
-      (list
-       '(:eval (propertize "%b " 'face 'font-lock-keyword-face
-                           'help-echo (buffer-file-name)))
-       (propertize "%02l" 'face 'font-lock-type-face) ","
-       (propertize "%02c" 'face 'font-lock-type-face)
-       " ["
-       '(:eval (propertize "%m" 'face 'font-lock-string-face
-                           'help-echo buffer-file-coding-system))
-       minor-mode-alist
-       "] "
-       "["
-       '(:eval (propertize (if overwrite-mode "Ovr" "Ins")
-                           'face 'font-lock-preprocessor-face
-                           'help-echo (concat "Buffer is in "
-                                              (if overwrite-mode "overwrite" "insert") " mode")))
-       '(:eval (when (buffer-modified-p)
-                 (concat ","  (propertize "Mod"
-                                          'face 'font-lock-warning-face
-                                          'help-echo "Buffer has been modified"))))
-       '(:eval (when buffer-read-only
-                 (concat ","  (propertize "RO"
-                                          'face 'font-lock-type-face
-                                          'help-echo "Buffer is read-only"))))        "] "
-       '(:eval (propertize (format-time-string "%H:%M:%S")
-                           'help-echo
-                           (concat (format-time-string "%c; ")
-                                   (emacs-uptime "Uptime:%hh"))))
-       " --"
-       "%-"
-       )))
+  (custom-set-variables '(line-number-mode t))
+  (custom-set-variables '(column-number-mode t))
+#+END_SRC
+
+Format the mode line, I... can't decipher this anymore nor do I care to, it works eff it.
+
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables
+   '(mode-line-format
+     (list
+      '(:eval (propertize "%b " 'face 'font-lock-keyword-face
+                          'help-echo (buffer-file-name)))
+      (propertize "%02l" 'face 'font-lock-type-face) ","
+      (propertize "%02c" 'face 'font-lock-type-face)
+      " ["
+      '(:eval (propertize "%m" 'face 'font-lock-string-face
+                          'help-echo buffer-file-coding-system))
+      minor-mode-alist
+      "] "
+      "["
+      '(:eval (propertize (if overwrite-mode "Ovr" "Ins")
+                          'face 'font-lock-preprocessor-face
+                          'help-echo (concat "Buffer is in "
+                                             (if overwrite-mode "overwrite" "insert") " mode")))
+      '(:eval (when (buffer-modified-p)
+                (concat ","  (propertize "Mod"
+                                         'face 'font-lock-warning-face
+                                         'help-echo "Buffer has been modified"))))
+      '(:eval (when buffer-read-only
+                (concat ","  (propertize "RO"
+                                         'face 'font-lock-type-face
+                                         'help-echo "Buffer is read-only"))))        "] "
+                                         '(:eval (propertize
+                                                  (format-time-string "%H:%M:%S")
+                                                  'help-echo
+                                                  (concat (format-time-string "%c; ")
+                                                          (emacs-uptime "Uptime:%hh")
+                                                          )))
+                                         " --"
+                                         "%-"
+                                         )))
 #+END_SRC
 ** whitespace
 
@@ -310,6 +374,18 @@ Customize whitespace mode to make tabs obvious as boxes, and to highlight lines 
 (set-face-attribute 'whitespace-line nil
                     :foreground "#2075c7"
                     :background "lightgrey")
+#+END_SRC
+** gui chrome
+
+When i'm running in a terminal emacs, most of this junk isn't needed. For that matter gui counts for most.
+
+Basically, never show the tool bar or the scroll bar in gui or tty. In gui its ok to show the menu-bar.
+
+#+BEGIN_SRC emacs-lisp
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1)
+  (when (not window-system)
+    (menu-bar-mode -1))
 #+END_SRC
 * packages
 
@@ -329,11 +405,10 @@ By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
            ("C-x C-b" . helm-buffers-list)
            ("C-x C-f" . helm-find-files)
            ("C-x C-r" . helm-recentf)
-           ("C-x c o" . helm-occur)
-           ("C-x c s" . helm-swoop))
+           ("C-x c o" . helm-occur))
     :init (progn
             (require 'helm-config)
-            (helm-mode 1))
+            (helm-mode 1)))
 #+END_SRC
 ** helm-descbinds
 
@@ -341,42 +416,172 @@ Its nice being able to describe helm things you know?
 
 #+BEGIN_SRC emacs-lisp
   (use-package helm-descbinds
-    :ensure t
-    :bind (("C-h b" . helm-descbinds)
-           ("C-h w" . helm-descbinds)))
+               :ensure t
+               :bind (("C-h b" . helm-descbinds)
+                      ("C-h w" . helm-descbinds))
+               )
 #+END_SRC
 ** helm-ag
 
 Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher)]] so much nicer than regular searching in helm imo.
 
-#+name: packages
 #+BEGIN_SRC emacs-lisp
   (use-package helm-ag
-    :ensure t)
+               :ensure t
+               )
 #+END_SRC
-** Magit
+** magit
 
 Make git not ass to use. At least in emacs. magit is the best git interface... in the world.
 
 #+BEGIN_SRC emacs-lisp
   (use-package magit
-    :ensure t
-    :commands (magit-init
-               magit-status
-               magit-diff
-               magit-commit)
-    :config
-    (progn
-      (defadvice magit-status (around magit-fullscreen activate)
-        (window-configuration-to-register :magit-fullscreen)
-        ad-do-it
-        (delete-other-windows))
-      
-      (defadvice magit-quit-window (around magit-restore-screen activate)
-        ad-do-it
-        (jump-to-register :magit-fullscreen))))
+               :ensure t
+               :commands (magit-init
+                          magit-status
+                          magit-diff
+                          magit-commit)
+               :bind ("C-x m" . magit-status)
+               :config
+               (progn
+                 (defadvice magit-status (around magit-fullscreen activate)
+                   (window-configuration-to-register :magit-fullscreen)
+                   ad-do-it
+                   (delete-other-windows))
+
+                 (defadvice magit-quit-window (around magit-restore-screen activate)
+                   ad-do-it
+                   (jump-to-register :magit-fullscreen)))
+               )
 
   (use-package magit-blame
-    :ensure magit
-    :commands (magit-blame-mode))
+               :ensure magit
+               :commands (magit-blame-mode)
+               )
+#+END_SRC
+** autopair
+
+Highlight matching ()'s []'s etc...
+
+#+BEGIN_SRC emacs-lisp
+  (use-package autopair
+               :ensure t
+               :config (customize-set-variable 'autopair-blink 'nil)
+               )
+#+END_SRC
+** org
+
+Org mode keybindings and settings, pretty sparse really.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package org
+               :ensure t
+               :bind (("C-c a" . org-agenda)
+                      ("C-c b" . org-iswitchb)
+                      ("C-c c" . org-capture)
+                      ("C-c l" . org-store-link)
+                      ("C-c p" . org-latex-export-to-pdf))
+               :config (customize-set-variable 'org-log-done t)
+               )
+
+#+END_SRC
+** flycheck
+
+Flycheck for on the fly checking of code.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package flycheck
+               :ensure t
+               :config (customize-set-variable 'flycheck-indication-mode 'right-fringe)
+               )
+
+#+END_SRC
+
+Need to vet this, used it more when I did more c. But its handy for non standard pkg-config
+setups.
+
+Not tangled into the config intentionally.
+
+#+BEGIN_SRC emacs-lisp :tangle=no
+  (defun pkg-config-add-lib-cflags (pkg-config-lib)
+    "This function will add necessary header file path of a
+  specified by `pkg-config-lib' to `flycheck-clang-include-path', which make it
+  completionable by auto-complete-clang"
+    (interactive "spkg-config lib: ")
+    (if (executable-find "pkg-config")
+        (if (= (shell-command
+                (format "pkg-config %s" pkg-config-lib))
+               0)
+            (setq flycheck-clang-include-path
+                  (append flycheck-clang-include-path
+                          (split-string
+                           (shell-command-to-string
+                            (format "pkg-config --cflags-only-I %s"
+                                    pkg-config-lib)))))
+          (message "Error, pkg-config lib %s not found." pkg-config-lib))
+      (message "Error: pkg-config tool not found.")))
+#+END_SRC
+
+** auto-complete
+
+Auto complete functionality is nice to have.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package auto-complete
+               :ensure t
+               )
+#+END_SRC
+** smartparens
+
+Helpfully inserts matching parens, can be a pita too.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package smartparens
+               :ensure t
+               )
+#+END_SRC
+** uniquify
+
+Make buffer names unique based on their directory and not have <N> or other nonsense.
+
+#+BEGIN_SRC emacs-lisp
+  (require 'uniquify)
+  (customize-set-variable 'uniquify-buffer-name-style 'post-forward)
+#+END_SRC
+** desktop-save
+
+Desktop saving of session information handy to keep the same buffers between sessions.
+
+#+BEGIN_SRC emacs-lisp
+  (require 'desktop)
+
+  (desktop-save-mode 1)
+
+  (customize-set-variable 'desktop-restore-eager 5)
+  (customize-set-variable 'desktop-path           '("~/.emacs.d"))
+  (customize-set-variable 'desktop-dirname        "~/.emacs.d")
+  (customize-set-variable 'desktop-base-file-name "desktop")
+
+  (defun local-desktop-save ()
+    (interactive)
+    (if (eq (desktop-owner) (emacs-pid))
+        (desktop-save desktop-dirname)))
+
+  (add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
+#+END_SRC
+* mode related
+** common defaults
+
+Common mode defaults I think are sensible.
+
+#+BEGIN_SRC emacs-lisp
+(interactive)
+(highlight-lines-matching-regexp ".\{81\}" 'hi-green-b)
+(hl-line-mode)
+;;(auto-complete-mode)
+(whitespace-mode)
+;;(smartparens-mode)
+(visual-line-mode)
+(customize-set-variable 'indent-tabs-mode nil)
+(customize-set-variable 'tab-width 2)
 #+END_SRC
