@@ -5,9 +5,8 @@ use warnings;
 use POSIX qw(strftime);
 
 my $now       = time;
-my $local_now = localtime $now;
-my $tz        = strftime '%z', $local_now;
+my $tz        = strftime(('%z', (localtime $now)));
 $tz =~ s/(\d{2})(\d{2})/$1:$2/smx;
-my $time = strftime '%Y-%m-%dT%H:%M:%S', $local_now;
+my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
 print "$time$tz\n";
 exit 0;
