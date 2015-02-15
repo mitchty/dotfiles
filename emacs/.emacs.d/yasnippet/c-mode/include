@@ -1,5 +1,0 @@
-#-*- mode: snippet; coding: utf-8 -*-
-# name: #include "...\.h"
-# key: inc/
-# --
-#include "${1:someuserheader}.h"

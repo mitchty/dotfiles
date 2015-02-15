@@ -5,3 +5,5 @@ url
 ac-dict
 ac-comphist.dat
 .emacs.desktop*
+*.elc
+emacs.el
