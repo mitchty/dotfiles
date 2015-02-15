@@ -387,6 +387,33 @@ Basically, never show the tool bar or the scroll bar in gui or tty. In gui its o
   (when (not window-system)
     (menu-bar-mode -1))
 #+END_SRC
+** fonts
+
+Fonts. Let me specify them for gui emacs.
+
+#+BEGIN_SRC emacs-lisp
+  (when window-system
+    (require 'cl)
+
+    (defun font-candidate (&rest fonts)
+      "Return first font that matches list of provided fonts."
+      (find-if (lambda (f) (find-font (font-spec :name f))) fonts))
+
+    (set-face-attribute 'default nil :font
+                        (font-candidate '"Pragmata\ Pro-13:weight=normal"
+                                        "Source Code Pro-13:weight=normal"
+                                        "Menlo-12:weight=normal"
+                                        "Monaco-12:weight=normal"
+                                        ))
+
+    (cond (on-linux
+           (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+           (setq x-select-enable-clipboard t)
+           )
+          )
+    )
+
+#+END_SRC
 * packages
 
 All the packages I use.
