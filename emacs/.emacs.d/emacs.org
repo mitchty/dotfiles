@@ -43,7 +43,7 @@ For some reason init.el doesn't always seem to get reflecte here. Weird reaserch
 #+BEGIN_SRC emacs-lisp
 (require 'use-package)
 #+END_SRC
-* basics
+* prelude
 ** always babel tangle and byte compile emacs.org
 
 Add a save hook to always tangle and byte compile emacs.org file when we save it.
@@ -574,7 +574,8 @@ Desktop saving of session information handy to keep the same buffers between ses
 
 Common mode defaults I think are sensible.
 
-#+BEGIN_SRC emacs-lisp
+TODO: fixme kthxbai
+#+BEGIN_SRC emacs-lisp :tangle no
 (interactive)
 (highlight-lines-matching-regexp ".\{81\}" 'hi-green-b)
 (hl-line-mode)
@@ -584,4 +585,62 @@ Common mode defaults I think are sensible.
 (visual-line-mode)
 (customize-set-variable 'indent-tabs-mode nil)
 (customize-set-variable 'tab-width 2)
+#+END_SRC
+** auto-insert-mode new file templates
+
+Use auto-insert-mode to insert in templates for blank files.
+
+So first up, add auto-insert to *find-file-hooks* so we insert straight away. Also setup the copyright bit to minimally put in name.
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'find-file-hooks 'auto-insert)
+(setq auto-insert-copyright (user-full-name))
+#+END_SRC
+
+Create the *auto-insert-alist* so all the mode lists are the same
+
+#+BEGIN_SRC emacs-lisp
+(setq auto-insert-alist '(()))
+#+END_SRC
+
+*** c
+
+#+BEGIN_SRC emacs-lisp
+    (setq auto-insert-alist
+          (append
+           '(
+             ((c-mode . "C")
+              nil
+              "/*\n"
+              "File: " (file-name-nondirectory buffer-file-name) "\n"
+              "Copyright: " (substring (current-time-string) -4) " " auto-insert-copyright "\n"
+              "Description: " _ "\n"
+              "*/\n"
+              "#include <stdio.h>\n"
+              "#include <stdlib.h>\n\n"
+              "int main(int argc, char **argv) {\n"
+              "  return 0;\n"
+              "}\n"
+              )
+             )
+           auto-insert-alist)
+          )
+#+END_SRC
+
+** python
+
+#+BEGIN_SRC emacs-lisp
+  (setq auto-insert-alist
+        (append
+         '(((python-mode . "Python")
+           nil
+           "#!/usr/bin/env python\n"
+           "# -*-mode: Python; coding: utf-8;-*-\n"
+           "# File: " (file-name-nondirectory buffer-file-name) "\n"
+           "# Copyright: " (substring (current-time-string) -4) " " auto-insert-copyright "\n"
+           "# Description: " _ "\n\n"
+           )
+           )
+         auto-insert-alist)
+        )
 #+END_SRC
