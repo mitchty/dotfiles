@@ -654,7 +654,7 @@ Create the *auto-insert-alist* so all the mode lists are the same
           )
 #+END_SRC
 
-** python
+*** python
 
 #+BEGIN_SRC emacs-lisp
   (setq auto-insert-alist
