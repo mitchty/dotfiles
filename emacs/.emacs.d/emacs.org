@@ -601,6 +601,8 @@ Desktop saving of session information handy to keep the same buffers between ses
 
 Common mode defaults I think are sensible.
 
+*** prog-mode hook
+
 #+BEGIN_SRC emacs-lisp
   (add-hook 'prog-mode-hook
         '(lambda ()
