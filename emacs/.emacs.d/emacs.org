@@ -659,6 +659,23 @@ Common mode defaults I think are sensible.
   (add-hook 'python-mode-hook '(lambda () (flycheck-select-checker 'python-flake8)))
 #+END_SRC
 
+*** shell
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'sh--mode "sh-mode" "mode for shell stuff" t)
+
+(add-to-list 'auto-mode-alist '("\\.sh$\\'" . sh-mode))
+(add-to-list 'auto-mode-alist '("\\.[zk]sh$\\'" . sh-mode))
+(add-to-list 'auto-mode-alist '("\\.bash$\\'" . sh-mode))
+(add-to-list 'auto-mode-alist '("\\[.].*shrc$\\'" . sh-mode))
+(add-to-list 'auto-mode-alist '("sourceme$\\'" . sh-mode))
+
+(add-hook 'sh-mode-hook
+          '(lambda ()
+             (setq sh-basic-offset 2 sh-indentation 4
+                   sh-indent-for-case-label 0 sh-indent-for-case-alt '+)))
+#+END_SRC
+
 ** auto-insert-mode new file templates
 
 Use auto-insert-mode to insert in templates for blank files.
@@ -730,6 +747,28 @@ Create the *auto-insert-alist* so all the mode lists are the same
            "# Copyright: " (substring (current-time-string) -4) " " auto-insert-copyright "\n"
            "# Description: " _ "\n\n"
            )
+           )
+         auto-insert-alist)
+        )
+#+END_SRC
+
+*** shell
+
+#+BEGIN_SRC emacs-lisp
+  (setq auto-insert-alist
+        (append
+         '(
+           ((sh-mode . "sh")
+            nil
+            "#!/usr/bin/env sh\n"
+            "#-*-mode: Shell-script; coding: utf-8;-*-\n"
+            "# File: " (file-name-nondirectory buffer-file-name) "\n"
+            "# Copyright: " (substring (current-time-string) -4) " " auto-insert-copyright "\n"
+            "# Description: " _ "\n"
+            "export script=$(basename \"$0\")\n"
+            "export dir=$(cd \"$(dirname \"$0\")\"; pwd)\n"
+            "export iam=${dir}/${script}\n"
+            )
            )
          auto-insert-alist)
         )
