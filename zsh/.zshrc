@@ -128,15 +128,39 @@ local userchar="%(!.#.$)"
 zstyle ':vcs_info:*' enable git
 zstyle ':vcs_info:*' check-for-changes true
 setopt prompt_subst
+
 precmd()
 {
     vcs_info
 }
 
+# +N/-N upstream info
+function +vi-git-st() {
+    local ahead behind
+    local -a gitstatus
+
+    ahead=$(git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l | sed -e 's|^ *||g')
+    behind=$(git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l | sed -e 's|^ *||g')
+
+    (( $ahead )) && gitstatus+=( "+${ahead}" )
+    (( $behind )) && gitstatus+=( "-${behind}" )
+
+    hook_com[misc]+=${(j:/:)gitstatus}
+}
+
+# Untracked crap in the repo not covered by .gitignore?
+function +vi-git-untracked(){
+    if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == 'true' ]] && \
+        git status --porcelain | grep '??' &> /dev/null ; then
+        hook_com[staged]+="%{$fg[red]%}N"
+    fi
+}
+
 local branch="%{$fg[green]%}%b%c%u%{$fg[green]%}%{$reset_color%}"
-zstyle ':vcs_info:*' formats "$branch"
-zstyle ':vcs_info:*' actionformats "$branch (%a)"
-zstyle ':vcs_info:*' stagedstr "%{$fg[yellow]%}*"
-zstyle ':vcs_info:*' unstagedstr "%{$fg[red]%}*"
+zstyle ':vcs_info:*' formats "%m $branch"
+zstyle ':vcs_info:*' actionformats "%a $branch"
+zstyle ':vcs_info:*' stagedstr "%{$fg[blue]%}S"
+zstyle ':vcs_info:*' unstagedstr "%{$fg[blue]%}M"
+zstyle ':vcs_info:git*+set-message:*' hooks git-untracked git-st
 PROMPT="$userat:$pwd$userchar "
-RPROMPT="\${vcs_info_msg_0_}"
+RPROMPT='${vcs_info_msg_0_}'
