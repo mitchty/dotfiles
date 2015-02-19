@@ -486,6 +486,27 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
                :commands (magit-blame-mode)
                )
 #+END_SRC
+** workgroups2
+
+Save workgroup layouts. Similar..ish to desktop-save.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package workgroups2
+    :ensure t
+    :init (progn
+            ;; Can't use :bind OR :config for this sadly
+            ;; also annoying, is that I have to set this before
+            ;; running workgroups-mode. Hokey stuff.
+            ;;
+            ;; Also note, use setq here not customize-set-variable
+            ;; workgroups2 can't detect stuff thats customized.
+            (setq wg-session-file  "~/.emacs.d/workgroups")
+            (setq wg-prefix-key (kbd "C-c C-w"))
+            (workgroups-mode 1)
+            )
+    )
+#+END_SRC
+
 ** autopair
 
 Highlight matching ()'s []'s etc...

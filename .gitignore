@@ -2,3 +2,9 @@
 .checksum
 common/.profile
 git/.gitconfig
+emacs/.emacs.d/workgroups
+emacs/.emacs.d/desktop
+emacs/.emacs.d/ac-comphist.dat
+emacs/.emacs.d/elpa
+emacs/.emacs.d/emacs.el
+emacs/.emacs.d/url
