@@ -396,10 +396,9 @@ Fonts. Let me specify them for gui emacs.
 #+BEGIN_SRC emacs-lisp
   (when window-system
     (require 'cl)
-
     (defun font-candidate (&rest fonts)
       "Return first font that matches list of provided fonts."
-      (find-if (lambda (f) (find-font (font-spec :name f))) fonts))
+      (with-no-warnings (find-if (lambda (f) (find-font (font-spec :name f))) fonts)))
 
     (set-face-attribute 'default nil :font
                         (font-candidate '"Pragmata\ Pro-13:weight=normal"
@@ -667,7 +666,9 @@ Common mode defaults I think are sensible.
 
 *** elisp
 
-#+BEGIN_SRC emacs-lisp
+TODO: fixme
+
+#+BEGIN_SRC emacs-lisp :tangle no
 (add-hook 'emacs-lisp-hook
           (lambda ()
             (define-key emacs-lisp-map
