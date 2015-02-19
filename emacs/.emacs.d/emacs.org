@@ -209,16 +209,18 @@ Not sure what to categorize this crap as tbh.
 
 TOOD: find out why I added this ages ago.
 
-#+BEGIN_SRC emacs-lisp
-;;(move-text-default-bindings)
+#+BEGIN_SRC emacs-lisp :tangle no
+  (move-text-default-bindings)
 #+END_SRC
+
 *** default major mode
 
 So if we don't know, call it text-mode.
 
-#+BEGIN_SRC emacs-lis
-(custom-set-variables '(default-major-mode 'text-mode))
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables '(default-major-mode 'text-mode))
 #+END_SRC
+
 *** encoding
 
 utf8 is the best. Default to it.
