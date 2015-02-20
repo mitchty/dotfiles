@@ -224,16 +224,18 @@ Not sure what to categorize this crap as tbh.
 
 TOOD: find out why I added this ages ago.
 
-#+BEGIN_SRC emacs-lisp
-;;(move-text-default-bindings)
+#+BEGIN_SRC emacs-lisp :tangle no
+  (move-text-default-bindings)
 #+END_SRC
+
 *** default major mode
 
 So if we don't know, call it text-mode.
 
-#+BEGIN_SRC emacs-lis
-(custom-set-variables '(default-major-mode 'text-mode))
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables '(default-major-mode 'text-mode))
 #+END_SRC
+
 *** encoding
 
 utf8 is the best. Default to it.
@@ -413,10 +415,9 @@ Fonts. Let me specify them for gui emacs.
 #+BEGIN_SRC emacs-lisp
   (when window-system
     (require 'cl)
-
     (defun font-candidate (&rest fonts)
       "Return first font that matches list of provided fonts."
-      (find-if (lambda (f) (find-font (font-spec :name f))) fonts))
+      (with-no-warnings (find-if (lambda (f) (find-font (font-spec :name f))) fonts)))
 
     (set-face-attribute 'default nil :font
                         (font-candidate '"Pragmata\ Pro-13:weight=normal"
@@ -507,6 +508,27 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
   (use-package magit-blame
     :ensure magit
     :commands (magit-blame-mode)
+    )
+#+END_SRC
+
+** workgroups2
+
+Save workgroup layouts. Similar..ish to desktop-save.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package workgroups2
+    :ensure t
+    :init (progn
+            ;; Can't use :bind OR :config for this sadly
+            ;; also annoying, is that I have to set this before
+            ;; running workgroups-mode. Hokey stuff.
+            ;;
+            ;; Also note, use setq here not customize-set-variable
+            ;; workgroups2 can't detect stuff thats customized.
+            (setq wg-session-file  "~/.emacs.d/workgroups")
+            (setq wg-prefix-key (kbd "C-c C-w"))
+            (workgroups-mode 1)
+            )
     )
 #+END_SRC
 
@@ -735,7 +757,9 @@ Common mode defaults I think are sensible.
 
 *** elisp
 
-#+BEGIN_SRC emacs-lisp
+TODO: fixme
+
+#+BEGIN_SRC emacs-lisp :tangle no
 (add-hook 'emacs-lisp-hook
           (lambda ()
             (define-key emacs-lisp-map
