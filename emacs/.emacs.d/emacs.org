@@ -31,6 +31,7 @@ rm -fr ~/.emacs.d ~/.emacs
 #+END_SRC
 
 ** Lastly copy necessary files
+
 #+BEGIN_SRC sh :tangle no
 mkdir ~/.emacs.d
 cp dotfiles/init.el dotfiles/emacs.org ~/.emacs.d
@@ -43,7 +44,19 @@ For some reason init.el doesn't always seem to get reflecte here. Weird reaserch
 #+BEGIN_SRC emacs-lisp
 (require 'use-package)
 #+END_SRC
+
 * prelude
+** match end of string function
+
+#+BEGIN_SRC emacs-lisp
+  (defun string/ends-with (string suffix)
+    "Return t if STRING ends with SUFFIX."
+    (and (string-match (rx-to-string `(: ,suffix eos) t)
+                       string)
+         t)
+    )
+#+END_SRC
+
 ** always babel tangle and byte compile emacs.org
 
 Add a save hook to always tangle and byte compile emacs.org file when we save it.
@@ -52,20 +65,22 @@ Add a save hook to always tangle and byte compile emacs.org file when we save it
   (defun tangle-init ()
     "If the current buffer is 'emacs.org' the code-blocks are
   tangled, and the tangled file is compiled."
-    (when (equal (buffer-file-name)
-                 (expand-file-name (concat user-emacs-directory "emacs.org")))
+    (when (string/ends-with (buffer-file-name)  ".emacs.d/emacs.org")
       (let ((prog-mode-hook nil))
         (org-babel-tangle)
-        (byte-compile-file (concat user-emacs-directory "emacs.el")))))
+        (byte-compile-file (concat user-emacs-directory "emacs.el")))
+      )
+    )
 
   (add-hook 'after-save-hook 'tangle-init)
 #+END_SRC
+
 ** debug on error
 
 Not having to start *emacs* with *--debug-init* is useful.
 
 #+BEGIN_SRC emacs-lisp
-(customize-set-variable 'debug-on-error t)
+(setq debug-on-error t)
 #+END_SRC
 ** emacs server
 
@@ -296,6 +311,7 @@ Global key bindings.
 (global-set-key (kbd "C-,") 'kill-whole-line)
 (global-set-key (kbd "C-]") 'er/expand-region)
 #+END_SRC
+
 * appearance
 ** theme
 
@@ -306,6 +322,7 @@ Solarized light is decent. I'll just use that.
    :ensure t
    :init (load-theme 'solarized-light 't))
 #+END_SRC
+
 ** modeline
 
 Updat the time every ~3 seconds in the mode line.
@@ -361,6 +378,7 @@ Format the mode line, I... can't decipher this anymore nor do I care to, it work
                                          "%-"
                                          )))
 #+END_SRC
+
 ** whitespace
 
 Customize whitespace mode to make tabs obvious as boxes, and to highlight lines over 80 characters in length.
@@ -377,6 +395,7 @@ Customize whitespace mode to make tabs obvious as boxes, and to highlight lines 
                     :foreground "#2075c7"
                     :background "lightgrey")
 #+END_SRC
+
 ** gui chrome
 
 When i'm running in a terminal emacs, most of this junk isn't needed. For that matter gui counts for most.
@@ -415,6 +434,7 @@ Fonts. Let me specify them for gui emacs.
     )
 
 #+END_SRC
+
 * packages
 
 All the packages I use.
@@ -438,55 +458,59 @@ By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
             (require 'helm-config)
             (helm-mode 1)))
 #+END_SRC
+
 ** helm-descbinds
 
 Its nice being able to describe helm things you know?
 
 #+BEGIN_SRC emacs-lisp
   (use-package helm-descbinds
-               :ensure t
-               :bind (("C-h b" . helm-descbinds)
-                      ("C-h w" . helm-descbinds))
-               )
+    :ensure t
+    :bind (("C-h b" . helm-descbinds)
+           ("C-h w" . helm-descbinds))
+    )
 #+END_SRC
+
 ** helm-ag
 
 Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher)]] so much nicer than regular searching in helm imo.
 
 #+BEGIN_SRC emacs-lisp
   (use-package helm-ag
-               :ensure t
-               )
+    :ensure t
+    )
 #+END_SRC
+
 ** magit
 
 Make git not ass to use. At least in emacs. magit is the best git interface... in the world.
 
 #+BEGIN_SRC emacs-lisp
   (use-package magit
-               :ensure t
-               :commands (magit-init
-                          magit-status
-                          magit-diff
-                          magit-commit)
-               :bind ("C-x m" . magit-status)
-               :config
-               (progn
-                 (defadvice magit-status (around magit-fullscreen activate)
-                   (window-configuration-to-register :magit-fullscreen)
-                   ad-do-it
-                   (delete-other-windows))
+    :ensure t
+    :commands (magit-init
+               magit-status
+               magit-diff
+               magit-commit)
+    :bind ("C-x m" . magit-status)
+    :config
+    (progn
+      (defadvice magit-status (around magit-fullscreen activate)
+        (window-configuration-to-register :magit-fullscreen)
+        ad-do-it
+        (delete-other-windows))
 
-                 (defadvice magit-quit-window (around magit-restore-screen activate)
-                   ad-do-it
-                   (jump-to-register :magit-fullscreen)))
-               )
+      (defadvice magit-quit-window (around magit-restore-screen activate)
+        ad-do-it
+        (jump-to-register :magit-fullscreen)))
+    )
 
   (use-package magit-blame
-               :ensure magit
-               :commands (magit-blame-mode)
-               )
+    :ensure magit
+    :commands (magit-blame-mode)
+    )
 #+END_SRC
+
 ** workgroups2
 
 Save workgroup layouts. Similar..ish to desktop-save.
@@ -518,6 +542,7 @@ Highlight matching ()'s []'s etc...
                :config (customize-set-variable 'autopair-blink 'nil)
                )
 #+END_SRC
+
 ** org
 
 Org mode keybindings and settings, pretty sparse really.
@@ -534,6 +559,7 @@ Org mode keybindings and settings, pretty sparse really.
                )
 
 #+END_SRC
+
 ** flycheck
 
 Flycheck for on the fly checking of code.
@@ -578,17 +604,24 @@ Auto complete functionality is nice to have.
 #+BEGIN_SRC emacs-lisp
   (use-package auto-complete
                :ensure t
+               :defer t
+               :init
+               (progn (require 'auto-complete-config)
+                      (ac-config-default)
+                      (global-auto-complete-mode t))
                )
 #+END_SRC
+
 ** smartparens
 
 Helpfully inserts matching parens, can be a pita too.
 
 #+BEGIN_SRC emacs-lisp
   (use-package smartparens
-               :ensure t
-               )
+    :ensure t
+  )
 #+END_SRC
+
 ** uniquify
 
 Make buffer names unique based on their directory and not have <N> or other nonsense.
@@ -597,6 +630,7 @@ Make buffer names unique based on their directory and not have <N> or other nons
   (require 'uniquify)
   (customize-set-variable 'uniquify-buffer-name-style 'post-forward)
 #+END_SRC
+
 ** desktop-save
 
 Desktop saving of session information handy to keep the same buffers between sessions.
@@ -618,6 +652,63 @@ Desktop saving of session information handy to keep the same buffers between ses
 
   (add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
 #+END_SRC
+
+** projectile
+
+#+BEGIN_SRC emacs-lisp
+  (use-package projectile
+    :ensure t
+    :defer t
+    :idle (projectile-global-mode)
+    :config (progn (require 'helm-projectile)
+                   (helm-projectile-on))
+    )
+#+END_SRC
+
+** git gutter
+
+#+BEGIN_SRC emacs-lisp
+  (use-package git-gutter
+    :ensure t
+    :defer t
+    :idle (global-git-gutter-mode t)
+    )
+#+END_SRC
+
+** clang-format
+
+#+BEGIN_SRC emacs-lisp
+  (use-package clang-format
+    :ensure t
+    :bind (([C-M-tab] . clang-format-region))
+    )
+#+END_SRC
+
+** ggtags
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  (use-package ggtags
+    :ensure t
+    )
+#+END_SRC
+
+** company-mode
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  (use-package company-mode
+    :ensure t
+    )
+#+END_SRC
+
+** helm-gtags
+
+#+BEGIN_SRC emacs-lisp
+  (use-package helm-gtags
+    :ensure t
+    )
+
+#+END_SRC
+
 * mode related
 ** common defaults
 
