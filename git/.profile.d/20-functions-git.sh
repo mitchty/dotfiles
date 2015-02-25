@@ -1,60 +1,42 @@
 # git/.profile.d/20-functions-git.sh
-
-_git_repo_add()
+maybe_git_repo()
 {
-  proto=${1}
-  where=${2}
-  location=${3}
-  repo=$(echo ${HOME}/Developer/${where}/${location} | sed -e 's/\.git$//g')
-  [[ ! -d ${repo} ]] && mkdir -p ${repo}
-  git clone ${proto}://${where}/${location} ${repo}
-}
+  # assume https if input doesn't contain a protocol
+  proto=https
+  destination=${HOME}/src
+  echo "${1}" | grep '://' > /dev/null 2>&1
+  [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
+  git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
+  repo=$(echo "${destination}/${git_dir}" | sed -e 's/\.git$//g')
 
-_git_https_repo_add()
-{
-  _git_repo_add https $*
-}
-
-_git_http_repo_add()
-{
-  _git_repo_add http $*
-}
-
-_git_git_repo_add()
-{
-  _git_repo_add git $*
+  if [ ! -d "${repo}" ]; then
+    mkdir -p "${repo}"
+    echo "git clone ${proto}://${git_dir} ${repo}"
+    git clone "${proto}://${git_dir}" "${repo}"
+    ${cmd}
+    if [ $? != 0 ]; then
+      # Try removing up to git_dir at worst empty directories.
+      # Cheap trick, but oldies are goodies.
+      (
+        repo_dir="${repo}"
+        until [ "${repo_dir}" = "${destination}" ]; do
+          cd "${repo_dir}" > /dev/null 2>&1
+          rmdir "${repo_dir}" > /dev/null 2>&1
+          repo_dir=$(echo "${repo_dir}" | sed -e 's/\/[^\/]*$//g')
+        done
+      )
+      echo "git clone of ${proto}://${repo} failed"
+    fi
+  fi
+  [ -d "${repo}" ] && cd "${repo}"
 }
 
 gh()
 {
-  _cd_git_repo https github.com ${1}
+  maybe_git_repo "https://github.com/${1}"
 }
 
 bb()
 {
-  _cd_git_repo https bitbucket.org ${1}
-}
-
-_cd_git_repo()
-{
-  proto=${1}
-  where=${2}
-  what=${3}
-  repo=$(echo "Developer/${where}/${what}"| sed -e 's/\.git$//g')
-  full_repo=${HOME}/${repo}
-  [[ ! -d ${full_repo} ]] &&  _git_repo_add $*
-
-  if [[ $? != 0 ]]; then
-    # Try removing up to ~/Developer at worst empty directories.
-    # Cheap trick, but oldies are goodies.
-    (
-      until [[ ${full_repo} == "${HOME}/Developer" ]]; do
-        cd ${full_repo} > /dev/null 2>&1
-        rmdir ${full_repo} > /dev/null 2>&1
-        full_repo=$(echo ${full_repo} | sed -e 's/\/[^\/]*$//g')
-      done
-    )
-  fi
-
-  [[ -d ${full_repo} ]] && cd ${full_repo}
+  maybe_git_repo "https://bitbucket.org/${1}"
 }
