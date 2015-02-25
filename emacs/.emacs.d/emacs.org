@@ -618,6 +618,15 @@ Desktop saving of session information handy to keep the same buffers between ses
 
   (add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
 #+END_SRC
+
+** fic-mode
+
+Highlight TODO/FIXME type messages in comments.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package fic-mode :ensure t)
+#+END_SRC
+
 * mode related
 ** common defaults
 
@@ -637,6 +646,7 @@ Common mode defaults I think are sensible.
            (customize-set-variable 'indent-tabs-mode nil)
            (customize-set-variable 'tab-width 2)
            (flycheck-mode)
+           (turn-on-fic-mode)
           )
         )
 #+END_SRC
