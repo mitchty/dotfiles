@@ -1,5 +1,5 @@
 #+BABEL: :cache yes
-#+PROPERTY: header-args :tangle yes :comments org
+#+PROPERTY: header-args :tangle yes :comments no
 #+TITLE: Emacs Configuration
 #+AUTHOR: Mitch Tishmack
 
@@ -336,7 +336,7 @@ Solarized light is decent. I'll just use that.
 
 ** modeline
 
-Updat the time every ~3 seconds in the mode line.
+Update the time every ~3 seconds in the mode line.
 
 #+BEGIN_SRC emacs-lisp
   (custom-set-variables '(display-time-default-load-average nil))
@@ -422,9 +422,9 @@ Basically, never show the tool bar or the scroll bar in gui or tty. In gui its o
     (menu-bar-mode -1))
 #+END_SRC
 
-** fonts
+** gui fonts
 
-Fonts. Let me specify them for gui emacs.
+Ah Fonts. Let me specify them for gui emacs.
 
 #+BEGIN_SRC emacs-lisp
   (when window-system
@@ -487,12 +487,16 @@ Its nice being able to describe helm things you know?
 
 ** helm-ag
 
-Helm search plugin for [[Ag%20(The%20Silver%20Searcher)][Ag (The Silver Searcher)]] so much nicer than regular searching in helm imo.
+Helm search plugin for Ag (The Silver Searcher) so much nicer than regular searching in helm imo.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package helm-ag
-    :ensure t
-    )
+  (use-package helm-ag :ensure t)
+#+END_SRC
+
+** helm-projectile
+
+#+BEGIN_SRC emacs-lisp
+  (use-package helm-projectile :ensure t)
 #+END_SRC
 
 ** magit
@@ -557,9 +561,9 @@ Highlight matching ()'s []'s etc...
                )
 #+END_SRC
 
-** org
+** org-mode
 
-Org mode keybindings and settings, pretty sparse really.
+Org-mode keybindings and settings, pretty sparse really.
 
 #+BEGIN_SRC emacs-lisp
   (use-package org
@@ -631,9 +635,7 @@ Auto complete functionality is nice to have.
 Helpfully inserts matching parens, can be a pita too.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package smartparens
-    :ensure t
-  )
+  (use-package smartparens :ensure t)
 #+END_SRC
 
 ** uniquify
@@ -667,14 +669,14 @@ Desktop saving of session information handy to keep the same buffers between ses
   (add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
 #+END_SRC
 
-<<<<<<< HEAD
 ** fic-mode
 
 Highlight TODO/FIXME type messages in comments.
 
 #+BEGIN_SRC emacs-lisp
   (use-package fic-mode :ensure t)
-=======
+#+END_SRC
+
 ** projectile
 
 #+BEGIN_SRC emacs-lisp
@@ -709,17 +711,39 @@ Highlight TODO/FIXME type messages in comments.
 ** ggtags
 
 #+BEGIN_SRC emacs-lisp :tangle no
-  (use-package ggtags
-    :ensure t
-    )
+  (use-package ggtags :ensure t)
 #+END_SRC
 
 ** company-mode
 
+Completion tips.
+
 #+BEGIN_SRC emacs-lisp :tangle no
-  (use-package company-mode
-    :ensure t
-    )
+  (use-package company-mode :ensure t)
+#+END_SRC
+
+** yaml-mode
+
+For.. yaml
+
+#+BEGIN_SRC emacs-lisp
+  (use-package yaml-mode :ensure t)
+#+END_SRC
+
+** writegood-mode
+
+So I write gooder. Me fail English? Thats unpossible.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package writegood-mode :ensure t :defer t)
+#+END_SRC
+
+** restclient
+
+Comes in handily for those times you need it.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package restclient :ensure t :defer t)
 #+END_SRC
 
 ** helm-gtags
