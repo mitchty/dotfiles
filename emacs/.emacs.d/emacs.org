@@ -295,6 +295,7 @@ Global key bindings.
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-,") 'kill-whole-line)
 (global-set-key (kbd "C-]") 'er/expand-region)
+(global-set-key (kbd "C-x C-m") 'compile)
 #+END_SRC
 * appearance
 ** theme
