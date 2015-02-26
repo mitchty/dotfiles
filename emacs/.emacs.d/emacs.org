@@ -329,9 +329,7 @@ Global key bindings.
 Solarized light is decent. I'll just use that.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package solarized-theme
-   :ensure t
-   :init (load-theme 'solarized-light 't))
+  (use-package solarized-theme :ensure t :init (load-theme 'solarized-light 't))
 #+END_SRC
 
 ** modeline
@@ -359,36 +357,55 @@ Format the mode line, I... can't decipher this anymore nor do I care to, it work
    '(mode-line-format
      (list
       '(:eval (propertize "%b " 'face 'font-lock-keyword-face
-                          'help-echo (buffer-file-name)))
+                          'help-echo (buffer-file-name)
+                          )
+              )
       (propertize "%02l" 'face 'font-lock-type-face) ","
       (propertize "%02c" 'face 'font-lock-type-face)
       " ["
       '(:eval (propertize "%m" 'face 'font-lock-string-face
-                          'help-echo buffer-file-coding-system))
+                          'help-echo buffer-file-coding-system)
+              )
       minor-mode-alist
       "] "
       "["
-      '(:eval (propertize (if overwrite-mode "Ovr" "Ins")
-                          'face 'font-lock-preprocessor-face
-                          'help-echo (concat "Buffer is in "
-                                             (if overwrite-mode "overwrite" "insert") " mode")))
+      '(:eval (propertize
+               (if overwrite-mode "Ovr" "I")
+               'face 'font-lock-preprocessor-face
+               'help-echo (concat "Buffer is in "
+                                  (if overwrite-mode "overwrite" "insert") " mode")
+               )
+              )
       '(:eval (when (buffer-modified-p)
-                (concat ","  (propertize "Mod"
+                (concat ","  (propertize "M"
                                          'face 'font-lock-warning-face
-                                         'help-echo "Buffer has been modified"))))
+                                         'help-echo "Buffer has been modified")
+                        )
+                )
+              )
       '(:eval (when buffer-read-only
                 (concat ","  (propertize "RO"
                                          'face 'font-lock-type-face
-                                         'help-echo "Buffer is read-only"))))        "] "
-                                         '(:eval (propertize
-                                                  (format-time-string "%H:%M:%S")
-                                                  'help-echo
-                                                  (concat (format-time-string "%c; ")
-                                                          (emacs-uptime "Uptime:%hh")
-                                                          )))
-                                         " --"
-                                         "%-"
-                                         )))
+                                         'help-echo "Buffer is read-only")
+                        )
+                )
+              )
+      "] "
+      '(:eval (when window-system
+                (propertize
+                 (format-time-string "%H:%M:%S")
+                 'help-echo
+                 (concat (format-time-string "%c; ")
+                         (emacs-uptime "Uptime:%hh")
+                         )
+                 )
+                )
+              )
+      " --"
+      "%-"
+      )
+     )
+   )
 #+END_SRC
 
 ** whitespace
