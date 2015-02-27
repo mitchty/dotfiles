@@ -319,7 +319,6 @@ Global key bindings.
 
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-,") 'kill-whole-line)
-(global-set-key (kbd "C-]") 'er/expand-region)
 (global-set-key (kbd "C-x C-m") 'compile)
 #+END_SRC
 
@@ -493,7 +492,13 @@ Ah Fonts. Let me specify them for gui emacs.
 
 All the packages I use.
 
-** Helm
+** expand-region
+
+#+BEGIN_SRC emacs-lisp
+  (use-package expand-region :bind ("C-]" . er/expand-region))
+#+END_SRC
+
+** helm
 
 By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
 
