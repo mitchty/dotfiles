@@ -972,3 +972,12 @@ Create the *auto-insert-alist* so all the mode lists are the same
          auto-insert-alist)
         )
 #+END_SRC
+* custom
+
+Load this up last to allow for local customization if needed and to keep from custom writing to the init.el file.
+
+#+BEGIN_SRC emacs-lisp
+  (setq custom-file "~/.emacs.d/custom.el")
+  (load custom-file 'noerror)
+
+#+END_SRC
