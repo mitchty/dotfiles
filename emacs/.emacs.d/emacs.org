@@ -767,7 +767,10 @@ Highlight TODO/FIXME type messages in comments.
 Completion tips.
 
 #+BEGIN_SRC emacs-lisp :tangle no
-  (use-package company-mode :ensure t)
+  (use-package company-mode
+    :ensure t
+    :config (add-hook 'after-init-hook 'global-company-mode)
+    )
 #+END_SRC
 
 ** yaml-mode
