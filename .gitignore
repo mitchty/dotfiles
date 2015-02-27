@@ -7,7 +7,9 @@ emacs/.emacs.d/desktop
 emacs/.emacs.d/ac-comphist.dat
 emacs/.emacs.d/elpa
 emacs/.emacs.d/emacs.el
+emacs/.emacs.d/emacs.elc
 emacs/.emacs.d/url
 emacs/.emacs.d/.emacs.desktop.lock
 emacs/.emacs.d/tramp
 emacs/.emacs.d/projectile-bookmarks.eld
+emacs/.emacs.d/.python-environments
