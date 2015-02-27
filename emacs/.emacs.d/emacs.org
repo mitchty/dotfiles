@@ -441,7 +441,7 @@ Ah Fonts. Let me specify them for gui emacs.
                                           )
                           )
 
-      (when on-linux (
+      (when on-linux (progn
              (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
              (setq x-select-enable-clipboard t)
              )
@@ -816,12 +816,10 @@ Comes in handily for those times you need it.
 #+BEGIN_SRC emacs-lisp
   (use-package company-anaconda
     :ensure t
-    :config (lambda ()
-              (
+    :config (progn
                (add-to-list 'company-backends 'company-anaconda)
                (add-hook 'python-mode-hook 'anaconda-mode)
                )
-              )
     )
 #+END_SRC
 
@@ -916,14 +914,14 @@ Use auto-insert-mode to insert in templates for blank files.
 So first up, add auto-insert to *find-file-hooks* so we insert straight away. Also setup the copyright bit to minimally put in name.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'find-file-hooks 'auto-insert)
-(setq auto-insert-copyright (user-full-name))
+  (add-hook 'find-file-hooks 'auto-insert)
+  (defvar auto-insert-copyright (user-full-name))
 #+END_SRC
 
-Create the *auto-insert-alist* so all the mode lists are the same
+Create *auto-insert-alist* so all the mode lists are the same
 
 #+BEGIN_SRC emacs-lisp
-(setq auto-insert-alist '(()))
+  (defvar auto-insert-alist '(()))
 #+END_SRC
 
 ***** c
