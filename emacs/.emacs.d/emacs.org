@@ -808,6 +808,30 @@ Comes in handily for those times you need it.
   (use-package helm-gtags :ensure t)
 #+END_SRC
 
+** jedi
+
+#+BEGIN_SRC emacs-lisp
+  (use-package jedi
+    :ensure t
+    :init (add-hook 'python-mode-hook 'jedi:setup)
+    :config (customize-set-variable 'jedi:complete-on-dot t)
+    )
+#+END_SRC
+
+** company-anaconda
+
+#+BEGIN_SRC emacs-lisp
+  (use-package company-anaconda
+    :ensure t
+    :config (lambda ()
+              (
+               (add-to-list 'company-backends 'company-anaconda)
+               (add-hook 'python-mode-hook 'anaconda-mode)
+               )
+              )
+    )
+#+END_SRC
+
 * mode related
 ** common defaults
 
