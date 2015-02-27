@@ -2,19 +2,21 @@
 #+PROPERTY: header-args :tangle yes :comments no
 #+TITLE: Emacs Configuration
 #+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
 
 * readme
 
 This is my emacs configuration file. I don't encourage anyone to use this verbatim,
 but if you wanted to this is how you would do so:
 
-** Clone this repo
+*** Clone this repo
 
 #+BEGIN_SRC sh :tangle no
 git clone https://github.com/mitchty/dotfiles
 #+END_SRC
 
-** Preferably backup your emacs configuration
+*** Preferably backup your emacs configuration
 
 Always good to back things up, just in case you hate how I did things.
 
@@ -22,7 +24,7 @@ Always good to back things up, just in case you hate how I did things.
 tar cvf ~/.emacs-backup.tar ~/.emacs.d ~/.emacs
 #+END_SRC
 
-** Remove/move your old configuration
+*** Remove/move your old configuration
 
 This is up to you to do right, just an example.
 
@@ -30,7 +32,7 @@ This is up to you to do right, just an example.
 rm -fr ~/.emacs.d ~/.emacs
 #+END_SRC
 
-** Lastly copy necessary files
+*** Lastly copy necessary files
 
 #+BEGIN_SRC sh :tangle no
 mkdir ~/.emacs.d
@@ -46,7 +48,7 @@ For some reason init.el doesn't always seem to get reflecte here. Weird reaserch
 #+END_SRC
 
 * prelude
-** match end of string function
+*** match end of string function
 
 #+BEGIN_SRC emacs-lisp
   (defun string/ends-with (string suffix)
@@ -57,7 +59,7 @@ For some reason init.el doesn't always seem to get reflecte here. Weird reaserch
     )
 #+END_SRC
 
-** always babel tangle and byte compile emacs.org
+*** always babel tangle and byte compile emacs.org
 
 Add a save hook to always tangle and byte compile emacs.org file when we save it.
 
@@ -75,7 +77,7 @@ Add a save hook to always tangle and byte compile emacs.org file when we save it
   (add-hook 'after-save-hook 'tangle-init)
 #+END_SRC
 
-** debug on error
+*** debug on error
 
 Not having to start *emacs* with *--debug-init* is useful.
 
@@ -83,7 +85,7 @@ Not having to start *emacs* with *--debug-init* is useful.
 (setq debug-on-error t)
 #+END_SRC
 
-** emacs server
+*** emacs server
 
 Start up the emacs server if it isn't running.
 
@@ -92,7 +94,7 @@ Start up the emacs server if it isn't running.
 (unless (server-running-p) (server-start))
 #+END_SRC
 
-** os detection
+*** os detection
 
 Make it easier to determine what os we're running on.
 
@@ -105,7 +107,7 @@ Make it easier to determine what os we're running on.
   "Am I running under linux?")
 #+END_SRC
 
-*** Mac OS X Gui emacs PATH setup
+***** Mac OS X Gui emacs PATH setup
 
 This is here because if gui emacs gets started say from Finder, one can
 end up with missing certain things that aren't in the default PATH.
@@ -125,7 +127,7 @@ however.
 
 (if on-osx (set-exec-path-from-shell-PATH))
 #+END_SRC
-** disable pointless startup stuff
+*** disable pointless startup stuff
 
 Like the startup screen and the echo hooey.
 
@@ -135,7 +137,7 @@ Like the startup screen and the echo hooey.
 (customize-set-variable 'inhibit-startup-echo-area-message t)
 #+END_SRC
 
-** temporary files
+*** temporary files
 
 Keep temporary stuff isolated from everyone else. It infects everything otherwise. As bad as the .DS_Store files on osx.
 
@@ -152,7 +154,7 @@ Keep temporary stuff isolated from everyone else. It infects everything otherwis
 (customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 #+END_SRC
 
-** auto revert
+*** auto revert
 
 Update files in open buffers as they're changed on disk, freaking annoying without this on.
 
@@ -160,7 +162,7 @@ Update files in open buffers as they're changed on disk, freaking annoying witho
 (customize-set-variable 'global-auto-revert-mode t)
 #+END_SRC
 
-** dired
+*** dired
 
 Use dired-x.
 
@@ -168,7 +170,7 @@ Use dired-x.
 (add-hook 'dired-load-hook (function (lambda () (load "dired-x"))))
 #+END_SRC
 
-** ediff
+*** ediff
 
 For those rare times I use it, make it a bit less derp on output.
 
@@ -177,7 +179,7 @@ For those rare times I use it, make it a bit less derp on output.
 (setq ediff-split-window-function 'split-window-horizontally)
 #+END_SRC
 
-** tramp
+*** tramp
 
 Tramp configuration.
 
@@ -210,7 +212,7 @@ Its a hack, but it work(ed). Will remove it at some date in the future.
                (tramp-password-end-of-line nil)))
 #+END_SRC
 
-** always remove trailing whitespace
+*** always remove trailing whitespace
 
 Trailing whitespace is not normally useful. Remove it always on save in the *before-save-hook*.
 
@@ -218,7 +220,7 @@ Trailing whitespace is not normally useful. Remove it always on save in the *bef
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 #+END_SRC
 
-** chmod u+x on save for scripts
+*** chmod u+x on save for scripts
 
 Because its derp to have to chmod 755 stuff after I save. Honestly, do it for me kthxbai.
 
@@ -226,11 +228,11 @@ Because its derp to have to chmod 755 stuff after I save. Honestly, do it for me
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 #+END_SRC
 
-** misc text related
+*** misc text related
 
 Not sure what to categorize this crap as tbh.
 
-*** wtf does this do?
+***** wtf does this do?
 
 TODO: find out why I added this ages ago.
 
@@ -238,7 +240,7 @@ TODO: find out why I added this ages ago.
   (move-text-default-bindings)
 #+END_SRC
 
-*** default major mode
+***** default major mode
 
 So if we don't know, call it text-mode.
 
@@ -246,7 +248,7 @@ So if we don't know, call it text-mode.
   (custom-set-variables '(default-major-mode 'text-mode))
 #+END_SRC
 
-*** encoding
+***** encoding
 
 utf8 is the best. Default to it.
 
@@ -258,14 +260,14 @@ utf8 is the best. Default to it.
 (prefer-coding-system 'utf-8)
 #+END_SRC
 
-*** text selection
+***** text selection
 
 If I selected text, delete the selection, I probably meant it emacs.
 
 #+BEGIN_SRC emacs-lisp
 (delete-selection-mode 1)
 #+END_SRC
-*** line width
+***** line width
 
 80 char line columns not 72.
 #+BEGIN_SRC emacs-lisp
@@ -273,7 +275,7 @@ If I selected text, delete the selection, I probably meant it emacs.
 
 #+END_SRC
 
-*** we aren't banging rocks on typewriters anymore emacs
+***** we aren't banging rocks on typewriters anymore emacs
 
 Double spacing after a line isn't needed.
 
@@ -281,7 +283,7 @@ Double spacing after a line isn't needed.
 (set-default 'sentence-end-double-space nil)
 #+END_SRC
 
-*** sentence end
+***** sentence end
 
 Semi related to the above, make the sentence endings a bit more code-ish.
 
@@ -290,14 +292,14 @@ Semi related to the above, make the sentence endings a bit more code-ish.
 (custom-set-variables '(sentence-end-double-space nil))
 #+END_SRC
 
-*** default tab-width
+***** default tab-width
 
 Two seems sensible, cause well, tabs are evil incarnate.
 #+BEGIN_SRC emacs-lisp
 (custom-set-variables '(default-tab-width 2))
 #+END_SRC
 
-** uncategorized
+*** uncategorized
 
 I have no idea how to label these.
 
@@ -323,7 +325,7 @@ Global key bindings.
 #+END_SRC
 
 * appearance
-** theme
+*** theme
 
 Solarized light is decent. I'll just use that.
 
@@ -331,7 +333,7 @@ Solarized light is decent. I'll just use that.
   (use-package solarized-theme :ensure t :init (load-theme 'solarized-light 't))
 #+END_SRC
 
-** modeline
+*** modeline
 
 Update the time every ~3 seconds in the mode line.
 
@@ -407,7 +409,7 @@ Format the mode line, I... can't decipher this anymore nor do I care to, it work
    )
 #+END_SRC
 
-** whitespace
+*** whitespace
 
 Customize whitespace mode to make tabs obvious as boxes, and to highlight lines over 80 characters in length.
 
@@ -425,7 +427,7 @@ Customize whitespace mode to make tabs obvious as boxes, and to highlight lines 
                     :background "lightgrey")
 #+END_SRC
 
-** gui chrome
+*** gui chrome
 
 When i'm running in a terminal emacs, most of this junk isn't needed. For that matter gui counts for most.
 
@@ -438,7 +440,7 @@ Basically, never show the tool bar or the scroll bar in gui or tty. In gui its o
     (menu-bar-mode -1))
 #+END_SRC
 
-** gui fonts
+*** gui fonts
 
 Ah Fonts. Let me specify them for gui emacs.
 
@@ -469,7 +471,7 @@ Ah Fonts. Let me specify them for gui emacs.
 
 #+END_SRC
 
-** console setup
+*** console setup
 
    Enable mouse mode for the console and use the mousewheel if possible.
 
@@ -492,13 +494,13 @@ Ah Fonts. Let me specify them for gui emacs.
 
 All the packages I use.
 
-** expand-region
+*** expand-region
 
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region :bind ("C-]" . er/expand-region))
 #+END_SRC
 
-** helm
+*** helm
 
 By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
 
@@ -518,7 +520,7 @@ By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
             (helm-mode 1)))
 #+END_SRC
 
-** helm-descbinds
+*** helm-descbinds
 
 Its nice being able to describe helm things you know?
 
@@ -530,7 +532,7 @@ Its nice being able to describe helm things you know?
     )
 #+END_SRC
 
-** helm-ag
+*** helm-ag
 
 Helm search plugin for Ag (The Silver Searcher) so much nicer than regular searching in helm imo.
 
@@ -538,13 +540,13 @@ Helm search plugin for Ag (The Silver Searcher) so much nicer than regular searc
   (use-package helm-ag :ensure t)
 #+END_SRC
 
-** helm-projectile
+*** helm-projectile
 
 #+BEGIN_SRC emacs-lisp
   (use-package helm-projectile :ensure t)
 #+END_SRC
 
-** magit
+*** magit
 
 Make git not ass to use. At least in emacs. magit is the best git interface... in the world.
 
@@ -574,7 +576,7 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
     )
 #+END_SRC
 
-** workgroups2
+*** workgroups2
 
 Save workgroup layouts. Similar..ish to desktop-save.
 
@@ -595,7 +597,7 @@ Save workgroup layouts. Similar..ish to desktop-save.
     )
 #+END_SRC
 
-** autopair
+*** autopair
 
 Highlight matching ()'s []'s etc...
 
@@ -606,7 +608,7 @@ Highlight matching ()'s []'s etc...
                )
 #+END_SRC
 
-** org-mode
+*** org-mode
 
 Org-mode keybindings and settings, pretty sparse really.
 
@@ -623,7 +625,7 @@ Org-mode keybindings and settings, pretty sparse really.
 
 #+END_SRC
 
-** flycheck
+*** flycheck
 
 Flycheck for on the fly checking of code.
 
@@ -660,7 +662,7 @@ Not tangled into the config intentionally.
       (message "Error: pkg-config tool not found.")))
 #+END_SRC
 
-** auto-complete
+*** auto-complete
 
 Auto complete functionality is nice to have.
 
@@ -675,7 +677,7 @@ Auto complete functionality is nice to have.
                )
 #+END_SRC
 
-** smartparens
+*** smartparens
 
 Helpfully inserts matching parens, can be a pita too.
 
@@ -683,7 +685,7 @@ Helpfully inserts matching parens, can be a pita too.
   (use-package smartparens :ensure t)
 #+END_SRC
 
-** rainbow delimiters
+*** rainbow delimiters
 
 Makes matching parens easier.
 
@@ -691,7 +693,7 @@ Makes matching parens easier.
   (use-package rainbow-delimiters :ensure t)
 #+END_SRC
 
-** uniquify
+*** uniquify
 
 Make buffer names unique based on their directory and not have <N> or other nonsense.
 
@@ -700,7 +702,7 @@ Make buffer names unique based on their directory and not have <N> or other nons
   (customize-set-variable 'uniquify-buffer-name-style 'post-forward)
 #+END_SRC
 
-** desktop-save
+*** desktop-save
 
 Desktop saving of session information handy to keep the same buffers between sessions.
 
@@ -722,7 +724,7 @@ Desktop saving of session information handy to keep the same buffers between ses
   (add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
 #+END_SRC
 
-** fic-mode
+*** fic-mode
 
 Highlight TODO/FIXME type messages in comments.
 
@@ -730,7 +732,7 @@ Highlight TODO/FIXME type messages in comments.
   (use-package fic-mode :ensure t)
 #+END_SRC
 
-** projectile
+*** projectile
 
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
@@ -742,7 +744,7 @@ Highlight TODO/FIXME type messages in comments.
     )
 #+END_SRC
 
-** git gutter
+*** git gutter
 
 #+BEGIN_SRC emacs-lisp
   (use-package git-gutter
@@ -752,7 +754,7 @@ Highlight TODO/FIXME type messages in comments.
     )
 #+END_SRC
 
-** clang-format
+*** clang-format
 
 #+BEGIN_SRC emacs-lisp
   (use-package clang-format
@@ -761,13 +763,13 @@ Highlight TODO/FIXME type messages in comments.
     )
 #+END_SRC
 
-** ggtags
+*** ggtags
 
 #+BEGIN_SRC emacs-lisp :tangle no
   (use-package ggtags :ensure t)
 #+END_SRC
 
-** company-mode
+*** company-mode
 
 Completion tips.
 
@@ -778,7 +780,7 @@ Completion tips.
     )
 #+END_SRC
 
-** yaml-mode
+*** yaml-mode
 
 For.. yaml
 
@@ -786,7 +788,7 @@ For.. yaml
   (use-package yaml-mode :ensure t)
 #+END_SRC
 
-** writegood-mode
+*** writegood-mode
 
 So I write gooder. Me fail English? Thats unpossible.
 
@@ -794,7 +796,7 @@ So I write gooder. Me fail English? Thats unpossible.
   (use-package writegood-mode :ensure t :defer t)
 #+END_SRC
 
-** restclient
+*** restclient
 
 Comes in handily for those times you need it.
 
@@ -802,13 +804,13 @@ Comes in handily for those times you need it.
   (use-package restclient :ensure t :defer t)
 #+END_SRC
 
-** helm-gtags
+*** helm-gtags
 
 #+BEGIN_SRC emacs-lisp
   (use-package helm-gtags :ensure t)
 #+END_SRC
 
-** jedi
+*** jedi
 
 #+BEGIN_SRC emacs-lisp
   (use-package jedi
@@ -818,7 +820,7 @@ Comes in handily for those times you need it.
     )
 #+END_SRC
 
-** company-anaconda
+*** company-anaconda
 
 #+BEGIN_SRC emacs-lisp
   (use-package company-anaconda
@@ -833,11 +835,11 @@ Comes in handily for those times you need it.
 #+END_SRC
 
 * mode related
-** common defaults
+*** common defaults
 
 Common mode defaults I think are sensible.
 
-*** prog-mode hook
+***** prog-mode hook
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'prog-mode-hook
@@ -857,7 +859,7 @@ Common mode defaults I think are sensible.
         )
 #+END_SRC
 
-*** c
+***** c
 
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'auto-mode-alist '("\\.[chm]\\'" . c-mode))
@@ -880,7 +882,7 @@ Common mode defaults I think are sensible.
                ))
 #+END_SRC
 
-*** elisp
+***** elisp
 
 TODO: fixme
 
@@ -893,13 +895,13 @@ TODO: fixme
               "\r" 'reindent-then-newline-and-indent)))
 #+END_SRC
 
-*** python
+***** python
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'python-mode-hook '(lambda () (flycheck-select-checker 'python-flake8)))
 #+END_SRC
 
-*** shell
+***** shell
 
 #+BEGIN_SRC emacs-lisp
   (autoload 'sh--mode "sh-mode" "mode for shell stuff" t)
@@ -916,7 +918,7 @@ TODO: fixme
                      sh-indent-for-case-label 0 sh-indent-for-case-alt '+)))
 #+END_SRC
 
-** auto-insert-mode new file templates
+*** auto-insert-mode new file templates
 
 Use auto-insert-mode to insert in templates for blank files.
 
@@ -933,7 +935,7 @@ Create the *auto-insert-alist* so all the mode lists are the same
 (setq auto-insert-alist '(()))
 #+END_SRC
 
-*** c
+***** c
 
 #+BEGIN_SRC emacs-lisp
     (setq auto-insert-alist
@@ -957,7 +959,7 @@ Create the *auto-insert-alist* so all the mode lists are the same
           )
 #+END_SRC
 
-*** elisp
+***** elisp
 #+BEGIN_SRC emacs-lisp
     (setq auto-insert-alist
           (append
@@ -974,7 +976,7 @@ Create the *auto-insert-alist* so all the mode lists are the same
           )
 #+END_SRC
 
-*** python
+***** python
 
 #+BEGIN_SRC emacs-lisp
   (setq auto-insert-alist
@@ -992,7 +994,7 @@ Create the *auto-insert-alist* so all the mode lists are the same
         )
 #+END_SRC
 
-*** shell
+***** shell
 
 #+BEGIN_SRC emacs-lisp
   (setq auto-insert-alist
@@ -1020,5 +1022,4 @@ Load this up last to allow for local customization if needed and to keep from cu
 #+BEGIN_SRC emacs-lisp
   (setq custom-file "~/.emacs.d/custom.el")
   (load custom-file 'noerror)
-
 #+END_SRC
