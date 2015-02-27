@@ -902,18 +902,18 @@ TODO: fixme
 *** shell
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'sh--mode "sh-mode" "mode for shell stuff" t)
+  (autoload 'sh--mode "sh-mode" "mode for shell stuff" t)
 
-(add-to-list 'auto-mode-alist '("\\.sh$\\'" . sh-mode))
-(add-to-list 'auto-mode-alist '("\\.[zk]sh$\\'" . sh-mode))
-(add-to-list 'auto-mode-alist '("\\.bash$\\'" . sh-mode))
-(add-to-list 'auto-mode-alist '("\\[.].*shrc$\\'" . sh-mode))
-(add-to-list 'auto-mode-alist '("sourceme$\\'" . sh-mode))
+  (add-to-list 'auto-mode-alist '("\\.sh$\\'" . sh-mode))
+  (add-to-list 'auto-mode-alist '("\\.[zk]sh$\\'" . sh-mode))
+  (add-to-list 'auto-mode-alist '("\\.bash$\\'" . sh-mode))
+  (add-to-list 'auto-mode-alist '("\\[.].*shrc$\\'" . sh-mode))
+  (add-to-list 'auto-mode-alist '("sourceme$\\'" . sh-mode))
 
-(add-hook 'sh-mode-hook
-          '(lambda ()
-             (setq sh-basic-offset 2 sh-indentation 4
-                   sh-indent-for-case-label 0 sh-indent-for-case-alt '+)))
+  (add-hook 'sh-mode-hook
+            '(lambda ()
+               (setq sh-basic-offset 2 sh-indentation 4
+                     sh-indent-for-case-label 0 sh-indent-for-case-alt '+)))
 #+END_SRC
 
 ** auto-insert-mode new file templates
