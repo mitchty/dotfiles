@@ -39,15 +39,41 @@ mkdir ~/.emacs.d
 cp dotfiles/init.el dotfiles/emacs.org ~/.emacs.d
 #+END_SRC
 
-* use-package-hack
+* prelude
 
-For some reason init.el doesn't always seem to get reflecte here. Weird reaserch later.
+Startup related tasks/setup that might be used later on.
+
+*** emacs package setup
+
+Setup the builtin emacs package manager.
 
 #+BEGIN_SRC emacs-lisp
-(require 'use-package)
+  (require 'package)
+  (package-initialize)
 #+END_SRC
 
-* prelude
+Add in the standard package archive urls.
+
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+  (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
+  (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
+#+END_SRC
+
+*** use-package bootstrap
+
+This configuration is using *use-package* extensively. Install it straight away.
+
+#+BEGIN_SRC emacs-lisp
+  (unless (package-installed-p 'use-package)
+    (progn
+      (package-refresh-contents)
+      (package-install 'use-package)
+      (package-initialize)))
+
+  (require 'use-package)
+#+END_SRC
+
 *** match end of string function
 
 #+BEGIN_SRC emacs-lisp
@@ -82,7 +108,7 @@ Add a save hook to always tangle and byte compile emacs.org file when we save it
 Not having to start *emacs* with *--debug-init* is useful.
 
 #+BEGIN_SRC emacs-lisp
-(setq debug-on-error t)
+  (setq debug-on-error t)
 #+END_SRC
 
 *** emacs server
@@ -90,8 +116,8 @@ Not having to start *emacs* with *--debug-init* is useful.
 Start up the emacs server if it isn't running.
 
 #+BEGIN_SRC emacs-lisp
-(load "server")
-(unless (server-running-p) (server-start))
+  (load "server")
+  (unless (server-running-p) (server-start))
 #+END_SRC
 
 *** os detection
@@ -99,12 +125,12 @@ Start up the emacs server if it isn't running.
 Make it easier to determine what os we're running on.
 
 #+BEGIN_SRC emacs-lisp
-(defvar on-mswindows (string-match "windows" (symbol-name system-type))
-  "Am I running under windows?")
-(defvar on-osx (string-match "darwin" (symbol-name system-type))
-  "Am I running under osx?")
-(defvar on-linux (string-match "gnu/linux" (symbol-name system-type))
-  "Am I running under linux?")
+  (defvar on-mswindows (string-match "windows" (symbol-name system-type))
+    "Am I running under windows?")
+  (defvar on-osx (string-match "darwin" (symbol-name system-type))
+    "Am I running under osx?")
+  (defvar on-linux (string-match "gnu/linux" (symbol-name system-type))
+    "Am I running under linux?")
 #+END_SRC
 
 *** disable pointless startup stuff
@@ -112,9 +138,9 @@ Make it easier to determine what os we're running on.
 Like the startup screen and the echo hooey.
 
 #+BEGIN_SRC emacs-lisp
-(customize-set-variable 'inhibit-startup-screen t)
-(customize-set-variable 'inhibit-startup-message t)
-(customize-set-variable 'inhibit-startup-echo-area-message t)
+  (customize-set-variable 'inhibit-startup-screen t)
+  (customize-set-variable 'inhibit-startup-message t)
+  (customize-set-variable 'inhibit-startup-echo-area-message t)
 #+END_SRC
 
 *** temporary files
@@ -122,16 +148,16 @@ Like the startup screen and the echo hooey.
 Keep temporary stuff isolated from everyone else. It infects everything otherwise. As bad as the .DS_Store files on osx.
 
 #+BEGIN_SRC emacs-lisp
-(customize-set-variable 'temporary-file-directory "/tmp")
-(customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
-(customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
-(customize-set-variable 'create-lockfiles nil)
-(customize-set-variable 'make-backup-files nil)
-(customize-set-variable 'auto-save-default nil)
-(customize-set-variable 'backup-by-copying t)
-(customize-set-variable 'auto-save-list-file-prefix temporary-file-directory)
-(customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
-(customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+  (customize-set-variable 'temporary-file-directory "/tmp")
+  (customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
+  (customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+  (customize-set-variable 'create-lockfiles nil)
+  (customize-set-variable 'make-backup-files nil)
+  (customize-set-variable 'auto-save-default nil)
+  (customize-set-variable 'backup-by-copying t)
+  (customize-set-variable 'auto-save-list-file-prefix temporary-file-directory)
+  (customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
+  (customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 #+END_SRC
 
 *** auto revert
@@ -139,7 +165,7 @@ Keep temporary stuff isolated from everyone else. It infects everything otherwis
 Update files in open buffers as they're changed on disk, freaking annoying without this on.
 
 #+BEGIN_SRC emacs-lisp
-(customize-set-variable 'global-auto-revert-mode t)
+  (customize-set-variable 'global-auto-revert-mode t)
 #+END_SRC
 
 *** dired
@@ -147,7 +173,7 @@ Update files in open buffers as they're changed on disk, freaking annoying witho
 Use dired-x.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'dired-load-hook (function (lambda () (load "dired-x"))))
+  (add-hook 'dired-load-hook (function (lambda () (load "dired-x"))))
 #+END_SRC
 
 *** ediff
@@ -155,41 +181,8 @@ Use dired-x.
 For those rare times I use it, make it a bit less derp on output.
 
 #+BEGIN_SRC emacs-lisp
-(setq ediff-window-setup-function 'ediff-setup-windows-plain)
-(setq ediff-split-window-function 'split-window-horizontally)
-#+END_SRC
-
-*** tramp
-
-Tramp configuration.
-
-Make the proxy list less weird.
-
-#+BEGIN_SRC emacs-lisp
-  (require 'tramp)
-  ;; FIXME
-  ;; (customize-variable 'tramp-default-proxies-alist
-  ;;   (quote ((".*" "\\`root\\'" "/ssh:%h:"))))
-#+END_SRC
-
-So this was originally a way to do tramp over ssh where sudo only worked with su.
-
-Its a hack, but it work(ed). Will remove it at some date in the future.
-
-#+BEGIN_SRC emacs-lisp
-(add-to-list 'tramp-methods
-             '("susudo"
-               (tramp-login-program "sudo")
-               (tramp-login-args
-                (("-u" "%u")
-                 ("-H")
-                 ("-p" "Password:")
-                 ("su -c /bin/sh")))
-               (tramp-remote-sh "/bin/sh")
-               (tramp-copy-program nil)
-               (tramp-copy-args nil)
-               (tramp-copy-keep-date nil)
-               (tramp-password-end-of-line nil)))
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+  (setq ediff-split-window-function 'split-window-horizontally)
 #+END_SRC
 
 *** always remove trailing whitespace
@@ -197,7 +190,7 @@ Its a hack, but it work(ed). Will remove it at some date in the future.
 Trailing whitespace is not normally useful. Remove it always on save in the *before-save-hook*.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
 #+END_SRC
 
 *** chmod u+x on save for scripts
@@ -205,20 +198,12 @@ Trailing whitespace is not normally useful. Remove it always on save in the *bef
 Because its derp to have to chmod 755 stuff after I save. Honestly, do it for me kthxbai.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+  (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 #+END_SRC
 
 *** misc text related
 
 Not sure what to categorize this crap as tbh.
-
-***** wtf does this do?
-
-TODO: find out why I added this ages ago.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-  (move-text-default-bindings)
-#+END_SRC
 
 ***** default major mode
 
@@ -233,11 +218,11 @@ So if we don't know, call it text-mode.
 utf8 is the best. Default to it.
 
 #+BEGIN_SRC emacs-lisp
-(custom-set-variables '(locale-coding-system 'utf-8))
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(set-selection-coding-system 'utf-8)
-(prefer-coding-system 'utf-8)
+  (custom-set-variables '(locale-coding-system 'utf-8))
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+  (set-selection-coding-system 'utf-8)
+  (prefer-coding-system 'utf-8)
 #+END_SRC
 
 ***** text selection
@@ -245,14 +230,14 @@ utf8 is the best. Default to it.
 If I selected text, delete the selection, I probably meant it emacs.
 
 #+BEGIN_SRC emacs-lisp
-(delete-selection-mode 1)
+  (delete-selection-mode 1)
 #+END_SRC
 ***** line width
 
 80 char line columns not 72.
-#+BEGIN_SRC emacs-lisp
-(custom-set-variables '(fill-column 80))
 
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables '(fill-column 80))
 #+END_SRC
 
 ***** we aren't banging rocks on typewriters anymore emacs
@@ -260,7 +245,7 @@ If I selected text, delete the selection, I probably meant it emacs.
 Double spacing after a line isn't needed.
 
 #+BEGIN_SRC emacs-lisp
-(set-default 'sentence-end-double-space nil)
+  (set-default 'sentence-end-double-space nil)
 #+END_SRC
 
 ***** sentence end
@@ -268,15 +253,18 @@ Double spacing after a line isn't needed.
 Semi related to the above, make the sentence endings a bit more code-ish.
 
 #+BEGIN_SRC emacs-lisp
-(custom-set-variables '(sentence-end "[.?!][]\"')]*\\($\\|\t\\| \\)[ \t\n]*"))
-(custom-set-variables '(sentence-end-double-space nil))
+  (custom-set-variables '(sentence-end "[.?!][]\"')]*\\($\\|\t\\| \\)[ \t\n]*"))
+  (custom-set-variables '(sentence-end-double-space nil))
 #+END_SRC
 
 ***** default tab-width
 
 Two seems sensible, cause well, tabs are evil incarnate.
+
+Lets use a tab width of 2 by default.
+
 #+BEGIN_SRC emacs-lisp
-(custom-set-variables '(default-tab-width 2))
+  (custom-set-variables '(default-tab-width 2))
 #+END_SRC
 
 *** uncategorized
@@ -286,13 +274,13 @@ I have no idea how to label these.
 Highlight parens.
 
 #+BEGIN_SRC emacs-lisp
-(show-paren-mode)
+  (show-paren-mode)
 #+END_SRC
 
 Typing out *yes* or *no* is stupid.
 
 #+BEGIN_SRC emacs-lisp
-(defalias 'yes-or-no-p 'y-or-n-p)
+  (defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
 * global key bindings
@@ -300,8 +288,8 @@ Typing out *yes* or *no* is stupid.
 Global key bindings.
 
 #+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "C-,") 'kill-whole-line)
-(global-set-key (kbd "C-x C-m") 'compile)
+  (global-set-key (kbd "C-,") 'kill-whole-line)
+  (global-set-key (kbd "C-x C-m") 'compile)
 #+END_SRC
 
 * appearance
@@ -474,6 +462,12 @@ Ah Fonts. Let me specify them for gui emacs.
 
 All the packages I use.
 
+*** tramp
+
+#+BEGIN_SRC emacs-lisp
+  (use-package tramp :defer t)
+#+END_SRC
+
 *** exec-path-from-shell
 
 Turns out that someone wrote this exact thing already. Yay get to drop my own crap.
@@ -488,7 +482,7 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
 *** expand-region
 
 #+BEGIN_SRC emacs-lisp
-  (use-package expand-region :bind ("C-]" . er/expand-region))
+  (use-package expand-region :defer t :bind ("C-]" . er/expand-region))
 #+END_SRC
 
 *** helm
@@ -518,6 +512,7 @@ Its nice being able to describe helm things you know?
 #+BEGIN_SRC emacs-lisp
   (use-package helm-descbinds
     :ensure t
+    :defer t
     :bind (("C-h b" . helm-descbinds)
            ("C-h w" . helm-descbinds))
     )
@@ -528,7 +523,7 @@ Its nice being able to describe helm things you know?
 Helm search plugin for Ag (The Silver Searcher) so much nicer than regular searching in helm imo.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package helm-ag :ensure t)
+  (use-package helm-ag :defer t)
 #+END_SRC
 
 *** helm-projectile
@@ -544,6 +539,7 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
 #+BEGIN_SRC emacs-lisp
   (use-package magit
     :ensure t
+    :defer t
     :commands (magit-init
                magit-status
                magit-diff
@@ -563,6 +559,7 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
 
   (use-package magit-blame
     :ensure magit
+    :defer t
     :commands (magit-blame-mode)
     )
 #+END_SRC
@@ -594,9 +591,9 @@ Highlight matching ()'s []'s etc...
 
 #+BEGIN_SRC emacs-lisp
   (use-package autopair
-               :ensure t
-               :config (customize-set-variable 'autopair-blink 'nil)
-               )
+    :defer t
+    :config (customize-set-variable 'autopair-blink 'nil)
+    )
 #+END_SRC
 
 *** org-mode
@@ -605,7 +602,7 @@ Org-mode keybindings and settings, pretty sparse really.
 
 #+BEGIN_SRC emacs-lisp
   (use-package org
-               :ensure t
+               :ensure org-plus-contrib
                :bind (("C-c a" . org-agenda)
                       ("C-c b" . org-iswitchb)
                       ("C-c c" . org-capture)
@@ -621,11 +618,13 @@ Org-mode keybindings and settings, pretty sparse really.
 Flycheck for on the fly checking of code.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package flycheck
-               :ensure t
-               :config (customize-set-variable 'flycheck-indication-mode 'right-fringe)
-               )
-
+    (use-package flycheck
+      :ensure t
+      :config (progn
+                (customize-set-variable 'flycheck-indication-mode 'right-fringe)
+                (add-hook 'prog-mode-hook (flycheck-mode))
+                )
+      )
 #+END_SRC
 
 Need to vet this, used it more when I did more c. But its handy for non standard pkg-config
@@ -658,14 +657,12 @@ Not tangled into the config intentionally.
 Auto complete functionality is nice to have.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package auto-complete
-               :ensure t
-               :defer t
-               :init
-               (progn (require 'auto-complete-config)
-                      (ac-config-default)
-                      (global-auto-complete-mode t))
-               )
+    (use-package auto-complete
+        :ensure t
+        :init (progn (require 'auto-complete-config)
+                     (ac-config-default)
+                     (global-auto-complete-mode t)
+        ))
 #+END_SRC
 
 *** smartparens
@@ -673,7 +670,10 @@ Auto complete functionality is nice to have.
 Helpfully inserts matching parens, can be a pita too.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package smartparens :ensure t)
+  (use-package smartparens
+    :ensure t
+    :init (progn (add-hook 'prog-mode-hook (smartparens-mode)))
+    )
 #+END_SRC
 
 *** rainbow delimiters
@@ -681,7 +681,10 @@ Helpfully inserts matching parens, can be a pita too.
 Makes matching parens easier.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package rainbow-delimiters :ensure t)
+  (use-package rainbow-delimiters
+    :ensure t
+    :config (add-hook 'prog-mode-hook (rainbow-delimiters-mode))
+    )
 #+END_SRC
 
 *** uniquify
@@ -689,8 +692,10 @@ Makes matching parens easier.
 Make buffer names unique based on their directory and not have <N> or other nonsense.
 
 #+BEGIN_SRC emacs-lisp
-  (require 'uniquify)
-  (customize-set-variable 'uniquify-buffer-name-style 'post-forward)
+  (use-package uniquify
+    :defer t
+    :config (customize-set-variable 'uniquify-buffer-name-style 'post-forward)
+    )
 #+END_SRC
 
 *** desktop-save
@@ -720,7 +725,10 @@ Desktop saving of session information handy to keep the same buffers between ses
 Highlight TODO/FIXME type messages in comments.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package fic-mode :ensure t)
+  (use-package fic-mode
+    :ensure t
+    :config (add-hook 'prog-mode-hook (turn-on-fic-mode))
+    )
 #+END_SRC
 
 *** projectile
@@ -740,8 +748,7 @@ Highlight TODO/FIXME type messages in comments.
 #+BEGIN_SRC emacs-lisp
   (use-package git-gutter
     :ensure t
-    :defer t
-    :idle (global-git-gutter-mode t)
+    :config (global-git-gutter-mode t)
     )
 #+END_SRC
 
@@ -757,7 +764,7 @@ Highlight TODO/FIXME type messages in comments.
 *** ggtags
 
 #+BEGIN_SRC emacs-lisp :tangle no
-  (use-package ggtags :ensure t)
+  (use-package ggtags :defer t)
 #+END_SRC
 
 *** company-mode
@@ -776,7 +783,7 @@ Completion tips.
 For.. yaml
 
 #+BEGIN_SRC emacs-lisp
-  (use-package yaml-mode :ensure t)
+  (use-package yaml-mode :defer t)
 #+END_SRC
 
 *** writegood-mode
@@ -784,7 +791,7 @@ For.. yaml
 So I write gooder. Me fail English? Thats unpossible.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package writegood-mode :ensure t :defer t)
+  (use-package writegood-mode :defer t)
 #+END_SRC
 
 *** restclient
@@ -792,20 +799,20 @@ So I write gooder. Me fail English? Thats unpossible.
 Comes in handily for those times you need it.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package restclient :ensure t :defer t)
+  (use-package restclient :defer t)
 #+END_SRC
 
 *** helm-gtags
 
 #+BEGIN_SRC emacs-lisp
-  (use-package helm-gtags :ensure t)
+  (use-package helm-gtags :defer t)
 #+END_SRC
 
 *** jedi
 
 #+BEGIN_SRC emacs-lisp
   (use-package jedi
-    :ensure t
+    :defer t
     :init (add-hook 'python-mode-hook 'jedi:setup)
     :config (customize-set-variable 'jedi:complete-on-dot t)
     )
@@ -815,11 +822,12 @@ Comes in handily for those times you need it.
 
 #+BEGIN_SRC emacs-lisp
   (use-package company-anaconda
-    :ensure t
+    :defer t
     :config (progn
-               (add-to-list 'company-backends 'company-anaconda)
-               (add-hook 'python-mode-hook 'anaconda-mode)
-               )
+              (with-no-warnings
+                (add-to-list 'company-backends 'company-anaconda))
+              (add-hook 'python-mode-hook 'anaconda-mode)
+              )
     )
 #+END_SRC
 
@@ -833,17 +841,13 @@ Common mode defaults I think are sensible.
 #+BEGIN_SRC emacs-lisp
   (add-hook 'prog-mode-hook
         '(lambda ()
+           (auto-complete-mode) ;; can't get this to work with use-package easily
            (interactive)
            (hl-line-mode)
-           (auto-complete-mode)
            (whitespace-mode)
-           (smartparens-mode)
            (visual-line-mode)
            (customize-set-variable 'indent-tabs-mode nil)
            (customize-set-variable 'tab-width 2)
-           (flycheck-mode)
-           (turn-on-fic-mode)
-           (rainbow-delimiters-mode)
           )
         )
 #+END_SRC
