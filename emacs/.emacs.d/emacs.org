@@ -817,6 +817,8 @@ Comes in handily for those times you need it.
 
 *** jedi
 
+Make python coding like an ide.
+
 #+BEGIN_SRC emacs-lisp
   (use-package jedi
     :defer t
@@ -826,6 +828,8 @@ Comes in handily for those times you need it.
 #+END_SRC
 
 *** company-anaconda
+
+Make it even easier with hints like intellisense.
 
 #+BEGIN_SRC emacs-lisp
   (use-package company-anaconda
