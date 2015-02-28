@@ -623,7 +623,10 @@ Org-mode keybindings and settings, pretty sparse really.
                       ("C-c c" . org-capture)
                       ("C-c l" . org-store-link)
                       ("C-c p" . org-latex-export-to-pdf))
-               :config (customize-set-variable 'org-log-done t)
+               :config (progn
+                         (customize-set-variable 'org-log-done t)
+                         (customize-set-variable 'org-hide-leading-stars t)
+                         )
                )
 
 #+END_SRC
