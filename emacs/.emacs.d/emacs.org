@@ -842,6 +842,21 @@ Make it even easier with hints like intellisense.
     )
 #+END_SRC
 
+*** haskell-mode
+
+Need to make haskell source be all pretty.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package haskell-mode :defer t)
+#+END_SRC
+
+*** flycheck-haskell
+
+And make flycheck whine when we effed something up.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package flycheck-haskell :defer t)
+#+END_SRC
 * mode related
 *** common defaults
 
