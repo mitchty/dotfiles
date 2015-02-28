@@ -326,6 +326,16 @@ Global key bindings.
   (global-set-key (kbd "C-x C-m") 'compile)
 #+END_SRC
 
+*** x copy/paste
+
+#+BEGIN_SRC emacs-lisp
+  (when (and on-linux (window-system))
+    (progn
+      (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+      (setq x-select-enable-clipboard t)
+      )
+    )
+#+END_SRC
 * appearance
 *** modeline
 
@@ -418,33 +428,31 @@ Basically, never show the tool bar or the scroll bar in gui or tty. In gui its o
 
 *** fonts
 
-Ah Fonts. Let me specify them for gui emacs.
+List of fonts in order of preference.
 
 #+BEGIN_SRC emacs-lisp
-  (with-no-warnings
-    (when window-system
-      (require 'cl)
-      (defun font-candidate (&rest fonts)
-        "Return first font that matches list of provided fonts."
-        (with-no-warnings (find-if (lambda (f) (find-font (font-spec :name f))) fonts))
-        )
-
-      (set-face-attribute 'default nil :font
-                          (font-candidate '"Pragmata\ Pro-13:weight=normal"
-                                          "Source Code Pro-13:weight=normal"
-                                          "Menlo-12:weight=normal"
-                                          "Monaco-12:weight=normal"
-                                          )
-                          )
-
-      (when on-linux (progn
-             (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
-             (setq x-select-enable-clipboard t)
-             )
-            )
+  (defvar mt:gui-fonts
+    '(
+      "Pragmata Pro"
+      "Source Code Pro"
+      "Menlo"
+      "Monaco"
       )
     )
+#+END_SRC
 
+Set preferred font list when we're in a gui emacs session.
+
+#+BEGIN_SRC emacs-lisp
+  (defun set-gui-font (fontlist)
+    (if (find-font  (font-spec :name (car fontlist)))
+        (progn (set-frame-font (car fontlist))
+               (set-face-attribute 'default nil :height 130))
+      (progn (set-gui-font (cdr fontlist)))))
+
+  (when window-system
+    (set-gui-font mt:gui-fonts)
+    )
 #+END_SRC
 
 *** tty
