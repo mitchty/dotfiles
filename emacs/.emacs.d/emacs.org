@@ -120,6 +120,14 @@ Start up the emacs server if it isn't running.
   (unless (server-running-p) (server-start))
 #+END_SRC
 
+*** theme
+
+Solarized light is decent. I'll just use that. Note, to prevent flicker this is setup early in startup.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package solarized-theme :ensure t :init (load-theme 'solarized-light 't))
+#+END_SRC
+
 *** os detection
 
 Make it easier to determine what os we're running on.
@@ -202,10 +210,18 @@ Because its derp to have to chmod 755 stuff after I save. Honestly, do it for me
 #+END_SRC
 
 *** misc text related
+*** line wrap
 
-Not sure what to categorize this crap as tbh.
+Line wrapping is useful. Enable it globally for a start.
 
-***** default major mode
+Need word-wrap so kill line kills the line, not the displayed line.
+
+#+BEGIN_SRC emacs-lisp
+  (global-visual-line-mode t)
+  (customize-set-variable 'word-wrap t)
+#+END_SRC
+
+*** default major mode
 
 So if we don't know, call it text-mode.
 
@@ -213,7 +229,7 @@ So if we don't know, call it text-mode.
   (custom-set-variables '(default-major-mode 'text-mode))
 #+END_SRC
 
-***** encoding
+*** encoding
 
 utf8 is the best. Default to it.
 
@@ -225,14 +241,14 @@ utf8 is the best. Default to it.
   (prefer-coding-system 'utf-8)
 #+END_SRC
 
-***** text selection
+*** text selection
 
 If I selected text, delete the selection, I probably meant it emacs.
 
 #+BEGIN_SRC emacs-lisp
   (delete-selection-mode 1)
 #+END_SRC
-***** line width
+*** line width
 
 80 char line columns not 72.
 
@@ -240,15 +256,15 @@ If I selected text, delete the selection, I probably meant it emacs.
   (custom-set-variables '(fill-column 80))
 #+END_SRC
 
-***** we aren't banging rocks on typewriters anymore emacs
+*** we aren't banging rocks anymore
 
-Double spacing after a line isn't needed.
+Double spacing after a line isn't needed. We aren't animals emacs, we have computers.
 
 #+BEGIN_SRC emacs-lisp
   (set-default 'sentence-end-double-space nil)
 #+END_SRC
 
-***** sentence end
+*** sentence end
 
 Semi related to the above, make the sentence endings a bit more code-ish.
 
@@ -257,7 +273,7 @@ Semi related to the above, make the sentence endings a bit more code-ish.
   (custom-set-variables '(sentence-end-double-space nil))
 #+END_SRC
 
-***** default tab-width
+*** default tab-width
 
 Two seems sensible, cause well, tabs are evil incarnate.
 
@@ -265,6 +281,24 @@ Lets use a tab width of 2 by default.
 
 #+BEGIN_SRC emacs-lisp
   (custom-set-variables '(default-tab-width 2))
+#+END_SRC
+
+*** whitespace
+
+Customize whitespace mode to make tabs obvious as boxes, and to highlight lines over 80 characters in length.
+
+#+BEGIN_SRC emacs-lisp
+(require 'whitespace)
+
+(setq whitespace-style '(face tabs trailing))
+
+(set-face-attribute 'whitespace-tab nil
+                    :foreground "#2075c7"
+                    :background "lightgrey")
+
+(set-face-attribute 'whitespace-line nil
+                    :foreground "#2075c7"
+                    :background "lightgrey")
 #+END_SRC
 
 *** uncategorized
@@ -283,7 +317,7 @@ Typing out *yes* or *no* is stupid.
   (defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
-* global key bindings
+*** global key bindings
 
 Global key bindings.
 
@@ -293,14 +327,6 @@ Global key bindings.
 #+END_SRC
 
 * appearance
-*** theme
-
-Solarized light is decent. I'll just use that.
-
-#+BEGIN_SRC emacs-lisp
-  (use-package solarized-theme :ensure t :init (load-theme 'solarized-light 't))
-#+END_SRC
-
 *** modeline
 
 Update the time every ~3 seconds in the mode line.
@@ -377,25 +403,7 @@ Format the mode line, I... can't decipher this anymore nor do I care to, it work
    )
 #+END_SRC
 
-*** whitespace
-
-Customize whitespace mode to make tabs obvious as boxes, and to highlight lines over 80 characters in length.
-
-#+BEGIN_SRC emacs-lisp
-(require 'whitespace)
-
-(setq whitespace-style '(face tabs trailing))
-
-(set-face-attribute 'whitespace-tab nil
-                    :foreground "#2075c7"
-                    :background "lightgrey")
-
-(set-face-attribute 'whitespace-line nil
-                    :foreground "#2075c7"
-                    :background "lightgrey")
-#+END_SRC
-
-*** gui chrome
+*** gui
 
 When i'm running in a terminal emacs, most of this junk isn't needed. For that matter gui counts for most.
 
@@ -408,7 +416,7 @@ Basically, never show the tool bar or the scroll bar in gui or tty. In gui its o
     (menu-bar-mode -1))
 #+END_SRC
 
-*** gui fonts
+*** fonts
 
 Ah Fonts. Let me specify them for gui emacs.
 
@@ -439,7 +447,7 @@ Ah Fonts. Let me specify them for gui emacs.
 
 #+END_SRC
 
-*** console setup
+*** tty
 
    Enable mouse mode for the console and use the mousewheel if possible.
 
@@ -455,7 +463,6 @@ Ah Fonts. Let me specify them for gui emacs.
                                  (scroll-up 1)))
     (defun track-mouse (e))
     )
-
 #+END_SRC
 
 * packages
