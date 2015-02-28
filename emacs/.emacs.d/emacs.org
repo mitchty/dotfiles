@@ -447,7 +447,7 @@ Set preferred font list when we're in a gui emacs session.
   (defun set-gui-font (fontlist)
     (if (find-font  (font-spec :name (car fontlist)))
         (progn (set-frame-font (car fontlist))
-               (set-face-attribute 'default nil :height 130))
+               (set-face-attribute 'default nil :height 150))
       (progn (set-gui-font (cdr fontlist)))))
 
   (when window-system
