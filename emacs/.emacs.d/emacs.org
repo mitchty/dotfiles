@@ -146,9 +146,11 @@ Make it easier to determine what os we're running on.
 Like the startup screen and the echo hooey.
 
 #+BEGIN_SRC emacs-lisp
-  (customize-set-variable 'inhibit-startup-screen t)
-  (customize-set-variable 'inhibit-startup-message t)
-  (customize-set-variable 'inhibit-startup-echo-area-message t)
+  (custom-set-variables
+   '(inhibit-startup-screen t)
+   '(inhibit-startup-message t)
+   '(inhibit-startup-echo-area-message t)
+   )
 #+END_SRC
 
 *** temporary files
@@ -156,16 +158,18 @@ Like the startup screen and the echo hooey.
 Keep temporary stuff isolated from everyone else. It infects everything otherwise. As bad as the .DS_Store files on osx.
 
 #+BEGIN_SRC emacs-lisp
-  (customize-set-variable 'temporary-file-directory "/tmp")
-  (customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
-  (customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
-  (customize-set-variable 'create-lockfiles nil)
-  (customize-set-variable 'make-backup-files nil)
-  (customize-set-variable 'auto-save-default nil)
-  (customize-set-variable 'backup-by-copying t)
-  (customize-set-variable 'auto-save-list-file-prefix temporary-file-directory)
-  (customize-set-variable 'backup-directory-alist `((".*" . ,temporary-file-directory)))
-  (customize-set-variable 'auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+  (custom-set-variables
+   '(temporary-file-directory "/tmp")
+   '(backup-directory-alist `((".*" . ,temporary-file-directory)))
+   '(auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+   '(create-lockfiles nil)
+   '(make-backup-files nil)
+   '(auto-save-default nil)
+   '(backup-by-copying t)
+   '(auto-save-list-file-prefix temporary-file-directory)
+   '(backup-directory-alist `((".*" . ,temporary-file-directory)))
+   '(auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+   )
 #+END_SRC
 
 *** auto revert
@@ -173,7 +177,7 @@ Keep temporary stuff isolated from everyone else. It infects everything otherwis
 Update files in open buffers as they're changed on disk, freaking annoying without this on.
 
 #+BEGIN_SRC emacs-lisp
-  (customize-set-variable 'global-auto-revert-mode t)
+  (custom-set-variables '(global-auto-revert-mode t))
 #+END_SRC
 
 *** dired
@@ -218,7 +222,7 @@ Need word-wrap so kill line kills the line, not the displayed line.
 
 #+BEGIN_SRC emacs-lisp
   (global-visual-line-mode t)
-  (customize-set-variable 'word-wrap t)
+  (custom-set-variables '(word-wrap t))
 #+END_SRC
 
 *** default major mode
@@ -269,8 +273,10 @@ Double spacing after a line isn't needed. We aren't animals emacs, we have compu
 Semi related to the above, make the sentence endings a bit more code-ish.
 
 #+BEGIN_SRC emacs-lisp
-  (custom-set-variables '(sentence-end "[.?!][]\"')]*\\($\\|\t\\| \\)[ \t\n]*"))
-  (custom-set-variables '(sentence-end-double-space nil))
+  (custom-set-variables
+   '(sentence-end "[.?!][]\"')]*\\($\\|\t\\| \\)[ \t\n]*")
+   '(sentence-end-double-space nil)
+   )
 #+END_SRC
 
 *** default tab-width
@@ -342,17 +348,21 @@ Global key bindings.
 Update the time every ~3 seconds in the mode line.
 
 #+BEGIN_SRC emacs-lisp
-  (custom-set-variables '(display-time-default-load-average nil))
-  (custom-set-variables '(display-time-format "%T"))
-  (custom-set-variables '(display-time-interval 3))
+  (custom-set-variables
+   '(display-time-default-load-average nil)
+   '(display-time-format "%T")
+   '(display-time-interval 3)
+   )
   (display-time-mode)
 #+END_SRC
 
 Display line and column always in the modeline.
 
 #+BEGIN_SRC emacs-lisp
-  (custom-set-variables '(line-number-mode t))
-  (custom-set-variables '(column-number-mode t))
+  (custom-set-variables
+   '(line-number-mode t)
+   '(column-number-mode t)
+   )
 #+END_SRC
 
 Format the mode line, I... can't decipher this anymore nor do I care to, it works eff it.
@@ -591,10 +601,12 @@ Save workgroup layouts. Similar..ish to desktop-save.
             ;; also annoying, is that I have to set this before
             ;; running workgroups-mode. Hokey stuff.
             ;;
-            ;; Also note, use setq here not customize-set-variable
+            ;; Also note, use setq here not custom-set-variables
             ;; workgroups2 can't detect stuff thats customized.
-            (setq wg-session-file  "~/.emacs.d/workgroups")
-            (setq wg-prefix-key (kbd "C-c C-w"))
+            (custom-set-variables
+             '(wg-session-file  "~/.emacs.d/workgroups")
+             '(wg-prefix-key (kbd "C-c C-w"))
+             )
             (workgroups-mode 1)
             )
     )
@@ -623,10 +635,13 @@ Org-mode keybindings and settings, pretty sparse really.
                       ("C-c c" . org-capture)
                       ("C-c l" . org-store-link)
                       ("C-c p" . org-latex-export-to-pdf))
-               :config (progn
-                         (customize-set-variable 'org-log-done t)
-                         (customize-set-variable 'org-hide-leading-stars t)
-                         )
+               :config
+               (progn
+                 (custom-set-variables
+                  '(org-log-done t)
+                  '(org-hide-leading-stars t)
+                  )
+                 )
                )
 
 #+END_SRC
@@ -636,13 +651,14 @@ Org-mode keybindings and settings, pretty sparse really.
 Flycheck for on the fly checking of code.
 
 #+BEGIN_SRC emacs-lisp
-    (use-package flycheck
-      :ensure t
-      :config (progn
-                (customize-set-variable 'flycheck-indication-mode 'right-fringe)
-                (add-hook 'prog-mode-hook (flycheck-mode))
-                )
+  (use-package flycheck
+    :ensure t
+    :config
+    (progn
+      (custom-set-variables '(flycheck-indication-mode 'left-fringe))
+      (add-hook 'prog-mode-hook (flycheck-mode))
       )
+    )
 #+END_SRC
 
 Need to vet this, used it more when I did more c. But its handy for non standard pkg-config
@@ -710,10 +726,8 @@ Makes matching parens easier.
 Make buffer names unique based on their directory and not have <N> or other nonsense.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package uniquify
-    :defer t
-    :config (customize-set-variable 'uniquify-buffer-name-style 'post-forward)
-    )
+  (require 'uniquify)
+  (custom-set-variables '(uniquify-buffer-name-style 'post-forward))
 #+END_SRC
 
 *** desktop-save
@@ -725,10 +739,12 @@ Desktop saving of session information handy to keep the same buffers between ses
 
   (desktop-save-mode 1)
 
-  (customize-set-variable 'desktop-restore-eager 5)
-  (customize-set-variable 'desktop-path           '("~/.emacs.d"))
-  (customize-set-variable 'desktop-dirname        "~/.emacs.d")
-  (customize-set-variable 'desktop-base-file-name "desktop")
+  (custom-set-variables
+   '(desktop-restore-eager 5)
+   '(desktop-path '("~/.emacs.d"))
+   '(desktop-dirname  "~/.emacs.d")
+   '(desktop-base-file-name "desktop")
+   )
 
   (defun local-desktop-save ()
     (interactive)
@@ -832,9 +848,11 @@ Make python coding like an ide.
 
 #+BEGIN_SRC emacs-lisp
   (use-package jedi
-    :defer t
-    :init (add-hook 'python-mode-hook 'jedi:setup)
-    :config (customize-set-variable 'jedi:complete-on-dot t)
+    :ensure t
+    :init
+    (progn (add-hook 'python-mode-hook 'jedi:setup))
+    :config
+    (progn (custom-set-variables '(jedi:complete-on-dot t)))
     )
 #+END_SRC
 
@@ -901,8 +919,10 @@ Common mode defaults I think are sensible.
            (hl-line-mode)
            (whitespace-mode)
            (visual-line-mode)
-           (customize-set-variable 'indent-tabs-mode nil)
-           (customize-set-variable 'tab-width 2)
+           (custom-set-variables
+            '(indent-tabs-mode nil)
+            '(tab-width 2)
+            )
           )
         )
 #+END_SRC
