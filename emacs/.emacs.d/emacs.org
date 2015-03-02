@@ -879,32 +879,48 @@ Make it even easier with hints like intellisense.
 Need to make haskell source be all pretty.
 
 #+BEGIN_SRC emacs-lisp
-      (use-package haskell-mode
+  (use-package haskell-mode
+    :ensure t
+    :config
+    (progn
+      (use-package hindent
         :ensure t
         :config
         (progn
-          (use-package hindent
-            :ensure t
-            :config (progn
-                      (add-hook 'haskell-mode-hook #'hindent-mode)
-                      )
-            )
-          (use-package flycheck-haskell :ensure t)
-          (use-package flycheck-hdevtools
-            :ensure t
-            :defer t
-            :config (progn
-                      (add-hook 'haskell-mode-hook 'flycheck-mode)
-                      )
-            )
-          (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
-          (add-hook 'haskell-mode-hook 'turn-on-haskell-indent)
-          (add-hook 'haskell-mode-hook 'turn-on-haskell-simple-indent)
-          (customize-set-variable 'haskell-program-name "ghci")
-          (add-to-list 'completion-ignored-extensions ".hi")
-          (customize-set-variable 'haskell-font-lock-symbols t)
+          (add-hook 'haskell-mode-hook #'hindent-mode)
           )
         )
+      (use-package flycheck-haskell :ensure t)
+      (use-package flycheck-hdevtools
+        :ensure t
+        :config
+        (progn
+          (add-hook 'haskell-mode-hook 'flycheck-mode)
+          )
+        )
+      (use-package ghc
+        :ensure t
+        :config
+        (progn
+          (autoload 'ghc-init "ghc" nil t)
+          (autoload 'ghc-debug "ghc" nil t)
+          (add-hook 'haskell-mode-hook (lambda ()
+                                         (ghc-init)
+                                         )
+                    )
+          )
+        )
+      (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+      (add-hook 'haskell-mode-hook 'turn-on-haskell-indent)
+      (add-hook 'haskell-mode-hook 'turn-on-haskell-simple-indent)
+      (custom-set-variables
+       '(haskell-program-name "ghci")
+       '(haskell-font-lock-symbols t)
+       '(haskell-tags-on-save t)
+       )
+      (add-to-list 'completion-ignored-extensions ".hi")
+      )
+    )
 #+END_SRC
 
 * mode related
