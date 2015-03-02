@@ -969,7 +969,13 @@ TODO: fixme
 ***** python
 
 #+BEGIN_SRC emacs-lisp
-  (add-hook 'python-mode-hook '(lambda () (flycheck-select-checker 'python-flake8)))
+  (add-hook 'python-mode-hook
+            '(lambda ()
+               (flycheck-select-checker 'python-flake8)
+               (flycheck-select-checker 'python-pylint)
+               )
+            )
+
 #+END_SRC
 
 ***** shell
