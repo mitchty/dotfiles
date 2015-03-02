@@ -490,7 +490,7 @@ All the packages I use.
 *** tramp
 
 #+BEGIN_SRC emacs-lisp
-  (use-package tramp :defer t)
+  (use-package tramp :ensure t)
 #+END_SRC
 
 *** exec-path-from-shell
@@ -507,7 +507,7 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
 *** expand-region
 
 #+BEGIN_SRC emacs-lisp
-  (use-package expand-region :defer t :bind ("C-]" . er/expand-region))
+  (use-package expand-region :ensure t :bind ("C-]" . er/expand-region))
 #+END_SRC
 
 *** helm
@@ -537,7 +537,6 @@ Its nice being able to describe helm things you know?
 #+BEGIN_SRC emacs-lisp
   (use-package helm-descbinds
     :ensure t
-    :defer t
     :bind (("C-h b" . helm-descbinds)
            ("C-h w" . helm-descbinds))
     )
@@ -548,7 +547,7 @@ Its nice being able to describe helm things you know?
 Helm search plugin for Ag (The Silver Searcher) so much nicer than regular searching in helm imo.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package helm-ag :defer t)
+  (use-package helm-ag :ensure t)
 #+END_SRC
 
 *** helm-projectile
@@ -564,7 +563,6 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
 #+BEGIN_SRC emacs-lisp
   (use-package magit
     :ensure t
-    :defer t
     :commands (magit-init
                magit-status
                magit-diff
@@ -584,7 +582,7 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
 
   (use-package magit-blame
     :ensure magit
-    :defer t
+    :ensure t
     :commands (magit-blame-mode)
     )
 #+END_SRC
@@ -618,8 +616,9 @@ Highlight matching ()'s []'s etc...
 
 #+BEGIN_SRC emacs-lisp
   (use-package autopair
-    :defer t
-    :config (customize-set-variable 'autopair-blink 'nil)
+    :ensure t
+    :config
+    (progn (custom-set-variables '(autopair-blink 'nil)))
     )
 #+END_SRC
 
@@ -717,7 +716,8 @@ Makes matching parens easier.
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
     :ensure t
-    :config (add-hook 'prog-mode-hook (rainbow-delimiters-mode))
+    :config
+    (progn (add-hook 'prog-mode-hook (rainbow-delimiters-mode)))
     )
 #+END_SRC
 
@@ -761,7 +761,8 @@ Highlight TODO/FIXME type messages in comments.
 #+BEGIN_SRC emacs-lisp
   (use-package fic-mode
     :ensure t
-    :config (add-hook 'prog-mode-hook (turn-on-fic-mode))
+    :config
+    (progn (add-hook 'prog-mode-hook (turn-on-fic-mode)))
     )
 #+END_SRC
 
@@ -770,10 +771,10 @@ Highlight TODO/FIXME type messages in comments.
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
     :ensure t
-    :defer t
     :idle (projectile-global-mode)
-    :config (progn (require 'helm-projectile)
-                   (helm-projectile-on))
+    :config
+    (progn (require 'helm-projectile)
+           (helm-projectile-on))
     )
 #+END_SRC
 
@@ -782,7 +783,8 @@ Highlight TODO/FIXME type messages in comments.
 #+BEGIN_SRC emacs-lisp
   (use-package git-gutter
     :ensure t
-    :config (global-git-gutter-mode t)
+    :config
+    (progn (global-git-gutter-mode t))
     )
 #+END_SRC
 
@@ -798,7 +800,7 @@ Highlight TODO/FIXME type messages in comments.
 *** ggtags
 
 #+BEGIN_SRC emacs-lisp :tangle no
-  (use-package ggtags :defer t)
+  (use-package ggtags :ensure t)
 #+END_SRC
 
 *** company-mode
@@ -808,7 +810,8 @@ Completion tips.
 #+BEGIN_SRC emacs-lisp :tangle no
   (use-package company-mode
     :ensure t
-    :config (add-hook 'after-init-hook 'global-company-mode)
+    :config
+    (progn (add-hook 'after-init-hook 'global-company-mode))
     )
 #+END_SRC
 
@@ -817,7 +820,7 @@ Completion tips.
 For.. yaml
 
 #+BEGIN_SRC emacs-lisp
-  (use-package yaml-mode :defer t)
+  (use-package yaml-mode :ensure t)
 #+END_SRC
 
 *** writegood-mode
@@ -825,7 +828,7 @@ For.. yaml
 So I write gooder. Me fail English? Thats unpossible.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package writegood-mode :defer t)
+  (use-package writegood-mode :ensure t)
 #+END_SRC
 
 *** restclient
@@ -833,13 +836,13 @@ So I write gooder. Me fail English? Thats unpossible.
 Comes in handily for those times you need it.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package restclient :defer t)
+  (use-package restclient :ensure t)
 #+END_SRC
 
 *** helm-gtags
 
 #+BEGIN_SRC emacs-lisp
-  (use-package helm-gtags :defer t)
+  (use-package helm-gtags :ensure t)
 #+END_SRC
 
 *** jedi
@@ -862,12 +865,12 @@ Make it even easier with hints like intellisense.
 
 #+BEGIN_SRC emacs-lisp
   (use-package company-anaconda
-    :defer t
-    :config (progn
-              (with-no-warnings
-                (add-to-list 'company-backends 'company-anaconda))
-              (add-hook 'python-mode-hook 'anaconda-mode)
-              )
+    :ensure t
+    :config
+    (progn
+      (add-to-list 'company-backends 'company-anaconda)
+      (add-hook 'python-mode-hook 'anaconda-mode)
+      )
     )
 #+END_SRC
 
