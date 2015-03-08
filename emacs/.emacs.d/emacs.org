@@ -909,6 +909,14 @@ Color variables for easy identification, its like a rainbow puked over everythin
     )
 #+END_SRC
 
+*** nix-mode
+
+Instead of text might as well get a decent mode hook going here.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package nix-mode :ensure t)
+#+END_SRC
+
 * mode related
 *** common defaults
 
