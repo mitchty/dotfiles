@@ -372,52 +372,30 @@ Format the mode line, I... can't decipher this anymore nor do I care to, it work
    '(mode-line-format
      (list
       '(:eval (propertize "%b " 'face 'font-lock-keyword-face
-                          'help-echo (buffer-file-name)
-                          )
-              )
-      (propertize "%02l" 'face 'font-lock-type-face) ","
-      (propertize "%02c" 'face 'font-lock-type-face)
-      " ["
-      '(:eval (propertize "%m" 'face 'font-lock-string-face
-                          'help-echo buffer-file-coding-system)
-              )
-      minor-mode-alist
-      "] "
-      "["
+                          'help-echo (buffer-file-name)))
+      (propertize "%l" 'face 'font-lock-type-face) ","
+      (propertize "%c" 'face 'font-lock-type-face) " ["
+      '(:eval (propertize "%m" 'face 'font-lock-preprocessor-face
+                          'help-echo mode-line-modes)) "]["
       '(:eval (propertize
                (if overwrite-mode "Ovr" "I")
                'face 'font-lock-preprocessor-face
                'help-echo (concat "Buffer is in "
-                                  (if overwrite-mode "overwrite" "insert") " mode")
-               )
-              )
+                                  (if overwrite-mode "overwrite" "insert") " mode")))
       '(:eval (when (buffer-modified-p)
                 (concat ","  (propertize "M"
                                          'face 'font-lock-warning-face
-                                         'help-echo "Buffer has been modified")
-                        )
-                )
-              )
+                                         'help-echo "Buffer has been modified"))))
       '(:eval (when buffer-read-only
                 (concat ","  (propertize "RO"
                                          'face 'font-lock-type-face
-                                         'help-echo "Buffer is read-only")
-                        )
-                )
-              )
-      "] "
+                                         'help-echo "Buffer is read-only")))) "] "
       '(:eval (when window-system
                 (propertize
                  (format-time-string "%H:%M:%S")
                  'help-echo
                  (concat (format-time-string "%c; ")
-                         (emacs-uptime "Uptime:%hh")
-                         )
-                 )
-                )
-              )
-      " --"
-      "%-"
+                         (emacs-uptime "Uptime:%hh")))))
       )
      )
    )
@@ -441,9 +419,10 @@ Basically, never show the tool bar or the scroll bar in gui or tty. In gui its o
 List of fonts in order of preference.
 
 #+BEGIN_SRC emacs-lisp
-  (defvar mt:gui-fonts
+  (defvar my/gui-fonts
     '(
-      "Pragmata Pro"
+      "PragmataPro"
+      "Pragmata Pro" ;; Seems to register differently on osx than X
       "Source Code Pro"
       "Menlo"
       "Monaco"
@@ -454,14 +433,11 @@ List of fonts in order of preference.
 Set preferred font list when we're in a gui emacs session.
 
 #+BEGIN_SRC emacs-lisp
-  (defun set-gui-font (fontlist)
-    (if (find-font  (font-spec :name (car fontlist)))
-        (progn (set-frame-font (car fontlist))
-               (set-face-attribute 'default nil :height 150))
-      (progn (set-gui-font (cdr fontlist)))))
-
   (when window-system
-    (set-gui-font mt:gui-fonts)
+    (if (find-font  (font-spec :name (car my/gui-fonts)))
+        (progn (set-frame-font (car my/gui-fonts))
+               (set-face-attribute 'default nil :height 180))
+      (progn (set-gui-font (cdr my/gui-fonts))))
     )
 #+END_SRC
 
