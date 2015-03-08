@@ -843,6 +843,7 @@ Need to make haskell source be all pretty.
     :config
     (progn
       (use-package hindent
+        :if (executable-find "hindent")
         :ensure t
         :config
         (progn
@@ -858,6 +859,7 @@ Need to make haskell source be all pretty.
           )
         )
       (use-package ghc
+        :if (executable-find "ghc-mod")
         :ensure t
         :config
         (progn
@@ -874,7 +876,6 @@ Need to make haskell source be all pretty.
       (add-hook 'haskell-mode-hook 'turn-on-haskell-simple-indent)
       (custom-set-variables
        '(haskell-program-name "ghci")
-       '(haskell-font-lock-symbols t)
        '(haskell-tags-on-save t)
        )
       (add-to-list 'completion-ignored-extensions ".hi")
