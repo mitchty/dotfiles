@@ -611,11 +611,10 @@ Flycheck for on the fly checking of code.
 #+BEGIN_SRC emacs-lisp
   (use-package flycheck
     :ensure t
+    :init
+    (custom-set-variables '(flycheck-indication-mode 'left-fringe))
     :config
-    (progn
-      (custom-set-variables '(flycheck-indication-mode 'left-fringe))
-      (add-hook 'prog-mode-hook (flycheck-mode))
-      )
+    (add-hook 'prog-mode-hook 'flycheck-mode)
     )
 #+END_SRC
 
