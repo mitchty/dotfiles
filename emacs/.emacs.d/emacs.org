@@ -883,6 +883,32 @@ Need to make haskell source be all pretty.
     )
 #+END_SRC
 
+*** undo-tree
+
+Make undo more useful, and treelike.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package undo-tree
+    :ensure t
+    :init
+    (global-undo-tree-mode)
+    :bind
+    ("C-x u" . undo-tree-visualize)
+    )
+#+END_SRC
+
+*** color-identifiers-mode
+
+Color variables for easy identification, its like a rainbow puked over everything opened in prog-mode-hook.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package color-identifiers-mode
+    :ensure t
+    :config
+    (add-hook 'prog-mode-hook 'color-identifiers-mode)
+    )
+#+END_SRC
+
 * mode related
 *** common defaults
 
