@@ -503,33 +503,16 @@ By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
            ("C-x c o" . helm-occur))
     :init (progn
             (require 'helm-config)
-            (helm-mode 1)))
-#+END_SRC
-
-*** helm-descbinds
-
-Its nice being able to describe helm things you know?
-
-#+BEGIN_SRC emacs-lisp
-  (use-package helm-descbinds
-    :ensure t
-    :bind (("C-h b" . helm-descbinds)
-           ("C-h w" . helm-descbinds))
+            (helm-mode 1)
+            (use-package helm-descbinds
+              :ensure t
+              :bind (("C-h b" . helm-descbinds)
+                     ("C-h w" . helm-descbinds))
+              )
+            (use-package helm-ag :ensure t)
+            (use-package helm-projectile :ensure t)
+            )
     )
-#+END_SRC
-
-*** helm-ag
-
-Helm search plugin for Ag (The Silver Searcher) so much nicer than regular searching in helm imo.
-
-#+BEGIN_SRC emacs-lisp
-  (use-package helm-ag :ensure t)
-#+END_SRC
-
-*** helm-projectile
-
-#+BEGIN_SRC emacs-lisp
-  (use-package helm-projectile :ensure t)
 #+END_SRC
 
 *** magit
