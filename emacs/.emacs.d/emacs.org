@@ -663,7 +663,8 @@ Helpfully inserts matching parens, can be a pita too.
 #+BEGIN_SRC emacs-lisp
   (use-package smartparens
     :ensure t
-    :init (progn (add-hook 'prog-mode-hook (smartparens-mode)))
+    :config
+    (add-hook 'prog-mode-hook 'smartparens-mode)
     )
 #+END_SRC
 
@@ -675,7 +676,7 @@ Makes matching parens easier.
   (use-package rainbow-delimiters
     :ensure t
     :config
-    (progn (add-hook 'prog-mode-hook (rainbow-delimiters-mode)))
+    (add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
     )
 #+END_SRC
 
@@ -719,8 +720,8 @@ Highlight TODO/FIXME type messages in comments.
 #+BEGIN_SRC emacs-lisp
   (use-package fic-mode
     :ensure t
-    :config
-    (progn (add-hook 'prog-mode-hook (turn-on-fic-mode)))
+    :init
+    (add-hook 'prog-mode-hook 'turn-on-fic-mode)
     )
 #+END_SRC
 
