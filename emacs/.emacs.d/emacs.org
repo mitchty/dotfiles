@@ -874,14 +874,7 @@ Compress down python configuration a bit.
 Make it even easier with hints like intellisense.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package company-anaconda
-    :ensure t
-    :config
-    (progn
-      (add-to-list 'company-backends 'company-anaconda)
-      (add-hook 'python-mode-hook 'anaconda-mode)
-      )
-    )
+
 #+END_SRC
 
 *** haskell-mode
