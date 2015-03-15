@@ -822,17 +822,50 @@ Comes in handily for those times you need it.
   (use-package helm-gtags :ensure t)
 #+END_SRC
 
-*** jedi
+*** python-mode
 
-Make python coding like an ide.
+Compress down python configuration a bit.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package jedi
+  (use-package python
+    :commands python-mode
+    :mode ("\\.py\\'" . python-mode)
     :ensure t
     :init
-    (progn (add-hook 'python-mode-hook 'jedi:setup))
-    :config
-    (progn (custom-set-variables '(jedi:complete-on-dot t)))
+    (progn
+      (use-package jedi
+        :commands jedi:goto-definition
+        :ensure t
+        :init
+        (progn
+          (add-hook 'python-mode-hook 'jedi:setup)
+          )
+        :config
+        (progn
+          (custom-set-variables
+           '(jedi:complete-on-dot t)
+           '(jedi:install-imenu t)
+           )
+          )
+        :bind
+        (("M-." . jedi:goto-definition)
+         ("M-," . jedi:goto-definition-pop-marker)
+         )
+        )
+      (use-package company-anaconda
+        :ensure t
+        :config
+        (progn
+          (add-to-list 'company-backends 'company-anaconda)
+          (add-hook 'python-mode-hook 'anaconda-mode)
+          )
+        )
+      (use-package pytest
+        :ensure t
+        :bind ("C-c t" . pytest-one)
+        )
+      (use-package pymacs :ensure t)
+      )
     )
 #+END_SRC
 
@@ -994,11 +1027,15 @@ TODO: fixme
               "\r" 'reindent-then-newline-and-indent)))
 #+END_SRC
 
-***** python
+***** python-mode
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'python-mode-hook
             '(lambda ()
+               (setq-default
+                tab-width 4
+                indent-tabs-mode t
+                python-indent-offset 4)
                (flycheck-select-checker 'python-flake8)
                (flycheck-select-checker 'python-pylint)
                )
