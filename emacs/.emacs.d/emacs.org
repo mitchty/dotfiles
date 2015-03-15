@@ -498,6 +498,20 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
     )
 #+END_SRC
 
+*** osx-clipboard-mode
+
+#+BEGIN_SRC emacs-lisp
+  (when on-osx
+    (use-package osx-clipboard
+      :ensure t
+      :config
+      (progn
+        (osx-clipboard-mode +1)
+        )
+      )
+    )
+
+#+END_SRC
 *** expand-region
 
 #+BEGIN_SRC emacs-lisp
