@@ -433,11 +433,13 @@ List of fonts in order of preference.
 Set preferred font list when we're in a gui emacs session.
 
 #+BEGIN_SRC emacs-lisp
-  (when window-system
-    (if (find-font  (font-spec :name (car my/gui-fonts)))
-        (progn (set-frame-font (car my/gui-fonts))
-               (set-face-attribute 'default nil :height 180))
-      (progn (set-gui-font (cdr my/gui-fonts))))
+  (with-no-warnings
+    (when window-system
+      (if (find-font  (font-spec :name (car my/gui-fonts)))
+          (progn (set-frame-font (car my/gui-fonts))
+                 (set-face-attribute 'default nil :height 180))
+        (progn (set-gui-font (cdr my/gui-fonts))))
+      )
     )
 #+END_SRC
 
