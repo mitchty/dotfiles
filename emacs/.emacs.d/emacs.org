@@ -484,7 +484,10 @@ All the packages I use.
 *** tramp
 
 #+BEGIN_SRC emacs-lisp
-  (use-package tramp :ensure t)
+  (use-package tramp
+    :ensure t
+    :config (custom-set-variables '(tramp-default-method "ssh"))
+    )
 #+END_SRC
 
 *** exec-path-from-shell
