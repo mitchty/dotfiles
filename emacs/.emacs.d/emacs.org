@@ -344,7 +344,7 @@ Also on osx, don't ever display the gui dialog box. Taken from http://superuser.
 Global key bindings.
 
 #+BEGIN_SRC emacs-lisp
-  (global-set-key (kbd "C-,") 'kill-whole-line)
+  (global-set-key (kbd "C-x ,") 'kill-whole-line)
   (global-set-key (kbd "C-x C-m") 'compile)
 #+END_SRC
 
