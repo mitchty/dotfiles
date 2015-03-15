@@ -513,8 +513,8 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
         )
       )
     )
-
 #+END_SRC
+
 *** expand-region
 
 #+BEGIN_SRC emacs-lisp
