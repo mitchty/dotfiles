@@ -765,7 +765,7 @@ Highlight TODO/FIXME type messages in comments.
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
     :ensure t
-    :idle (projectile-global-mode)
+    :init (projectile-global-mode)
     :config
     (progn (require 'helm-projectile)
            (helm-projectile-on))
