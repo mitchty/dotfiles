@@ -392,7 +392,7 @@ Format the mode line, I... can't decipher this anymore nor do I care to, it work
       (propertize "%l" 'face 'font-lock-type-face) ","
       (propertize "%c" 'face 'font-lock-type-face) " ["
       '(:eval (propertize "%m" 'face 'font-lock-preprocessor-face
-                          'help-echo mode-line-modes)) "]["
+                          'help-echo (format-mode-line mode-line-modes))) "]["
       '(:eval (propertize
                (if overwrite-mode "Ovr" "I")
                'face 'font-lock-preprocessor-face
