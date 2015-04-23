@@ -564,6 +564,7 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
     :bind ("C-x m" . magit-status)
     :config
     (progn
+      (setq magit-last-seen-setup-instructions "1.4.0") ;; honestly wtf
       (defadvice magit-status (around magit-fullscreen activate)
         (window-configuration-to-register :magit-fullscreen)
         ad-do-it
@@ -878,14 +879,6 @@ Compress down python configuration a bit.
       (use-package pymacs :ensure t)
       )
     )
-#+END_SRC
-
-*** company-anaconda
-
-Make it even easier with hints like intellisense.
-
-#+BEGIN_SRC emacs-lisp
-
 #+END_SRC
 
 *** haskell-mode
