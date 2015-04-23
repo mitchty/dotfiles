@@ -7,7 +7,13 @@ maybe_git_repo()
   echo "${1}" | grep '://' > /dev/null 2>&1
   [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
   git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
-  repo=$(echo "${destination}/${git_dir}" | sed -e 's/\.git$//g')
+
+  # strip user@, :NNN, and .git from input uri's
+  repo="${destination}/"$(echo "${git_dir}" |
+    sed -e 's/\.git$//g' |
+    sed -e 's|.*\@||g' |
+    sed -e 's|\:[[:digit:]]\{1,\}\/|/|g' |
+    tr -d '~')
 
   if [ ! -d "${repo}" ]; then
     mkdir -p "${repo}"
