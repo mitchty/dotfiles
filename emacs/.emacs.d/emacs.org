@@ -573,12 +573,6 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
         ad-do-it
         (jump-to-register :magit-fullscreen)))
     )
-
-  (use-package magit-blame
-    :ensure magit
-    :ensure t
-    :commands (magit-blame-mode)
-    )
 #+END_SRC
 
 *** workgroups2
@@ -993,6 +987,7 @@ Common mode defaults I think are sensible.
            (hl-line-mode)
            (whitespace-mode)
            (visual-line-mode)
+           (flyspell-prog-mode)
            (custom-set-variables
             '(indent-tabs-mode nil)
             '(tab-width 2)
@@ -1042,10 +1037,6 @@ TODO: fixme
 #+BEGIN_SRC emacs-lisp
   (add-hook 'python-mode-hook
             '(lambda ()
-               (setq-default
-                tab-width 4
-                indent-tabs-mode t
-                python-indent-offset 4)
                (flycheck-select-checker 'python-flake8)
                (flycheck-select-checker 'python-pylint)
                )

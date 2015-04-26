@@ -86,7 +86,7 @@ login_shell()
 cconv()
 {
   curl -L --silent\
-       "https://www.google.com/finance/converter?a=$1&from=$2&to=$3"
-         | grep converter_result\
+       "https://www.google.com/finance/converter?a=$1&from=$2&to=$3" \
+         | grep converter_result \
              | perl -pe 's|[<]\w+ \w+[=]\w+[>]||g;' -e 's|[<][/]span[>]||'
 }

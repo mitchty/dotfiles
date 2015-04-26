@@ -5,32 +5,31 @@ STOWOPTS=-target $(HOME) -d $(PWD)
 DOTGITCONFIG=~/.gitconfig
 DOTPROFILE=~/.profile
 
-.PHONY: mosh common emacs git ruby haskell perl tmux vim zsh list home osx linux ws nix
+.PHONY: mosh common emacs git ruby haskell perl tmux vim zsh list osx linux ws nix
 
-home: $(DOTGITCONFIG) $(DOTPROFILE)
-	$(DOTDEE) $(DOTPROFILE)
+all: common
 
-ws: common emacs nix mosh git ruby haskell perl tmux vim zsh home
+common: $(DOTPROFILE)
 
-all: home
+ws: emacs nix mosh git ruby haskell perl tmux vim zsh common
 
 $(DOTGITCONFIG):
+	$(STOW) $(STOWOPTS) git
 	touch $(DOTGITCONFIG)
 	$(DOTDEE) $(DOTGITCONFIG)
 
 clean:
 	$(STOW) $(STOWOPTS) -D mosh common emacs git ruby haskell perl tmux vim zsh osx
+	-rm $(DOTGITCONFIG) $(DOTPROFILE)
+	-rm -fr $(DOTCONFIG).d $(DOTPROFILE).d
+	-find $(PWD) -type f -name ".checksum" -exec rm {} \;
 
 $(DOTPROFILE):
+	$(STOW) $(STOWOPTS) common
 	touch $(DOTPROFILE)
 	$(DOTDEE) $(DOTPROFILE)
 
-common:
-	$(STOW) $(STOWOPTS) common
-
-# Specific stows, nothing special
-git:
-	$(STOW) $(STOWOPTS) git
+git: $(DOTGITCONFIG)
 
 emacs:
 	$(STOW) $(STOWOPTS) emacs # $@?
