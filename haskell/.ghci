@@ -1,1 +1,5 @@
 :set prompt "λ "
+:set -XPackageImports
+:set -XOverloadedStrings
+:set -XScopedTypeVariables -XRankNTypes
+:l ~/.ghc.hs
