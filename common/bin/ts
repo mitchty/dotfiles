@@ -2,11 +2,18 @@
 #
 # Timestamp stdin and then print to stdout and flush.
 #
-# Thats about it. Might add a quick and dirty option to allow you to 
+# Thats about it. Might add a quick and dirty option to allow you to
 # specify the time output whatnot. But this is intended to be simple.
-#
+use strict;
+use warnings;
+use POSIX qw(strftime);
+use IO::Handle;
+STDOUT->autoflush(1);
 
 while(<STDIN>){
-  print localtime()." : ".$_;
-  $stdout.flush;
+  my $now       = time;
+  my $tz        = strftime(('%z', (localtime $now)));
+  $tz =~ s/(\d{2})(\d{2})/$1:$2/smx;
+  my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
+  print "$time$tz : ".$_;
 };
