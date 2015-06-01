@@ -4,5 +4,5 @@
 # BAD INSTALLER NO COOKIE!
 if [ -e ${HOME}/.nix-profile/etc/profile.d/nix.sh ]; then
     . ${HOME}/.nix-profile/etc/profile.d/nix.sh;
-    export NIX_PATH=${HOME}/Developer/github.com/NixOS/nixpkgs:nixpkgs=${HOME}/Developer/github.com/NixOS/nixpkgs
+    export NIX_PATH=${HOME}/src/github.com/NixOS/nixpkgs:nixpkgs=${HOME}/src/github.com/NixOS/nixpkgs
 fi
