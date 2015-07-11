@@ -320,7 +320,7 @@ Highlight parens.
 Typing out *yes* or *no* is stupid.
 
 #+BEGIN_SRC emacs-lisp
-  (defalias 'yes-or-no-p 'y-or-n-p)
+  (fset 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
 Also on osx, don't ever display the gui dialog box. Taken from http://superuser.com/questions/125569/how-to-fix-emacs-popup-dialogs-on-mac-os-x
@@ -363,7 +363,7 @@ Global key bindings.
 
 Update the time every ~3 seconds in the mode line.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (custom-set-variables
    '(display-time-default-load-average nil)
    '(display-time-format "%T")
@@ -374,7 +374,7 @@ Update the time every ~3 seconds in the mode line.
 
 Display line and column always in the modeline.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (custom-set-variables
    '(line-number-mode t)
    '(column-number-mode t)
@@ -383,7 +383,7 @@ Display line and column always in the modeline.
 
 Format the mode line, I... can't decipher this anymore nor do I care to, it works eff it.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (custom-set-variables
    '(mode-line-format
      (list
@@ -423,11 +423,14 @@ When i'm running in a terminal emacs, most of this junk isn't needed. For that m
 
 Basically, never show the tool bar or the scroll bar in gui or tty. In gui its ok to show the menu-bar.
 
+Also have the scratch buffer be empty instead of have the derp message I never read anyway.
+
 #+BEGIN_SRC emacs-lisp
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
   (when (not window-system)
     (menu-bar-mode -1))
+  (custom-set-variables '(initial-scratch-message nil))
 #+END_SRC
 
 *** fonts
@@ -515,6 +518,59 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
     )
 #+END_SRC
 
+*** smart-mode-line
+
+#+BEGIN_SRC emacs-lisp
+  (use-package smart-mode-line
+    :ensure t
+    :config
+    (progn
+      (custom-set-variables '(sml/name-width 20)
+                            '(sml/mode-width 'full)
+                            '(sml/shorten-modes t)
+                            '(sml/shorten-directory t)
+                            '(sml/hidden-modes
+                              '(" GitGutter"
+                                " Fill"
+                                " $"
+                                " Wrap"
+                                " MRev"
+                                " Ind"
+                                " Projectile"
+                                " SP"
+                                " Undo-Tree"
+                                " yas"
+                                " WSC"))
+                            )
+      (sml/toggle-shorten-modes)
+      (rich-minority-mode 1)
+      (add-to-list 'sml/replacer-regexp-list
+                   '("^~/src/" ":src:"))
+      (sml/setup)
+      )
+    )
+#+END_SRC
+
+*** semantic
+
+#+BEGIN_SRC emacs-lisp
+  (use-package semantic
+    :ensure t
+    :config
+    (progn
+      (custom-set-variables
+       '(global-semantic-decoration-mode t)
+       '(global-semantic-highlight-func-mode t)
+       '(global-semantic-idle-scheduler-mode t)
+       '(global-semantic-show-unmatched-syntax-mode t)
+       '(global-semantic-idle-local-symbol-highlight-mode t)
+       '(global-semantic-stickyfunc-mode t)
+       )
+      )
+    :init(semantic-mode t)
+    )
+#+END_SRC
+
 *** expand-region
 
 #+BEGIN_SRC emacs-lisp
@@ -564,7 +620,10 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
     :bind ("C-x m" . magit-status)
     :config
     (progn
-      (setq magit-last-seen-setup-instructions "1.4.0") ;; honestly wtf
+      (custom-set-variables
+       '(magit-auto-revert-mode nil)
+       '(magit-last-seen-setup-instructions "1.4.0")
+       )
       (defadvice magit-status (around magit-fullscreen activate)
         (window-configuration-to-register :magit-fullscreen)
         ad-do-it
@@ -580,22 +639,19 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
 
 Save workgroup layouts. Similar..ish to desktop-save.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package workgroups2
     :ensure t
-    :init (progn
-            ;; Can't use :bind OR :config for this sadly
-            ;; also annoying, is that I have to set this before
-            ;; running workgroups-mode. Hokey stuff.
-            ;;
-            ;; Also note, use setq here not custom-set-variables
-            ;; workgroups2 can't detect stuff thats customized.
-            (custom-set-variables
-             '(wg-session-file  "~/.emacs.d/workgroups")
-             '(wg-prefix-key (kbd "C-c C-w"))
-             )
-            (workgroups-mode 1)
-            )
+    :diminish (workgroups-mode . "")
+    :config
+    (progn
+      (custom-set-variables
+       '(wg-session-file "~/.emacs.d/workgroups")
+       '(wg-prefix-key (kbd "C-c C-w"))
+       '(wg-mode-line-display-on nil)
+                            )
+      )
+    :init (workgroups-mode 1)
     )
 #+END_SRC
 
@@ -786,6 +842,15 @@ Highlight TODO/FIXME type messages in comments.
     )
 #+END_SRC
 
+*** hideshow
+
+#+BEGIN_SRC emacs-lisp
+  (use-package hideshow
+    :ensure t
+    :bind ("C-c s" . hs-toggle-hiding)
+    )
+#+END_SRC
+
 *** ggtags
 
 #+BEGIN_SRC emacs-lisp :tangle no
@@ -846,10 +911,11 @@ Compress down python configuration a bit.
     :init
     (progn
       (use-package jedi
-        :commands jedi:goto-definition
+        :commands jedi:setup
         :ensure t
         :init
         (progn
+          (jedi:install-server)
           (add-hook 'python-mode-hook 'jedi:setup)
           )
         :config
@@ -939,7 +1005,15 @@ Make undo more useful, and treelike.
   (use-package undo-tree
     :ensure t
     :init
-    (global-undo-tree-mode)
+    (progn (
+            (global-undo-tree-mode)
+            (defadvice undo-tree-visualize (around undo-tree-split-side-by-side activate)
+              "Split undo-tree side-by-side"
+              (let ((split-height-threshold nil)
+                    (split-width-threshold 0))
+                ad-do-it))
+            )
+           )
     :bind
     ("C-x u" . undo-tree-visualize)
     )
@@ -1052,6 +1126,23 @@ TODO: fixme
             '(lambda ()
                (setq sh-basic-offset 2 sh-indentation 4
                      sh-indent-for-case-label 0 sh-indent-for-case-alt '+)))
+#+END_SRC
+
+***** perl
+
+#+BEGIN_SRC emacs-lisp
+  (fset 'perl-mode 'cperl-mode)
+
+  (add-hook 'cperl-mode-hook
+            '(lambda ()
+               (setq indent-tabs-mode t)
+               (setq tab-width 8)
+               (setq cperl-indent-level 4)
+               (setq tab-stop-list (number-sequence 4 200 4))
+               (setq cperl-tab-always-indent t)
+               (setq cperl-indent-parens-as-block t)
+               )
+            )
 #+END_SRC
 
 *** auto-insert-mode new file templates
