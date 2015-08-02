@@ -1005,14 +1005,14 @@ Make undo more useful, and treelike.
   (use-package undo-tree
     :ensure t
     :init
-    (progn (
-            (global-undo-tree-mode)
-            (defadvice undo-tree-visualize (around undo-tree-split-side-by-side activate)
-              "Split undo-tree side-by-side"
-              (let ((split-height-threshold nil)
-                    (split-width-threshold 0))
-                ad-do-it))
-            )
+    (progn (global-undo-tree-mode))
+    :config
+    (progn (defadvice undo-tree-visualize (around undo-tree-split-side-by-side activate)
+             "Split undo-tree side-by-side"
+             (let ((split-height-threshold nil)
+                   (split-width-threshold 0))
+               ad-do-it)
+             )
            )
     :bind
     ("C-x u" . undo-tree-visualize)
