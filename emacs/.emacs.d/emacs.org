@@ -323,7 +323,11 @@ Typing out *yes* or *no* is stupid.
   (fset 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
-Also on osx, don't ever display the gui dialog box. Taken from http://superuser.com/questions/125569/how-to-fix-emacs-popup-dialogs-on-mac-os-x
+*** osx specific
+
+**** no yes-or-no gui windows
+
+On osx, don't ever display the gui dialog box. Taken from http://superuser.com/questions/125569/how-to-fix-emacs-popup-dialogs-on-mac-os-x
 
 #+BEGIN_SRC emacs-lisp
   (when (and on-osx (window-system))
@@ -336,7 +340,22 @@ Also on osx, don't ever display the gui dialog box. Taken from http://superuser.
       (let ((use-dialog-box nil))
         ad-do-it))
     )
+#+END_SRC
 
+**** make osx gui emacs keyboard setup match console
+
+Command should be meta on cocoa emacs like the old carbon/macports version.
+
+#+BEGIN_SRC emacs-lisp
+  (when (and on-osx (window-system))
+    (custom-set-variables
+     '(mac-command-key-is-meta t)
+     '(mac-option-key-is-meta nil)
+     '(mac-command-key-is-meta t)
+     '(mac-command-modifier 'meta)
+     '(mac-option-modifier 'none)
+     )
+    )
 #+END_SRC
 
 *** global key bindings
@@ -359,64 +378,6 @@ Global key bindings.
     )
 #+END_SRC
 * appearance
-*** modeline
-
-Update the time every ~3 seconds in the mode line.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-  (custom-set-variables
-   '(display-time-default-load-average nil)
-   '(display-time-format "%T")
-   '(display-time-interval 3)
-   )
-  (display-time-mode)
-#+END_SRC
-
-Display line and column always in the modeline.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-  (custom-set-variables
-   '(line-number-mode t)
-   '(column-number-mode t)
-   )
-#+END_SRC
-
-Format the mode line, I... can't decipher this anymore nor do I care to, it works eff it.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-  (custom-set-variables
-   '(mode-line-format
-     (list
-      '(:eval (propertize "%b " 'face 'font-lock-keyword-face
-                          'help-echo (buffer-file-name)))
-      (propertize "%l" 'face 'font-lock-type-face) ","
-      (propertize "%c" 'face 'font-lock-type-face) " ["
-      '(:eval (propertize "%m" 'face 'font-lock-preprocessor-face
-                          'help-echo (format-mode-line mode-line-modes))) "]["
-      '(:eval (propertize
-               (if overwrite-mode "Ovr" "I")
-               'face 'font-lock-preprocessor-face
-               'help-echo (concat "Buffer is in "
-                                  (if overwrite-mode "overwrite" "insert") " mode")))
-      '(:eval (when (buffer-modified-p)
-                (concat ","  (propertize "M"
-                                         'face 'font-lock-warning-face
-                                         'help-echo "Buffer has been modified"))))
-      '(:eval (when buffer-read-only
-                (concat ","  (propertize "RO"
-                                         'face 'font-lock-type-face
-                                         'help-echo "Buffer is read-only")))) "] "
-      '(:eval (when window-system
-                (propertize
-                 (format-time-string "%H:%M:%S")
-                 'help-echo
-                 (concat (format-time-string "%c; ")
-                         (emacs-uptime "Uptime:%hh")))))
-      )
-     )
-   )
-#+END_SRC
-
 *** gui
 
 When i'm running in a terminal emacs, most of this junk isn't needed. For that matter gui counts for most.
@@ -543,10 +504,10 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
                                 " WSC"))
                             )
       (sml/toggle-shorten-modes)
-      (rich-minority-mode 1)
       (add-to-list 'sml/replacer-regexp-list
                    '("^~/src/" ":src:"))
       (sml/setup)
+      (column-number-mode)
       )
     )
 #+END_SRC
@@ -562,9 +523,8 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
        '(global-semantic-decoration-mode t)
        '(global-semantic-highlight-func-mode t)
        '(global-semantic-idle-scheduler-mode t)
-       '(global-semantic-show-unmatched-syntax-mode t)
        '(global-semantic-idle-local-symbol-highlight-mode t)
-       '(global-semantic-stickyfunc-mode t)
+       '(global-semantic-stickyfunc-mode f)
        )
       )
     :init(semantic-mode t)
@@ -944,6 +904,23 @@ Compress down python configuration a bit.
         )
       (use-package pymacs :ensure t)
       )
+    :config
+    (progn
+      (add-hook 'python-mode-hook'
+                (lambda ()
+                  (push '("lambda" . ?λ) prettify-symbols-alist)
+                    (push '("<=" . ?≤) prettify-symbols-alist)
+                    (push '(">=" . ?≥) prettify-symbols-alist)
+                    (push '("==" . ?≡) prettify-symbols-alist)
+                    (push '("/=" . ?≢) prettify-symbols-alist)
+                    (push '("&&" . ?∧) prettify-symbols-alist)
+                    (push '("||" . ?∨) prettify-symbols-alist)
+                    (push '("not" . ?¬) prettify-symbols-alist)
+                    (push '("forall" . ?∀) prettify-symbols-alist)
+                    (push '("None" . ?⊥) prettify-symbols-alist)
+                    (prettify-symbols-mode)
+                    )
+                  ))
     )
 #+END_SRC
 
