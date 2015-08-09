@@ -1,7 +1,7 @@
 DOTDEE=update-dotdee
 STOW=xstow
 PWD=$(shell pwd)
-STOWOPTS=-target $(HOME) -d $(PWD)
+STOWOPTS=-f -target $(HOME) -d $(PWD) 
 DOTGITCONFIG=~/.gitconfig
 DOTPROFILE=~/.profile
 
