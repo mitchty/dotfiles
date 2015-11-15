@@ -20,6 +20,7 @@
               Spock
               stack
               stylish-haskell
+              regex-posix
               wreq
               ]
           );
