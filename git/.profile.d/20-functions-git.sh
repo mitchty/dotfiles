@@ -7,6 +7,7 @@ maybe_git_repo()
   echo "${1}" | grep '://' > /dev/null 2>&1
   [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
   git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
+  rrepo="${proto}://${git_dir}"
 
   # strip user@, :NNN, and .git from input uri's
   repo="${destination}/"$(echo "${git_dir}" |
@@ -16,22 +17,13 @@ maybe_git_repo()
     tr -d '~')
 
   if [ ! -d "${repo}" ]; then
-    mkdir -p "${repo}"
-    echo "git clone ${proto}://${git_dir} ${repo}"
-    git clone "${proto}://${git_dir}" "${repo}"
-    ${cmd}
-    if [ $? != 0 ]; then
-      # Try removing up to git_dir at worst empty directories.
-      # Cheap trick, but oldies are goodies.
-      (
-        repo_dir="${repo}"
-        until [ "${repo_dir}" = "${destination}" ]; do
-          cd "${repo_dir}" > /dev/null 2>&1
-          rmdir "${repo_dir}" > /dev/null 2>&1
-          repo_dir=$(echo "${repo_dir}" | sed -e 's/\/[^\/]*$//g')
-        done
-      )
-      echo "git clone of ${proto}://${repo} failed"
+    git ls-remote "${rrepo}" > /dev/null 2>&1
+    if [ $? = 0 ]; then
+      mkdir -p "${repo}"
+      echo "git clone ${rrepo} ${repo}"
+      git clone "${rrepo}" "${repo}"
+    else
+      echo "${rrepo} doesn't look to be a git repository"
     fi
   fi
   [ -d "${repo}" ] && cd "${repo}"
