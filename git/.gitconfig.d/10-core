@@ -5,6 +5,7 @@
   ci = commit
   ciu = commit --all
   co = checkout
+  ds = diff --stat
   ba = branch --all
   st = status --short --branch
   unstage = reset HEAD
