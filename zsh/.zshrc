@@ -162,5 +162,5 @@ zstyle ':vcs_info:*' actionformats "%a $branch"
 zstyle ':vcs_info:*' stagedstr "%{$fg[blue]%}S"
 zstyle ':vcs_info:*' unstagedstr "%{$fg[blue]%}M"
 zstyle ':vcs_info:git*+set-message:*' hooks git-untracked git-st
-PROMPT="$userat:$pwd$userchar "
-RPROMPT='${vcs_info_msg_0_}'
+PROMPT="%(!.#.$) " # $ as a user # as root
+RPROMPT='${vcs_info_msg_0_} ${PWD/#$HOME/~}'
