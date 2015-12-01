@@ -9,6 +9,7 @@
         iperf
         curl
         clang
+        clang-analyzer
         git
         gist
         mercurial
@@ -31,11 +32,11 @@
         aspell
         aspellDicts.en
         openssl
+        pinentry
+        pbzip2
         pigz
-        xz
         pv
         postgresql
-        python27Packages.youtube-dl
         readline
         rsync
         sqlite
@@ -45,8 +46,19 @@
         wget
         wakelan
         unzip
-        zip
         upx
+        xz
+        zip
+        nox
+#        xhyve        compiles normally, figure out hypervisor framework issue
+#        lastpass-cli no worky on osx TODO fix this it works on homebrew
+        pylint
+        python27Packages.howdoi
+#        python27Packages.youtube-dl
+        python27Packages.pyflakes
+        python27Packages.flake8
+        python27Packages.virtualenv
+        python27Packages.pip
       ];
     };
     myHaskellEnv =
