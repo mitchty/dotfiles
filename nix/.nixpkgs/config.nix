@@ -10,7 +10,10 @@
         curl
         clang
         clang-analyzer
-        git
+        gitAndTools.gitFull
+        bazaarTools
+        mercurialFull
+        subversionClient
         gist
         mercurial
         docbook5
@@ -50,15 +53,17 @@
         xz
         zip
         nox
-#        xhyve        compiles normally, figure out hypervisor framework issue
-#        lastpass-cli no worky on osx TODO fix this it works on homebrew
+        mutt
+        duply
         pylint
         python27Packages.howdoi
-#        python27Packages.youtube-dl
+        python27Packages.youtube-dl
         python27Packages.pyflakes
         python27Packages.flake8
         python27Packages.virtualenv
         python27Packages.pip
+#        xhyve        compiles normally, figure out hypervisor framework issue
+#        lastpass-cli no worky on osx TODO fix this it works on homebrew
       ];
     };
     myHaskellEnv =
