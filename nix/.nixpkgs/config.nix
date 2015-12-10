@@ -1,25 +1,53 @@
-{ pkgs }: {
-  packageOverrides = pkgs_: with pkgs_; {
+{pkgs}: {
+  allowUnfree = true;
+  allowBroken = true;
+
+  packageOverrides = pkgs: with pkgs; {
+    pinentry = pkgs.pinentry.override {
+      gtk2 = null;
+      qt4 = null;
+      ncurses = null;
+    };
+    gnupg = pkgs.gnupg.override {
+      x11Support = false;
+      pinentry = true;
+    };
+    youtube-dl = pkgs.youtube-dl.override {
+      pandoc = null;
+    };
+
+    # haskellPackages = haskellPackages.override {
+    #   extension = self : super : {
+    #     cabal = pkgs.haskellPackages.cabalNoTest;
+    #   };
+    # };
+
     default = with pkgs; buildEnv {
+
       name = "default";
+
       paths = [
         ansible
         ack
         aria
         iperf
+        cacert
         curl
         clang
         clang-analyzer
+        diffutils
+        patchutils
         gitAndTools.gitFull
+        gitAndTools.git-extras
         bazaarTools
-        mercurialFull
+        mercurial
         subversionClient
         gist
         mercurial
         docbook5
         entr
         emacs
-        gnupg1
+        gnupg1compat
         gnutar
         gnumake
         sloccount
@@ -30,6 +58,7 @@
         gdbm
         mosh
         htop
+        imagemagick
         keychain
         silver-searcher
         aspell
@@ -51,10 +80,13 @@
         unzip
         upx
         xz
-        zip
+        p7zip
+        unrar
+        watch
         nox
         mutt
         duply
+        zsh
         pylint
         python27Packages.howdoi
         python27Packages.youtube-dl
@@ -66,30 +98,30 @@
 #        lastpass-cli no worky on osx TODO fix this it works on homebrew
       ];
     };
-    myHaskellEnv =
-      pkgs_.haskell.packages.ghc7102.ghcWithPackages
+    env_hs =
+      pkgs.haskell.packages.ghc7102.ghcWithPackages
           (haskellPackages: with haskellPackages; [
-              aeson
-              arrows
-              async
+              alex
+              happy
               bake
               cabal-dependency-licenses
               cabal-install
-              case-insensitive
+              cabal-meta
+              ghc-core
               ghc-mod
+              hasktags
               hindent
               hoogle
               hspec
-              inline-c
+              idris
               pandoc
               shake
               ShellCheck
               stack
               stylish-haskell
-              wreq
+              nats
+              transformers-compat
               ]
           );
   };
-  allowUnfree = true;
-  allowBroken = true;
 }
