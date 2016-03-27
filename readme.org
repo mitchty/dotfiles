@@ -1,0 +1,147 @@
+#+TITLE: Dotfiles Everywhere
+#+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
+#+BABEL: :cache yes
+#+PROPERTY: header-args :tangle no :comments no
+
+In the long long ago (2015), I used xstow and update-dotdee to construct my
+dotfiles from tiny pieces of files.
+
+I have since evolved to this setup. Originally the intention was to make it easy
+for me to compile dotfiles based on certain parameters. Aka, my dotfiles are the
+same for x, y, and z, whatever those are, but for certain cases z should have
+one section be different or added etc... as the case may be.
+
+Aka it was just a glorified program or templating system.
+
+Since I already use org-mode to build my emacs configuration,
+why not just do the same for the dotfiles. Bonus, now I can have ALL
+my dotfiles in one logical file that can build itself.
+
+So now if you want to look at my dotfiles, they're all in here. With one
+caveat that my emacs configuration is not. That is still separate, I might
+change that at some point in the future, but that day is not today.
+
+* Use
+
+Use of this setup is simple in general. There really is generally one step:
+- make
+
+??? HOW ???
+
+Well the Makefile is pretty basic, start there. But generally here is how
+the sausage is being made.
+
+There are a couple helper scripts:
+- etangle, aka emacs tangle, which is just a wrapper around emacs+org for
+  the commandline/makefile to use.
+- ddiff, a rather stupid shell script that recursively diffs directory a
+  to directory b, ignoring files that do not exist in directory b but
+  exist in a (aka new files).
+
+** Explanation of what is happening
+
+The prelude controls org variables that change how files get tangled to files.
+
+This allows me to tangle files that would be useful for linux/bsd/etc...
+without affecting the existing files.
+
+The general idea is this (look at Makefile for details):
+- increment generation count from last generation
+- tangle files to tmp/$filename based on current settings
+- copy tmp to generation/N
+- iff generation/(N-1) exists, diff each file there to what exists at DEST
+- If diffing fails, the destination files have been updated, STOP, might lose
+  hand edited changes. Note, if destination does not exist, this is ignored.
+  Also setting FORCE will ignore this check.
+- If diffing does not fail, hardlink generation/N/$files to DEST/$files
+- Update last with current generation.
+
+Note, the destination can be anywhere, not just $HOME. This allows one to
+compile/tangle files that can then be trivially rsynced to remote machines,
+or to tar/xz the files as needed. The key here is emacs is only required
+to generate config files.
+
+#+BEGIN_SRC sh :tangle no :results none
+make tmp
+#+END_SRC
+
+* ~/.hushlogin
+
+Because who gives a rats when and where I last logged on from?
+
+#+BEGIN_SRC conf :tangle tmp/.hushlogin :results replace
+
+#+END_SRC
+
+* ~/.gitconfig
+
+General git configuration.
+
+#+BEGIN_SRC conf :tangle tmp/.gitconfig :results replace
+[pager]
+  color = true
+[color]
+  status = auto
+  diff = auto
+  branch = auto
+[color "status"]
+  added = green
+  changed = blue
+  untracked = red
+[color "branch"]
+  current = green
+  local = blue
+  remote = red
+[color "diff"]
+  meta = blue bold
+  frag = black reverse
+  old = red reverse
+  new = green reverse
+[alias]
+  begin = !sh -c 'git init && git commit --allow-empty -m "Initial commit"'
+  up = !sh -c 'git pull --rebase && git push'
+  wsdiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space --ignore-all-space
+  wdiff = diff --color-words
+  ci = commit
+  ciu = commit --all
+  co = checkout
+  ds = diff --stat
+  ba = branch --all
+  st = status --short --branch
+  s = status --short --branch --untracked-files=no
+  unstage = reset HEAD
+  tlog = log --graph --color=always --abbrev-commit --date=relative --pretty=oneline
+  hist = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  slog = log --oneline --decorate
+  fixup = commit --fixup
+  squash = commit --squash
+  ri = rebase --interactive --autosquash
+  ra = rebase --abort
+  effit = reset --hard
+  # What commits differ between branches, note, equivalent commits are omitted.
+  # Use this with three dot operator aka master...origin/master
+  cdiff = log --left-right --graph --cherry-pick --oneline
+  # Same as ^ only equivalent commits are listed with a = sign.
+  cmdiff = log --left-right --graph --cherry-mark --oneline
+[github]
+  user = mitchty
+[credential]
+  helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc
+[advice]
+  statushints = false
+[gui]
+  fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+  fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+[http]
+  postBuffer = 209715200
+	sslcainfo = ~/.nix-profile/etc/ca-bundle.crt
+[push]
+  default = simple
+[url "https://github.com/"]
+	insteadOf = git://github.com/
+[user]
+  name = Mitch Tishmack
+  email = mitch.tishmack@gmail.com
+#+END_SRC
