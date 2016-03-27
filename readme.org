@@ -3,7 +3,7 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :tangle yes :comments no
+#+PROPERTY: header-args :tangle yes :comments no :padline no
 
 In the long long ago (2015), I used xstow and update-dotdee to construct my
 dotfiles from tiny pieces of files.
@@ -25,7 +25,7 @@ change that at some point in the future, but that day is not today.
 
 * Use
 
-Use of this setup is simple in general. There really is generally one step:
+Use of this setup is simple. There really is one step:
 - make
 
 ??? HOW ???
@@ -39,6 +39,11 @@ There are a couple helper scripts:
 - ddiff, a rather stupid shell script that recursively diffs directory a
   to directory b, ignoring files that do not exist in directory b but
   exist in a (aka new files).
+
+NOTE: Removal of files is YOUR job, not this thing. One could
+theoretically look at what changed between two generations and
+remove that. BUT that sounds janky and error prone. Removal of
+files is the users job, not this setup.
 
 ** Explanation of what is happening
 
@@ -63,8 +68,8 @@ compile/tangle files that can then be trivially rsynced to remote machines,
 or to tar/xz the files as needed. The key here is emacs is only required
 to generate config files.
 
-#+BEGIN_SRC sh :tangle no :results none
-install -dm755 tmp
+#+BEGIN_SRC sh :tangle (make-directory "tmp" ".")
+# cheap hack to work around org-mode shenanigans
 #+END_SRC
 
 * ~/.hushlogin
@@ -78,12 +83,17 @@ Because who gives a rats when and where I last logged on from?
 
 Mkdir on tmp/bin to start
 
-#+BEGIN_SRC sh :results none
-install -dm755 tmp/bin
+#+BEGIN_SRC sh :tangle (make-directory "tmp/bin" ".")
+# you'll see a lot of these cheap hacks ahead
 #+END_SRC
 
 ** ~/bin/cidr
-#+BEGIN_SRC perl :tangle tmp/bin/cidr :results replace
+
+A stupid script I wrote ages ago to help me be lazy with cidr
+notation for stuff. Setup the wrong netmask a few times and
+you too, will wish for something similar.
+
+#+BEGIN_SRC perl :tangle tmp/bin/cidr :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Convert input ip/cidr|netmask|hexnetmask to useable network information.
@@ -228,6 +238,510 @@ foreach my $arg (@ARGV){
 };
 #+END_SRC
 
+** ~/bin/dns
+
+Just a silly dns script that slighly mimics the old host utility
+of yore. Can also do reverse lookups.
+
+Example:
+$ dns google.com
+google.com is 216.58.216.206
+google.com is also google.com
+$ dns 216.58.216.206
+ord31s21-in-f206.1e100.net is 216.58.216.206
+ord31s21-in-f206.1e100.net is also ord31s21-in-f206.1e100.net
+
+#+BEGIN_SRC perl :tangle tmp/bin/dns :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Stupid script to help with dns information. Solaris 9/8 lack the host utility.
+# Which this (kinda) mimics, except the mx record crap
+use strict;
+use warnings;
+use Socket;
+use Sys::Hostname;
+
+my $input = shift || hostname();
+my $lookup = $input;
+
+if ( $lookup =~ /\d+[.]\d+[.]\d+[.]\d+/smx ) {
+  $lookup = ( gethostbyaddr inet_aton($lookup), AF_INET )[0];
+  die "Error: Unable to reverse lookup ip $input.\n" if ( $lookup eq q{} );
+}
+
+my $ipv4 = gethostbyname $lookup;
+
+die "Error: $lookup doesn't have any known ip addresses\n"
+  if ( !defined $ipv4 );
+
+$ipv4 = inet_ntoa($ipv4);
+
+my ( $short_name, $aliases, $addrtype, $len, @addrs ) = gethostbyname $lookup;
+
+foreach my $ipv4 (@addrs) {
+  $ipv4 = inet_ntoa($ipv4);
+  print "$lookup is $ipv4\n";
+}
+
+print "$lookup is also $short_name\n";
+if ( defined $aliases and "$aliases" ne q{} ) {
+  print "aliases are ($aliases)\n";
+}
+exit 0;
+#+END_SRC
+
+** ~/bin/ts
+
+Stupid simple timestamp script that just takes input, and prefixes a timestamp to to output. Thats it.
+
+#+BEGIN_SRC perl :tangle tmp/bin/ts :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Timestamp stdin and then print to stdout and flush.
+#
+# Thats about it. Might add a quick and dirty option to allow you to
+# specify the time output whatnot. But this is intended to be simple.
+use strict;
+use warnings;
+use POSIX qw(strftime);
+use IO::Handle;
+STDOUT->autoflush(1);
+
+while(<STDIN>){
+  my $now       = time;
+  my $tz        = strftime(('%z', (localtime $now)));
+  $tz =~ s/(\d{2})(\d{2})/$1:$2/smx;
+  my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
+  print "$time$tz ".$_;
+};
+#+END_SRC
+
+** ~/bin/diskhog
+
+Old script I wrote after I had to figure out where space was used and it was mostly all in a directory with a ton of small files.
+
+Written in anger. Not all that useful nominally.
+
+Defaults to /tmp if you don't specify where, also defaults to the top 10 offenders/users of space.
+
+Its not particuarly bright, or even good code. If you want ALL THE THINGS, pass -n -1 in and you will get a ton of output. Good luck with that.
+
+Example:
+$ diskhog
+1.79m    /private/tmp
+1.38m    /private/tmp/wifi-Ea5Y9F.log
+420.57k  /private/tmp/sysp.xml
+161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=/ksfetch
+161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
+0.00k    /private/tmp/com.apple.launchd.yaVsd6J1re
+0.00k    /private/tmp/cvcd
+0.00k    /private/tmp/com.apple.launchd.IPS1lPqGTD
+0.00k    /private/tmp/com.apple.launchd.voZH6WFol3
+0.00k    /private/tmp/ct.shutdown
+$ diskhog -n 4 /tmp
+1.79m    /private/tmp
+1.38m    /private/tmp/wifi-Ea5Y9F.log
+420.57k  /private/tmp/sysp.xml
+161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
+
+#+BEGIN_SRC perl :tangle tmp/bin/diskhog :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Find out who is hogging disk space and where.
+#
+# Argument is the directory to start from. Only calculates size of files.
+# Adds the size of files in a directory to the size of the parent directory only.
+#
+# Defaults to top 10 directories/files.
+#
+# Override with -n num to list whatever amount of large things you desire.
+# Or if you want to abuse the parser, use -1 for all files/directories.
+#
+# Defaults to pwd for space.
+#
+
+use File::Find;
+use Getopt::Long;
+use Cwd;
+
+my $debug;
+my $statbug;
+(exists($ENV{"DEBUG"})) ? $debug++ : undef;
+my $dir = Cwd::abs_path($ARGV[-1] || Cwd::getcwd());
+my %diskhogs = ();
+my %inodes = ();
+my ($topdev,undef,undef,undef,undef,undef,undef,undef) = lstat($dir);
+local $opt_displaynum = 10;
+
+GetOptions( 'n=i',  => \$opt_displaynum,
+      );
+
+find(\&sieve, $dir);
+
+#
+# For outputing the size of a bunch of bytes in g/m/k depending upon the size
+#
+sub byte_print {
+  my $byte_k = 1_024;
+  my $byte_m = $byte_k**2;
+  my $byte_g = $byte_k**3;
+  my $bytes = pop;
+  my $base = $bytes;
+  my $suffix = "nil";
+  my $out_string = "BUG";
+  if($bytes > $byte_g){
+    $base = $bytes / $byte_g;
+    $suffix = "g";
+  }elsif($bytes > $byte_m){
+    $base = $bytes / $byte_m;
+    $suffix = "m";
+  }else{
+    $base = $bytes / $byte_k;
+    $suffix = "k";
+  };
+  $out_string = sprintf("%.2f%s", $base, $suffix);
+  return $out_string;
+};
+
+#
+# Dumb function to return if an inode has already been seen.
+# So we handle hard links sane(er-ish-ly) in size calculations.
+# This has more truthiness(tm).
+#
+sub seeninode{
+  my $what = pop();
+  my $ret = 0;
+  unless(exists($inodes{$what})){
+    $inodes{$what} = 0;
+    print "New inode $what added to seen inodes.\n" if $debug;
+  }else{
+    $inodes{$what}++;
+    $ret++;
+    print "Found a hardlink for $what.\n" if $debug;
+  };
+  return $ret;
+};
+
+sub sieve {
+  my $file = $File::Find::name;
+  my $filedir = $File::Find::dir;
+  my @statinfo = lstat($file);
+  my $dev = $statinfo[0];
+  my $inode = $statinfo[1];
+  my $size = $statinfo[7];
+  my $blocksize = 512; # field 11 is the "preferred" block size, which appears
+                       # to not match the actual blocksize of the filesystems
+                       # in use. For now every hard drive uses 512bytes/block.
+                       # Will revisit this when 4096byte/block hard drives arrive
+  my $apparentsize = $statinfo[12] * $blocksize;
+
+  print "$file\@$filedir \<$topdev\>\=\<$dev\>\n" if $debug;
+  print "size,apparentsize,blocksize = <$statinfo[7],$apparentsize\,$blocksize\>\n" if $debug;
+  #
+  # Try to handle sparse files.
+  #
+  if ($size > $apparentsize) {
+    print "Sparse file $file!\n" if $debug;
+    $size = $apparentsize;
+  };
+
+  $dev = (-l $file) ? 0xdeadbeef : $dev;
+  if (($file =~ m/\/proc|\/chroot|udev\/devices/) ||
+      ($dev != $topdev) || seeninode($inode)){
+    print "Pruned $file.\n" if $debug;
+    $File::Find::prune = 1;
+    next;
+  };
+  unless ($dev){
+    # Yay, we can't l(stat) files. This version of perl is broken.
+    # Snag information from ls, assume it's a file. Thanks Solaris 8, you suck.
+    $statbug++;
+    warn "Hit empty device statbug while stat()ing file <$file>.\n";
+    my $ls = qx(ls -ld $file);
+    my @raw = split(/\s+/, $ls);
+    $diskhogs{"$file"} = $raw[4];
+    $diskhogs{"$filedir"} += $raw[4];
+  }elsif (-f){
+    if ($debug){
+      print "Adding $file size ", &byte_print($size), " to $filedir.\n";
+      print "Adding $file size ", &byte_print($size), "\n";
+    };
+    $diskhogs{"$file"} = $size;
+    $diskhogs{"$filedir"} += $size;
+  }elsif (-d){
+    print "Adding $file size ".&byte_print($size)."\n" if $debug;
+    $diskhogs{"$file"} += $size;
+  };
+  if ($debug) {
+    print "$file from $filedir has size ".&byte_print($diskhogs{"$file"})."\n";
+  };
+};
+
+#
+# Reverse sort the keys by size.
+#
+my @sorted = sort {$diskhogs{$b} <=> $diskhogs{$a}} keys %diskhogs;
+
+splice @sorted, $opt_displaynum if @sorted > $opt_displaynum;
+
+warn "Found one or more instances of the stat() call statbug. This is normally only present on Solaris 8 with stock perl.\n" if $statbug;
+
+foreach (@sorted){
+  printf "%-9s%s\n", &byte_print($diskhogs{$_}), $_;
+};
+
+if ($debug){
+  print "DEBUG INFORMATION:\n";
+  foreach (keys %diskhogs){
+    printf "%-9s%s\n", &byte_print($diskhogs{$_}), $_;
+  };
+};
+#+END_SRC
+** ~/bin/ifinfo
+
+I don't remember now why I wrote this but its just a simpler view
+of interfaces on a system.
+
+Probably some old solaris holdover thing I can nuke.
+
+Example:
+$ ifinfo
+gif0@1280        127.0.0.1/8        a:b:c:d:e:f
+en1@1500         10.1.10.15/24      a:b:c:d:e:f
+bridge100@1500   192.168.64.1/24    a:b:c:d:e:f
+
+Comes in slightly handy, no guarantees it parses ifconfig right tho.
+
+#+BEGIN_SRC perl :tangle tmp/bin/ifinfo :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Because ifconfig output is... overly verbose.
+#
+# Output information from ifconfig -a like so:
+#   interface:mtu ipv4/cidr mac_address ipv6_addr(if applicable)
+#   ipv6 is not yet in place due to a: lazy, b: can't use it yet.
+#
+
+use strict;
+use Socket;
+use Sys::Hostname;
+$ENV{'PATH'}='/sbin:/usr/sbin:/bin:/usr/bin';
+
+my ($fqdn_regexp) = qr/([0-9,a-z,A-Z,\-,\_]+)\.([0-9,a-z,A-Z,\-,\_]+)\.(com|gov)/;
+
+#
+# converts a 1-word (4 byte) signed or unsigned integer into a dotted decimal
+# ip address.
+#
+sub int2ip {
+  my $n=int(pop);
+  return(sprintf("%d.%d.%d.%d", ($n>>24)&0xff,($n>>16)&0xff,
+    ($n>>8)&0xff,$n&0xff));
+};
+
+#
+# Convert a host/ip/netmask/cidr/etc.... to a hash of information
+# Example: host.domain.tld/24 will get the ip and calculate the netmask info
+#  equally if host.domain.tld corresponds with 1.2.3.4 the following is valid
+#  1.2.3.4/255.255.255.0 would obtain the same information.
+#
+# die()'s if anything isn't kosher.
+#
+# Ultra long function, probably needs to be looked at for condensing/splitting.
+#
+sub cidr2raw {
+  my $rawinput = pop;
+  my ($lhs, $rhs, $j, $uip) = (undef, undef, undef, undef);
+  my ($ucidr) = 0;
+  my ($network, $bits, $netmask, $broadcast, $low, $high);
+
+  if ($rawinput =~ qr/(.*)\/(.*)/){
+      $lhs = $1; $rhs = $2;
+  }else{
+    die "Input: $rawinput not expected.\n";
+  };
+
+  #
+  # Handle ip/hostname for left hand side.
+  if ($lhs =~ qr/(\d+)\.(\d+)\.(\d+)\.(\d+)/){
+    foreach my $dotted (($1,$2,$3,$4)){
+      if (($dotted > 255) or ($dotted < 0)){
+        die "FATAL: ipv4 address entered, $lhs entered is impossible, $dotted is not between 0-255.\n";
+      };
+    };
+    $uip = "$1.$2.$3.$4";
+  };
+  #
+  # Handle the netmask/cidr for the right hand side,
+  #
+  # All input netmasks are converted to a cidr address for notation
+  if ($rhs =~ qr/^(\d+)$/){ # /cidr
+    $ucidr = $1;
+    die "FATAL: Invalid CIDR <$ucidr>.$!\n" if (($ucidr > 32) or ($ucidr < 0));
+  }elsif ($rhs =~ qr/(0[xX])?([0-9,a-f,A-F]{7})/){ # /0xhexnetmask
+    my $trimmed = $2;
+    my $insane = 0;
+    foreach my $byte (split('', unpack("B32", pack("H*", $trimmed)))){
+      ($byte) ? $ucidr++ : $insane++;
+      die "FATAL: $rhs is not a valid hex netmask.$!\n" if ($insane and $byte);
+    };
+  }elsif ($rhs =~ qr/(\d+)\.(\d+)\.(\d+)\.(\d+)/){ # /255.255.255.0 form
+    my @a = ($1, $2, $3, $4);
+    my $insane = 0;
+    foreach my $t (@a){
+      die "FATAL: Netmask out of range. Input <$rhs> Invalid <$t>$!\n" if (($t < 0) or ($t > 255));
+    };
+    foreach my $byte (split('', unpack("B32", pack("C4", @a)))){
+      ($byte) ? $ucidr++ : $insane++;
+      die "FATAL: $rhs is not a valid netmask.$!\n" if ($insane and $byte);
+    };
+  }else{
+    die "FATAL: Unknown or invalid netmask value entered. <$rhs>\n";
+  };
+
+  #
+  # Network math GO! This is the meat of the function.
+  my (@uip) = split(/\./, $uip);
+  $network = 0;
+  for ($j = 0; $j <= $#uip; $j++){
+    $network += int($uip[$j])<<((3-$j)*8);
+  };
+
+  $bits = 0; $j = 0;
+  for ($j = 31 - $ucidr; $j >= 0; $j--){
+    $bits |= 1<<$j;
+  };
+
+  $netmask = 0xffffffff^$bits;
+  $low = ($network&$netmask);
+  $high = ($network&$netmask)+$bits-1;
+  $broadcast = ($network&$netmask)|$bits;
+
+  #
+  # Throw the info back, they get a hash with zie info they may/may not need.
+  # All up to the caller what they want to use.
+  #
+  return ("inet4" => $uip,
+          "netmask" => int2ip($netmask),
+          "broadcast" => int2ip($broadcast),
+          "cidr" => $ucidr,
+          "router" => int2ip($low+1),
+          "network" => int2ip($low),
+          "high" => int2ip($high),
+          );
+};
+
+my @ifout;
+if ($ENV{'TESTING'} ne '') {
+    while(<>){
+        chomp($_);
+        last if ($_ eq '');
+        push(@ifout, $_);
+#        sleep 1;
+#        print STDERR $_ . "\n";
+    }
+}else{
+    open IFCONFIG, "ifconfig -a |";
+    @ifout = <IFCONFIG>;
+    close IFCONFIG;
+}
+
+# This seems wrong but it makes parsing easier due to solaris
+# non root ifconfig not displaying the mac address. Reverse the output.
+#
+@ifout = reverse(@ifout);
+
+my @output = ();
+
+my ($ifname, $ifether, $ifmtu, $ifipv4, $ifnetmask, $ifipv6) = (undef,undef,undef,undef,undef,undef);
+sub printiface{
+  # assume a /32 if we don't know it
+  unless (defined($ifnetmask)) {
+    warn "$ifname has indeterminant netmask assuming /32\n";
+    $ifnetmask = '32';
+  }
+
+  unless (defined($ifnetmask)) {
+    $ifether = 'unknown';
+  }
+
+  unless ($ifname =~ m/lo.*/){
+    my %netinfo = cidr2raw("$ifipv4\/$ifnetmask");
+    $ifnetmask = $netinfo{"cidr"};
+    $ifether = lc($ifether);
+    my $line = sprintf "%-16s %-18s %-17s\n", "$ifname\@$ifmtu", "$ifipv4\/$ifnetmask", $ifether;
+    push @output, $line;
+  }
+
+  # reset vars
+  ($ifname, $ifether, $ifmtu, $ifipv4, $ifnetmask, $ifipv6) = (undef,undef,undef,undef,undef,undef);
+};
+
+foreach my $line (@ifout) {
+  if ($line =~ /inet\s+(\d+[.]\d+[.]\d+[.]\d+)\s+/){
+    $ifipv4 = $1;
+  }
+  if ($line =~ m/ether\s([:,0-9,a-f,A-F]{11,})/){
+    $ifether =$1;
+  }
+  if ($line =~ m/^([\w,\:\d+]+)\s+.*HWaddr\s([:,0-9,a-f,A-F]{11,})/){
+    $ifname = $1;
+    $ifether = $2;
+  }
+  if ($line =~ m/^(.*)\:\s+.*mtu\s(\d+)/){
+    $ifname = $1;
+    $ifmtu = $2;
+  }
+  if ($line =~ m/MTU[:](\d+)/){
+    $ifmtu = $1;
+  }
+  if ($line =~ m/inet\saddr\:(\d+[.]\d+[.]\d+[.]\d+)/){
+    $ifipv4 = $1;
+  }
+  if ($line =~ m/netmask\s+(0[xX])?([a-f,A-F,0-9]{8})/){
+    $ifnetmask = $2;
+  }
+  if ($line =~ m/Mask[:](\d+\.\d+\.\d+\.\d+)/){
+    $ifnetmask = $1;
+  }
+  if ($line =~ m/netmask\s+(\d+[.]\d+[.]\d+[.]\d+)/){
+    $ifnetmask = $1;
+  }
+  if ($line =~ m/netmask\s+0\s+broadcast/){
+    $ifnetmask = '0';
+  }
+
+  print ":$ifether:$ifname:$ifmtu:$ifipv4:$ifnetmask:$ifipv6:\n" if ($ENV{'DEBUG'} ne '');
+  printiface() if ($ifname and $ifmtu and $ifipv4 );
+};
+
+if (scalar(@output) < 1){
+  warn "No interfaces? Scripts busted yo.\n";
+}else{
+  foreach my $line (reverse(@output)){
+    print $line;
+  }
+}
+#+END_SRC
+** ~/bin/iso8601
+
+Mostly because I use iso8601 timestamps and its nice to use them
+generally without depending on gnu date.
+
+#+BEGIN_SRC perl :tangle tmp/bin/iso8601 :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#-*-mode: Perl; coding: utf-8;-*-
+use strict;
+use warnings;
+use POSIX qw(strftime);
+
+my $now       = time;
+my $tz        = strftime(('%z', (localtime $now)));
+$tz =~ s/(\d{2})(\d{2})/$1:$2/smx;
+my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
+print "$time$tz\n";
+exit 0;
+#+END_SRC
 * ~/.gitconfig
 
 General git configuration.
@@ -297,10 +811,4 @@ General git configuration.
 [user]
   name = Mitch Tishmack
   email = mitch.tishmack@gmail.com
-#+END_SRC
-
-* chmod 755 tmp/bin/*
-
-#+BEGIN_SRC sh :tangle no :results none
-chmod 755 tmp/bin/*
 #+END_SRC

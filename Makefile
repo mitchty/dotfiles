@@ -30,8 +30,8 @@ $(LASTGEN):
 generation/$(GEN):
 	install -dm755 $@
 
-generation: $(NEXTGEN) $(LASTGEN)
-	cd tmp && cp -r . $(NEXTGEN)
+generation: $(NEXTGEN) $(LASTGEN) tmp
+	cd tmp && cp -av . $(NEXTGEN)
 
 check:
 
@@ -44,10 +44,11 @@ tangle-next:
 	$(MAKE) tangle
 	$(MAKE) generation
 	$(MAKE) next
-	$(MAKE) copy
+	$(MAKE) copy GEN=$(NEXT)
 	@echo $(NEXT) > last
 
 copy:
+	cd $(PWD)/generation/$(GEN) && find . -type f -exec rm -f $(DEST)/{} \;
 	cd $(PWD)/generation/$(GEN) && cp -r . $(DEST)
 
 tangle: tmp
