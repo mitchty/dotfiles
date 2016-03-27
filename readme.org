@@ -4,6 +4,10 @@
 #+STARTUP: odd
 #+BABEL: :cache yes
 #+PROPERTY: header-args :tangle yes :comments no :padline no
+#+headers: :var nix=f
+#+headers: :var osx=f
+#+headers: :var linux=f
+#+headers: :var bsd=f
 
 In the long long ago (2015), I used xstow and update-dotdee to construct my
 dotfiles from tiny pieces of files.
@@ -742,6 +746,311 @@ my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
 print "$time$tz\n";
 exit 0;
 #+END_SRC
+** ~/bin/whoson
+
+Basically getent passwd $username/$uid to show who is on a system.
+
+#+BEGIN_SRC perl :tangle tmp/bin/whoson :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Because i'm lazy and sick of typing in getent passwd $someusername/uid
+#
+
+my %who_cmds = ("solaris", "/bin/who -q",
+                "linux", "/usr/bin/who -q",
+                "darwin", "/usr/bin/who -q",
+               );
+
+my $who_cmd = $who_cmds{$^O};
+
+local %users = ();
+
+foreach my $l (qx/$who_cmd/){
+  next if($l =~ m/^\#.*/);
+  foreach my $user (split(/\s+/,$l)){
+    unless(exists($users{$user})){
+      $users{$user} = 0;
+    }else{
+      $users{$user}++;
+    };
+  };
+};
+
+foreach my $user (keys %users){
+  my $gecos = ( getpwnam($user) )[6];
+  my $count = $users{$user} + 1;
+  my $output = "$user\, ".((defined($gecos)) ? "$gecos, " : '')."is logged in on $count tty".(($count>1) ? "\'s" : '')."\n";
+  print $output;
+};
+#+END_SRC
+** ~/bin/gecos
+
+Silly wrapper perl script that makes it easier to get at the gecos string for a $user/$uid.
+
+#+BEGIN_SRC perl :tangle tmp/bin/gecos :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Dumb wrapper to get the gecos information from a uid/username.
+
+foreach my $input (@ARGV){
+  my $gecos = undef;
+  my $uid = undef;
+  my $name = undef;
+  if ( $input =~ m/^\d+$/ ) {
+    ( $name,$uid,$gecos ) = ( getpwuid($input) )[0,2,6];
+  } else {
+    ( $name,$uid,$gecos ) = ( getpwnam($input) )[0,2,6];
+  }
+  print "$name is '$gecos' uid '$uid'\n" if $gecos;
+}
+#+END_SRC
+** ~/bin/hatimerun
+
+Stupid perl script to mimic hatimerun for systems that don't have it.
+
+#+BEGIN_SRC perl :tangle tmp/bin/hatimerun :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# hatimerun in perl, sorta
+#
+use Getopt::Long;
+
+my $opt_exitcode = 99;
+my $opt_killcode = 9;
+my $opt_timeout = 60;
+
+GetOptions( 'e=i' => \$opt_exitcode,
+            'k=i' => \$opt_killcode,
+            't=i' => \$opt_timeout,
+            'h' => \&opt_help,
+            'help' => \&opt_help,
+);
+
+sub opt_help{
+  my $message = <<__END__;
+UX: ERROR: invalid syntax
+usage: [-e return code][-k kill signal][-t seconds to wait]
+       [-h][--help]
+
+  Options
+      --help, -h     Prints this help text.
+      -e             Exit code to return on timeout.
+                     NOTE: 99 by default.
+      -k             Signal number to send via kill.
+                     NOTE: 9 by default.
+      -t             Timeout in seconds before alarming.
+                     NOTE: 60 by default.
+
+__END__
+  print $message;
+  exit 1;
+};
+
+my $pid;
+
+local $SIG{ALRM} = sub { kill $opt_killcode, $pid or die "Kill failed: $!";
+                         die "Timeout!\n"};
+
+eval{
+  my $x = defined($pid = fork());
+
+  unless ($pid){
+    print qx(@ARGV);
+    die "Exec of ", join(' ', @ARGV), " failed at $!\n";
+  };
+
+  alarm $opt_timeout;
+  waitpid $pid => 0;
+  alarm 0;
+  exit 0;
+};
+
+if ($@){
+  die "Nothing to do!\n" unless $@ eq "Timeout!\n";
+  exit $opt_exitcode;
+}else{
+  exit 0;
+};
+#+END_SRC
+
+** ~/bin/ptree.pl
+
+Silly perl based ptree alike implementation. Mad old code that should be avoided at all costs but it works and I'm not fixing it unless I need to.
+
+#+BEGIN_SRC perl :tangle tmp/bin/ptree.pl :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# ptree for linux/darwin/solaris. I got sick of ps and pstree on linux.
+# ptree works on solaris fine, but doesn't exist for darwin/linux/etc...
+#
+# TODO: Allow passing a regexp instead of a pid and passing multiple pids.
+#
+
+local $ENV{"PATH"} = '/bin:/usr/bin:/sbin:/usr/sbin';
+local $debug = 0;
+
+(exists($ENV{"DEBUG"})) ? $debug = 1 : undef;
+($debug) ? local $| = 1 : undef; # disable buffering for STDERR and STDOUT
+
+sub debug_print {
+  ($debug) && warn pop;
+};
+
+local @cmd = ('/bin/ps');
+local $init = 0;
+local $start = 1;
+
+if ($^O eq "linux"){
+  push(@cmd, 'ajxSw');
+  $start = 0;
+}elsif ($^O =~ m/darwin|freebsd/){
+  push(@cmd, 'Ajwww');
+}elsif ($^O eq "solaris"){
+  @cmd = ('/usr/ucb/ps');
+  if ((-x "/bin/zonename") && !(qx(zonename) eq "global\n")){
+    $init = qx(pgrep zsched);
+    chomp($init);
+    $start = $init;
+  };
+  push(@cmd, 'laxwww');
+}else{
+  die "$^O isn't a known os to this script\n";
+};
+
+local @ps = qx(@cmd);
+($?) ? die $cmd[0]." posix return code $?\n" : undef;
+
+local %proc;
+local @trail;
+
+(defined($ARGV[0])) ? $start = $ARGV[0] : undef;
+
+debug_print("Dump of raw line array data:\n");
+
+foreach my $x (@ps){
+  my $cmd_index = 9;
+  my $ppid = -1;
+  my $pid = -1;
+  next if ($x =~ m/.*PID.*/);
+  my @line = split(m/\s+/,$x);
+  splice(@line, 0, 1) unless ($line[0] =~ m/\d+/);
+  splice(@line, 0, 1) if ("$line[0]" eq "");
+
+  if ($^O eq "linux"){
+    ($ppid,$pid) = @line;
+    $cmd_index = 9;
+  }elsif ($^O =~ m/darwin|freebsd/){
+    ($pid,$ppid) = @line;
+    $cmd_index = 8;
+  }elsif ($^O eq "solaris"){
+    (undef, undef, $pid,$ppid) = @line;
+    for($x=$cmd_index; $x < 14; $x++){
+      $cmd_index = ($line[$x] =~ m/\d+\:\d+/) ? ($x + 1) : $cmd_index;
+    };
+  };
+
+  my $command = join(' ', @line[$cmd_index..$#line++]);
+  (!defined $proc{$pid}) ? $proc{$pid}->{"children"} = [ ] : undef;
+  (!defined $proc{$ppid}) ? $proc{$ppid}->{"children"} = [ ] : undef;
+  $proc{$pid}->{"pid"} = $pid;
+  $proc{$pid}->{"command"} = $command;
+  $proc{$pid}->{"ppid"} = $ppid;
+  push(@{$proc{$ppid}->{"children"}},$pid);
+  debug_print(join(',', @line[0..($#line-1)])."\n");
+};
+
+if ($debug){
+  debug_print("Done reading ps output\nDump of Hash\n");
+  foreach my $key (sort({$a <=> $b} (keys %proc))){
+    $ppid = $proc{$key}->{"ppid"};
+    $command = $proc{$key}->{"command"};
+    $children = join(',', @{$proc{$key}->{"children"}});
+    debug_print("PID<$key> PPID<$ppid> Children<$children> Command<$command>\n");
+  };
+};
+
+sub intrail{
+  my $crumb = pop;
+  my $ret = 0;
+  map {$ret++ if ($crumb == $_)} @trail;
+  return $ret;
+};
+
+sub addchildren{
+  my $start_node = pop;
+  foreach my $child (@{$proc{$start_node}->{"children"}}){
+    next if (!defined($child) || ($start_node == $child));
+    debug_print("Start ($start_node) Add child $child.\n");
+    push(@trail, $child);
+    addchildren($child);
+  };
+};
+
+sub addparents{
+  my $start_node = pop;
+  my $parent = $proc{$start_node}->{"ppid"};
+  return unless (defined($start_node));
+  return if (($parent == $start_node) || !(defined($parent))); # At the top of the tree, or in a zone
+  debug_print("Start ($start_node) Add parent $parent.\n");
+  push(@trail, $parent);
+  addparents($parent) if ($parent != $init);
+};
+
+sub printnode{
+  my $start_node = pop;
+  my $indent = pop;
+  if (intrail($start_node)){
+    my $pid = $proc{$start_node}->{"pid"};
+    my $ppid = $proc{$start_node}->{"ppid"};
+    my $cmdline = $proc{$start_node}->{"command"};
+    my $indentation = '  'x($indent);
+    if ($pid == $init){
+      my $s = $^O." kernel";
+      if ($cmdline ne ''){
+        $s = $s." <$cmdline>";
+      };
+      $cmdline = $s;
+    };
+    printf("%s%d   %s\n", $indentation, $pid, $cmdline);
+    foreach my $child (@{$proc{$start_node}->{"children"}}){
+      next if ($pid == $child);
+      printnode($indent+1,$child);
+    };
+  };
+};
+
+my $valid = 0;
+foreach my $j (keys %proc){ ($j == $start) ? $valid++ : undef; };
+
+debug_print("Starting from <$start>, validity is<$valid>\n");
+
+if ($valid){
+  if (!$start){
+    @trail = keys %proc;
+    push(@trail, $start); push(@trail, 1);
+    debug_print("Done with adding $start to trail.\n");
+  }else{
+    push(@trail, $start);
+    debug_print("Adding children from $start.\n");
+    addchildren($start);
+    debug_print("Adding parents from $start.\n");
+    addparents($start);
+  };
+
+  @trail = sort(@trail);
+
+  debug_print("Trail is: ".join(',', @trail)."\nStarting at pid $start\ninit pid $init\n");
+  print "PID COMMAND\n";
+  my $startindent = 0;
+  (intrail($startindent)) ? $startindent = -1 : undef;
+  printnode($startindent,$init);
+}else{
+  die "pid $start doesn't exist.\n";
+};
+
+exit 0;
+#+END_SRC
+
 * ~/.gitconfig
 
 General git configuration.
@@ -803,17 +1112,480 @@ General git configuration.
   fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
 [http]
   postBuffer = 209715200
-	sslcainfo = ~/.nix-profile/etc/ca-bundle.crt
+  sslcainfo = ~/.nix-profile/etc/ca-bundle.crt
 [push]
   default = simple
 [url "https://github.com/"]
-	insteadOf = git://github.com/
+  insteadOf = git://github.com/
 [user]
   name = Mitch Tishmack
   email = mitch.tishmack@gmail.com
 #+END_SRC
 
+* ~/.gitignore
 
+Common crap/build artifacts that git should always ignore.
+
+#+BEGIN_SRC conf :tangle tmp/.gitignore :results replace
+.*~
+*~
+.\#*
+\#*
+\#*\#
+.\#*\#
+.DS_Store
+*.pyc
+*.rbc
+*.elc
+*.swp
+*.[oa]
+*.hi
+#+END_SRC
+
+* ~/.zprofile
+
+Make sure that zsh sources ~/.profile correctly on login.
+
+#+BEGIN_SRC sh :tangle tmp/.zprofile :results replace
+emulate sh
+source ~/.profile
+emulate zsh
+
+# zsh does this differently
+login_shell()
+{
+  [[ -o login ]]
+}
+#+END_SRC
+* ~/.zshrc
+
+Zsh configuration, its not too crazy... I think. Don't judge me.
+
+#+BEGIN_SRC sh :tangle tmp/.zshrc :results replace
+#-*-mode: Shell-script; coding: utf-8;-*-
+# zsh specific global aliases
+alias -g silent="> /dev/null 2>&1"
+alias -g noerr="2> /dev/null"
+alias -g stdboth="2>&1"
+
+# mainly for firefox, because it can suck up the cycles, but not when
+# in a SIGSTOP state you can't use any power then firefox.
+alias -g sigcont='kill -CONT '
+alias -g sigstop='kill -STOP '
+
+# Keybindings, what few there are.
+bindkey -v
+bindkey '^P' push-line # Saves the current line and returns to it afterwards.
+
+# General history options
+export HISTSIZE=5000
+export SAVEHIST=${HISTSIZE}
+export HISTFILE=~/.zsh_history
+
+# I like my options
+setopt append_history
+setopt extended_history
+setopt hist_reduce_blanks
+setopt hist_no_store
+setopt hist_ignore_dups
+setopt histignorespace
+setopt no_hist_beep
+setopt no_list_beep
+setopt share_history
+setopt inc_append_history
+setopt auto_menu
+setopt bash_auto_list
+
+# Options that don't need to be set.
+unsetopt bad_pattern # No, don't warn me on bad file patterns kthxbai.
+
+# The rest of the story (tm) (c) (r) in option settings.
+setopt equals
+setopt notify
+setopt auto_cd
+setopt glob_dots
+setopt print_exit_value # I love you zsh for this, print out non zero exits.
+
+other_term()
+{
+  case $TERM in
+  *xterm*|*rxvt*|(dt|k|e)term)
+    print -Pn "\e]2;%~\a"
+    ;;
+  sun-cmd)
+    print -Pn "\e]l%~\e\\"
+    ;;
+  *)
+    ;;
+  esac
+}
+
+chpwd()
+{
+  [[ -o interactive ]] || return
+  case $TERM in
+  eterm-color) # getting emacs terminal to not be annoying... sucks
+    print -Pn ""
+    ;;
+  *)
+    if [[ $SSH_TTY != '' ]]; then
+      case $ORIG_TERM in
+      eterm-color)
+        print -Pn ""
+        ;;
+      *)
+        other_term
+        ;;
+      esac
+    fi
+    ;;
+  esac
+}
+
+# Needs to be reviewed a bit.
+zstyle ':completion:*' squeeze-slashes true
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:*:*:*:processes' force-list always
+
+# No need to setup ssh known host parsing as root, just regular users.
+# This is pretty old using compctl, need to update eventually.
+
+if [[ "$LOGNAME" != "root" ]]; then
+    zmodload zsh/mathfunc
+    if [[ -f "$HOME/.ssh/known_hosts" ]]; then
+        hosts=(${${${${(f)"$(<$HOME/.ssh/known_hosts)"}:#[0-9]*}%%\ *}%%,*})
+        zstyle ':completion:*:(ssh|scp|cssh):*' hosts $hosts
+        zstyle ':completion:*:*:*:hosts-host' ignored-patterns '|1|*' loopback localhost
+    fi
+    zstyle ':completion:::complete*' use-cache 1
+
+    # This really should be closer to the definition of extract.
+    compctl -g '*.tar.bz2 *.tbz2 *.tbz *.tar.gz *.tgz *.bz2 *.gz *.jar *.zip *.rar *.tar *.Z *.tZ *.tar.Z' + -g '*(-/)' extract
+fi
+
+# More history options for newer zsh versions
+setopt share_history
+setopt hist_save_no_dups
+setopt hist_find_no_dups
+setopt hist_no_functions
+setopt hist_expire_dups_first
+
+bindkey ' ' magic-space # Complete spaces too dammit, i'm lazy.
+
+alias edirs='ls -d **/*(/^F)' # empty directories
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:kill:*' force-list always
+zstyle ':completion:*:kill:*:processes' command "ps x"
+zstyle ':completion:*' menu select=2
+
+autoload -U compinit
+autoload -U colors && colors
+autoload -Uz vcs_info
+
+bindkey -e
+
+local userat="%{$fg[blue]%}%n%(!.%{$fg[red]%}.%{$fg[blue]%})%{$reset_color%}%B@%b%{$fg[blue]%}%m%b"
+local pwd="%B%~%b"
+local userchar="%(!.#.$)"
+
+zstyle ':vcs_info:*' enable git
+zstyle ':vcs_info:*' check-for-changes true
+setopt prompt_subst
+
+precmd()
+{
+    vcs_info
+}
+
+# +N/-N upstream info
+function +vi-git-st() {
+    local ahead behind
+    local -a gitstatus
+
+    ahead=$(git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l | sed -e 's|^ *||g')
+    behind=$(git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l | sed -e 's|^ *||g')
+
+    (( $ahead )) && gitstatus+=( "+${ahead}" )
+    (( $behind )) && gitstatus+=( "-${behind}" )
+
+    hook_com[misc]+=${(j:/:)gitstatus}
+}
+
+# Untracked crap in the repo not covered by .gitignore?
+function +vi-git-untracked(){
+    if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == 'true' ]] && \
+        git status --porcelain | grep '??' &> /dev/null ; then
+        hook_com[staged]+="%{$fg[red]%}N"
+    fi
+}
+
+local branch="%{$fg[green]%}%b%c%u%{$fg[green]%}%{$reset_color%}"
+zstyle ':vcs_info:*' formats "%m $branch"
+zstyle ':vcs_info:*' actionformats "%a $branch"
+zstyle ':vcs_info:*' stagedstr "%{$fg[blue]%}S"
+zstyle ':vcs_info:*' unstagedstr "%{$fg[blue]%}M"
+zstyle ':vcs_info:git*+set-message:*' hooks git-untracked git-st
+PROMPT="%(!.#.$) " # $ as a user # as root
+RPROMPT='${vcs_info_msg_0_} ${PWD/#$HOME/~}'
+#+END_SRC
+* ~/.tmux.conf
+#+BEGIN_SRC conf :tangle tmp/.tmux.conf :results replace
+# Setup utf8 by default and vi mode
+set-window-option -g utf8 on
+set-window-option -g mode-keys vi
+set-window-option -g aggressive-resize on
+
+set-option -g default-command zsh
+set-option -g default-terminal 'xterm-256color'
+
+# Status line options, mainly coloring
+set-window-option -g window-status-bg colour6
+set-window-option -g window-status-fg black
+set-window-option -g window-status-current-bg white
+
+# Status line options
+set-option -g status-bg black
+set-option -g status-fg colour7
+set-option -g status-left-length 24
+set-option -g status-left ''
+set-option -g status-right-length 13
+set-option -g status-right "%a %H:%M:%S"
+set-option -g status-interval 7
+set-option -g status-utf8 on
+
+# Pane border options, mimics the status line coloring
+set-option -g pane-border-bg colour15
+set-option -g pane-border-fg colour82
+set-option -g pane-active-border-bg colour15
+set-option -g pane-active-border-fg colour2
+
+# Alert related things
+set-option -g visual-activity on
+set-option -g visual-bell on
+set-option -g message-bg colour7
+set-option -g message-fg black
+
+# Pass through the window title and display it automatically on changes.
+set-option -g set-titles on
+set-option -g set-titles-string '#T'
+set-window-option -g automatic-rename on
+
+# Key rebinding to make things more au naturalle
+bind-key R \
+  source-file ~/.tmux.conf \;\
+  display 'reloaded tmux config'
+
+# Log pane output to a file, save with an iso8601 datestamp
+bind-key o \
+  pipe-pane -o "cat >> $HOME/tmux-`iso8601`.log" \;\
+  set-window-option window-status-current-fg green \;
+
+bind-key O \
+  pipe-pane \;\
+  set-window-option window-status-current-fg default \;
+
+bind-key N new-session -t default
+
+# Using s for synchronizing panes, means that s for choosing sessions
+# is now e
+unbind-key s # interactive select sessions
+bind-key e choose-tree
+
+# (un)synchronize panes with prefix-s
+bind-key s \
+  if-shell \
+    "tmux show-window-options | grep 'synchronize-panes on'" \
+      "set-window-option window-status-current-bg colour7; \
+      set-window-option pane-active-border-fg colour2; \
+      set-window-option pane-active-border-bg colour15; \
+      set-window-option synchronize-panes off; \
+      display 'synchronization off'" \
+      "set-window-option window-status-current-bg red; \
+      set-window-option pane-active-border-fg red; \
+      set-window-option pane-active-border-bg colour15; \
+      set-window-option synchronize-panes on; \
+      display 'synchronizing'"
+
+# same thing as ^ so it sets up things if we were started with
+# something else that set synchronization.
+if-shell \
+  "tmux show-window-options | grep 'synchronize-panes on' || /bin/true" \
+  "set-window-option window-status-current-bg red; \
+  set-window-option pane-active-border-fg yellow; \
+  set-window-option pane-active-border-bg red"
+
+# Setup splits to be less annoying
+bind-key \ split-window -h
+bind-key - split-window -v
+
+# vi keybindings for pane navigation
+bind-key k select-pane -U
+bind-key j select-pane -D
+bind-key h select-pane -L
+bind-key l select-pane -R
+
+# Make it so that I can detach/etc while holding control down,
+# PURE LAZY
+bind-key C-d detach
+bind-key C-n next-window
+bind-key C-p previous-window
+
+bind-key C-k select-pane -U
+bind-key C-j select-pane -D
+bind-key C-h select-pane -L
+bind-key C-l select-pane -R
+
+# Non confirming kill pane plskthxbai
+bind-key x kill-pane
+
+# In case something I run exits straight away, i'd like to know about it.
+set-option -g set-remain-on-exit on
+
+# Lets change the prefix key so we don't clobber emacs back one char key
+unbind-key C-b
+
+# hacky, but C-\ isn't used by anything overly important in emacs
+set-option -g prefix 'C-\'
+
+# two C-\'s == C-\, if i need it, likely not
+bind 'C-\' send-prefix
+
+# Delay in sending things is dumb
+set-option -s escape-time 1
+
+# so we can scroll the mouse, select panes, etc...
+set -g mouse on
+bind -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e'"
+bind-key m \
+  if-shell \
+    "tmux show-options -g | grep 'mouse on'" \
+      "set -g mouse off; \
+       display 'Mouse modes off'" \
+      "set -g mouse on; \
+      display 'Mouse modes on'"
+
+# Assume linux for things, load osx stuff only on osx
+bind C-p run "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
+bind C-y run "tmux save-buffer - | xclip -i"
+
+# TODO: FIXME replace rainbarf with a not perl dependency magnet.
+# Linux specific. Now that I installed rainbarf on things, why not use it.
+# if-shell 'test "$(uname)" = "Linux"' \
+#     "set-option -g status-right-length 55; \
+#      set-option -g status-right '#(rainbarf --bright --width 25) %a %H:%M:%S'; "
+
+# osx specific
+# Have to modify default command so I can ssh in.
+# that and rainbarf output is 42 chars long (utf8) but helpful.
+# if-shell 'test "$(uname)" = "Darwin"' \
+#     "set-option -g default-command 'zsh -l'; \
+#      set-option -g status-right-length 55; \
+#      set-option -g status-right '#(rainbarf --remaining --bolt --bright --width 25) %a %H:%M:%S'; "
+#+END_SRC
+* ~/.dir_colors
+#+BEGIN_SRC conf :tangle tmp/.dir_colors :results replace
+COLOR tty
+
+TERM ansi
+TERM color-xterm
+TERM con132x25
+TERM con132x30
+TERM con132x43
+TERM con132x60
+TERM con80x25
+TERM con80x28
+TERM con80x30
+TERM con80x43
+TERM con80x50
+TERM con80x60
+TERM cons25
+TERM console
+TERM cygwin
+TERM dtterm
+TERM eterm-color
+TERM Eterm
+TERM gnome
+TERM konsole
+TERM kterm
+TERM linux
+TERM linux-c
+TERM mach-color
+TERM putty
+TERM rxvt
+TERM rxvt-cygwin
+TERM rxvt-cygwin-native
+TERM rxvt-unicode
+TERM screen
+TERM screen-bce
+TERM screen-w
+TERM screen.linux
+TERM vt100
+TERM xterm
+TERM xterm-256color
+TERM xterm-color
+TERM xterm-debian
+
+# Below are the color init strings for the basic file types. A color init
+# string consists of one or more of the following numeric codes:
+# Attribute codes:
+# 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
+# Text color codes:
+# 30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
+# Background color codes:
+# 40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
+NORMAL 00           # global default, although everything should be something.
+FILE 00             # normal file
+DIR 01;34           # directory
+LINK 01;36          # symbolic link.  (If you set this to 'target' instead of a
+                    # numerical value, the color will match the file pointed to)
+FIFO 40;33          # pipe
+SOCK 01;35          # socket
+DOOR 01;35          # door
+BLK 40;33;01        # block device driver
+CHR 40;33;01        # character device driver
+ORPHAN 01;05;37;41  # orphaned syminks
+MISSING 01;05;37;41 # ... and the files they point to
+
+# This is for files with execute permission:
+EXEC 01;32
+
+# List any file extensions like '.gz' or '.tar' that you would like ls
+# to colorize below. Put the extension, a space, and the color init string.
+# (and any comments you want to add after a '#')
+
+.cmd 01;32 # executables (bright green)
+.exe 01;32
+.com 01;32
+.btm 01;32
+.bat 01;32
+.sh  01;32
+.csh 01;32
+.ksh 01;32
+.zsh 01;32
+
+.tar 01;31 # archives / compressed (bright red)
+.tgz 01;31
+.arj 01;31
+.taz 01;31
+.lzh 01;31
+.zip 01;31
+.z   01;31
+.Z   01;31
+.gz  01;31
+.bz2 01;31
+.bz  01;31
+.tbz2 01;31
+.tz  01;31
+.deb 01;31
+.rpm 01;31
+.rar 01;31 # app-arch/rar
+.ace 01;31 # app-arch/unace
+.zoo 01;31 # app-arch/zoo
+.cpio 01;31 # app-arch/cpio
+.7z  01;31 # app-arch/p7zip
+.rz  01;31 # app-arch/rzip
+#+END_SRC
 * Reference for babel stuff
 
 Found this STUPID useful for constructing the tangle stuff.
