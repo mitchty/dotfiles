@@ -812,3 +812,10 @@ General git configuration.
   name = Mitch Tishmack
   email = mitch.tishmack@gmail.com
 #+END_SRC
+
+
+* Reference for babel stuff
+
+Found this STUPID useful for constructing the tangle stuff.
+
+[[https://raw.githubusercontent.com/eschulte/babel-dev/master/scraps.org][babel scraps link]]
