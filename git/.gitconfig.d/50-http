@@ -1,4 +1,0 @@
-[http]
-  postBuffer = 209715200
-[push]
-  default = simple
