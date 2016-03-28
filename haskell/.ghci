@@ -1,3 +1,0 @@
-:l ~/.ghc.hs
-:set prompt "λ "
-:set +t

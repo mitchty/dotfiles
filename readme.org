@@ -4,10 +4,25 @@
 #+STARTUP: odd
 #+BABEL: :cache yes
 #+PROPERTY: header-args :tangle yes :comments no :padline no
-#+headers: :var nix=f
-#+headers: :var osx=f
-#+headers: :var linux=f
-#+headers: :var bsd=f
+
+Control variables for output, ALL default to no unless changed to yes.
+
+For things that need to be switched, changing to yes will work. Each subheading with options should have a property attribute to control where things get saved to.
+
+os related, aka which os type are we generating things for
+#+results: output-os
+| bsd | linux | osx |
+| no  | no    | no  |
+
+application options, aka things we may or may not have at the destination
+#+results: output-options
+| nix | x  | mosh | git | tmux |
+| no  | no | no   | no  | no   |
+
+and finally what optional programming languages do we want output files for
+#+results: output-languages
+| haskell | perl | ruby |
+| no      | no   | no   |
 
 In the long long ago (2015), I used xstow and update-dotdee to construct my
 dotfiles from tiny pieces of files.
@@ -76,13 +91,179 @@ to generate config files.
 # cheap hack to work around org-mode shenanigans
 #+END_SRC
 
-* ~/.hushlogin
+* ~/.profile
+:PROPERTIES:
+:header-args: :tangle yes :comments no :padline no :cache yes
+:END:
+#+BEGIN_SRC sh :tangle profile-test :results replace
+# -*- mode: Shell-script; -*-
+# Common .profile
 
-Because who gives a rats when and where I last logged on from?
+# Common variables for use later
+_uname=$(uname)
+_uname_n=$(uname -n)
+_hostname=$(hostname)
+export _uname _uname_n _hostname
 
-#+BEGIN_SRC conf :tangle tmp/.hushlogin :results replace
+# Default if not already overridden
+_host=${_host:=${_uname_n}}
+
+PATH="${PATH}:${HOME}/bin"
+export PATH
+
+# cat out a : separated env variable
+# variable is the parameter
+cat_env()
+{
+  set | grep '^'"$1"'=' > /dev/null 2>&1 && eval "echo \$$1" | tr ':' '
+' | awk '!/^\s+$/' | awk '!/^$/'
+}
+
+# Convert a line delimited input to : delimited
+to_env()
+{
+  awk '!a[$0]++' < /dev/stdin | tr -s '
+' ':' | sed -e 's/\:$//' | awk 'NF > 0'
+}
+
+# Unshift a new value onto the env var
+# first arg is ENV second is value to unshift
+# basically prepend value to the ENV variable
+unshift_env()
+{
+  new=$(eval "echo $2; echo \$$1" | to_env)
+  eval "$1=${new}; export $1"
+}
+
+# Opposite of above, but echos what was shifted off
+shift_env()
+{
+  first=$(cat_env "$1" | head -n 1)
+  rest=$(cat_env "$1" | awk '{if (NR!=1) {print}}' | to_env)
+  eval "$1=$rest; export $1"
+  echo "${first}"
+}
+
+# push $2 to $1 on the variable
+push_env()
+{
+  have=$(cat_env "$1")
+  new=$(printf "%s
+%s" "$have" "$2" | to_env)
+  eval "$1=$new; export $1"
+}
+
+# Remove a line matched in $HOME/.ssh/known_hosts for when there are legit
+# host key changes.
+nukehost()
+{
+  if [ -z "$1" ]; then
+    echo "Usage: nukehost <hostname>"
+    echo "       Removes <hostname> from ssh known_host file."
+  else
+    sed -i -e "/$1/d" ~/.ssh/known_hosts
+  fi
+}
+
+# Cheap copy function to make copying a file via ssh from one host
+# to another less painful, use pipeviewer to give some idea as to progress.
+ssh-copyfile()
+{
+  if [ -z "$1" -o -z "$2" ]; then
+    echo "Usage: copy source:/file/location destination:/file/location"
+  else
+    srchost="$(echo "$1" | awk -F: '{print $1}')"
+    src="$(echo "$1" | awk -F: '{print $2}')"
+    dsthost="$(echo "$2" | awk -F: '{print $1}')"
+    dst="$(echo "$2" | awk -F: '{print $2}')"
+    size=$(ssh "$srchost" du -hs "$src" 2> /dev/null)
+    size=$(echo "${size}" | awk '{print $1}')
+    echo "Copying $size to $dst"
+    ssh "$srchost" "/bin/cat \$src" 2> /dev/null | pv -cb -N copied - | ssh "$dsthost" "/bin/cat - > \$dst" 2> /dev/null
+  fi
+}
+
+# extract function to automate being lazy at extracting archives.
+extract()
+{
+  if [ -f "$1" ]; then
+    case ${1} in
+      *.tar.bz2|*.tbz2|*.tbz)  bunzip2 -c "$1" | tar xvf -;;
+      *.tar.gz|*.tgz)          gunzip -c "$1" | tar xvf -;;
+      *.tz|*.tar.z)            zcat "$1" | tar xvf -;;
+      *.tar.xz|*.txz|*.tpxz)   xz -d -c "$1" | tar xvf -;;
+      *.bz2)                   bunzip2 "$1";;
+      *.gz)                    gunzip "$1";;
+      *.jar|*.zip)             unzip "$1";;
+      *.rar)                   unrar x "$1";;
+      *.tar)                   tar -xvf "$1";;
+      *.z)                     uncompress "$1";;
+      *.rpm)                   rpm2cpio "$1" | cpio -idv;;
+      *)                       echo "Unable to extract <$1> Unknown extension."
+    esac
+  else
+    print "File <$1> does not exist."
+  fi
+}
+
+# Tcsh compatibility so I can be a lazy bastard and paste things directly
+# if/when I need to.
+setenv()
+{
+  export "$1=$2"
+}
+
+# Just to be lazy, set/unset the DEBUG env variable used in my scripts
+debug()
+{
+  if [ -z "$DEBUG" ]; then
+    if [ -z "$1" ]; then
+      echo Setting DEBUG to "$1"
+      setenv DEBUG "$1"
+    else
+      echo Setting DEBUG to default
+      setenv DEBUG default
+    fi
+  else
+    echo Unsetting DEBUG
+    unset DEBUG
+  fi
+}
+
+login_shell()
+{
+  [ "$-" = "*i*" ]
+}
+
+# Yeah, sick of using the web browser for this crap
+# Use is NUM FROM TO and boom get the currency converted from goggle.
+cconv()
+{
+  curl -L --silent\
+       "https://www.google.com/finance/converter?a=$1&from=$2&to=$3" \
+         | grep converter_result \
+             | perl -pe 's|[<]\w+ \w+[=]\w+[>]||g;' -e 's|[<][/]span[>]||'
+}
+
+# general aliases
+alias s="\$(which ssh)"
+alias quit='exit'
+alias cr='reset; clear'
+alias a=ag
+alias n=noglob
+alias l=ls
+alias L='ls -dal'
+alias cleandir="find . -type f \( -name '*~' -o -name '#*#' -o -name '.*~' -o -name '.#*#' -o -name 'core' -o -name 'dead.letter*' \) | grep -v auto-save-list | xargs -t rm"
+
+# Prefer less for paging duties.
+which less > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  alias T="\$(which less) -f +F"
+else
+  alias T="\$(which tail) -f"
+fi
+
 #+END_SRC
-
 * ~/bin
 
 Mkdir on tmp/bin to start
@@ -804,6 +985,7 @@ foreach my $input (@ARGV){
   print "$name is '$gecos' uid '$uid'\n" if $gecos;
 }
 #+END_SRC
+
 ** ~/bin/hatimerun
 
 Stupid perl script to mimic hatimerun for systems that don't have it.
@@ -1051,7 +1233,79 @@ if ($valid){
 exit 0;
 #+END_SRC
 
-* ~/.gitconfig
+** ~/bin/portchk
+
+Just find out if a port responds to anything tcp related or not.
+
+#+BEGIN_SRC perl :tangle tmp/bin/portchk :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Dumb wrapper to get the gecos information from a uid/username.
+
+foreach my $input (@ARGV){
+  my $gecos = undef;
+  my $uid = undef;
+  my $name = undef;
+  if ( $input =~ m/^\d+$/ ) {
+    ( $name,$uid,$gecos ) = ( getpwuid($input) )[0,2,6];
+  } else {
+    ( $name,$uid,$gecos ) = ( getpwnam($input) )[0,2,6];
+  }
+  print "$name is '$gecos' uid '$uid'\n" if $gecos;
+}
+#+END_SRC
+
+** ~/bin/notify
+
+OSX only really, just fires off a notification when its ran.
+
+Example:
+notify "some command" "not ok"
+
+First param is the message, second title of the notification.
+
+#+BEGIN_SRC sh :tangle tmp/bin/notify :results replace :tangle-mode (identity #o755)
+#!/bin/sh
+message=${1:="no message"}
+title=''
+if [ "${2}" != "" ]; then
+  message="${2}"
+  title="${1}"
+fi
+notification="display notification \"${message}\""
+[ "${title}" != "" ] && notification="${notification} with title \"${title}\""
+
+osascript -e "${notification}"
+#+END_SRC
+
+** ~/bin/today
+
+Stupid ruby script I wrote to highlight the week/day in a calendar.
+
+
+#+BEGIN_SRC ruby :tangle tmp/bin/today :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env ruby
+cal, today, week_color, day_color, reset = %x(cal).split(%r(\n)), Time.now.day, %x(tput sgr0;tput setab 4;tput setaf 7), %x(tput sgr0; tput setab 0;tput setaf 7;tput bold), %x(tput sgr0)
+done=false
+cal.each do |line|
+  if done then
+    puts line
+    next
+  end
+  if(line =~ /^(.*\s+?)#{today}(\s+?.*)$/ or
+     line =~ /^(.*\s+?)#{today}$/ or
+     line =~ /^()#{today}(\s+?.*)$/ or
+     line =~ /^#{today}$/ ) then
+    puts "#{week_color}#{$1}#{day_color}#{today}#{week_color}#{$2}#{reset}"
+    done=true
+  else
+    puts line
+  end
+end
+#+END_SRC
+
+* Git
+** ~/.gitconfig
 
 General git configuration.
 
@@ -1122,7 +1376,7 @@ General git configuration.
   email = mitch.tishmack@gmail.com
 #+END_SRC
 
-* ~/.gitignore
+** ~/.gitignore
 
 Common crap/build artifacts that git should always ignore.
 
@@ -1142,7 +1396,89 @@ Common crap/build artifacts that git should always ignore.
 *.hi
 #+END_SRC
 
-* ~/.zprofile
+* X
+** ~/.Xdefaults
+
+X defaults, just urxvt for the moment. Slightly linux/bsd only but not really.
+
+#+BEGIN_SRC conf :tangle tmp/.Xdefaults :results replace
+! urxvt generalish stuff
+!
+urxvt*termName:                 rxvt-256color
+urxvt*font:                     xft:menlo:size=12:antialias=true
+urxvt*perl-ext-common:          default,matcher
+urxvt*jumpScroll:               true
+urxvt*cursorColor:              pink
+urxvt*loginShell:               true
+urxvt*scrollBar:                true
+urxvt*scrollstyle:              next
+urxvt*scrollBar_right:          true
+urxvt*scrollTtyOutput:          false
+urxvt*cursorBlink:              true
+urxvt*saveLines:                10000
+urxvt*urlLauncher:              /usr/bin/google-chrome
+urxvt*matcher.button:           1
+urxvt*allowWindowOps:           true
+#+END_SRC
+
+** ~/.Xmodmap
+
+Swap around left/right clicks basically.
+
+#+BEGIN_SRC conf :tangle tmp/.Xmodmap :results replace
+pointer = 3 2 1 4 5
+#+END_SRC
+
+** ~/.Xresources
+
+I can't remember why I did all this effort. But I'll remove it some year I bet.
+
+#+BEGIN_SRC conf :tangle tmp/.Xresources :results replace
+#define brightblack     #ffffff
+#define normblack       #f9f9f9
+#define normgreen       #00cc33
+#define brightgreen     #00cc99
+#define normblue        #f00033
+#define brightblue      #0099ff
+#define normcyan        #66ccff
+#define brightcyan      #66ccff
+#define normwhite       #060606
+#define brightwhite     #000000
+#define normyellow      #ffcc33
+#define brightyellow    #ffcc33
+#define normred         #ff3300
+#define brightred       #ff3300
+#define normmagenta     #ff66ff
+#define brightmagenta   #ff66ff
+
+*background:            normblack
+*foreground:            normwhite
+*fading:                40
+*fadeColor:             brightblack
+*cursorColor:           brightcyan
+*pointerColorBackground: #3f3f3f
+*pointerColorForeground: #f3f3f3
+
+*color0: #090909
+*color1: #f00000
+*color2: normgreen
+*color3: normyellow
+*color4: #0066ff
+*color5: normmagenta
+*color6: normcyan
+*color7: #c8c8c8
+*color8: #888888
+*color9: #f00033
+*color10: brightgreen
+*color11: brightyellow
+*color12: #0099ff
+*color13: brightmagenta
+*color14: brightcyan
+*color15: #f9f9f9
+#+END_SRC
+
+* Zsh
+** ~/.zprofile
 
 Make sure that zsh sources ~/.profile correctly on login.
 
@@ -1157,7 +1493,8 @@ login_shell()
   [[ -o login ]]
 }
 #+END_SRC
-* ~/.zshrc
+
+** ~/.zshrc
 
 Zsh configuration, its not too crazy... I think. Don't judge me.
 
@@ -1329,7 +1666,12 @@ zstyle ':vcs_info:git*+set-message:*' hooks git-untracked git-st
 PROMPT="%(!.#.$) " # $ as a user # as root
 RPROMPT='${vcs_info_msg_0_} ${PWD/#$HOME/~}'
 #+END_SRC
-* ~/.tmux.conf
+
+* Tmux
+** ~/.tmux.conf
+
+Tmux configuration. Pretty boring in most ways.
+
 #+BEGIN_SRC conf :tangle tmp/.tmux.conf :results replace
 # Setup utf8 by default and vi mode
 set-window-option -g utf8 on
@@ -1483,7 +1825,160 @@ bind C-y run "tmux save-buffer - | xclip -i"
 #      set-option -g status-right-length 55; \
 #      set-option -g status-right '#(rainbarf --remaining --bolt --bright --width 25) %a %H:%M:%S'; "
 #+END_SRC
-* ~/.dir_colors
+* Vim
+** ~/.vimrc
+
+What remains of my days from being a vim user.
+
+#+BEGIN_SRC conf :tangle tmp/.vimrc :results replace
+set nocompatible
+set backspace=indent,eol,start
+set history=50 " keep 50 lines of command line history
+set ruler " show the cursor position all the time
+set showcmd " display incomplete commands
+set incsearch " do incremental searching
+map Q gq
+if &t_Co > 2 || has("gui_running")
+  syntax on
+  set hlsearch
+endif
+if has("autocmd")
+  filetype plugin indent on
+  augroup vimrcEx
+  au!
+  autocmd FileType text setlocal textwidth=78
+  autocmd BufReadPost *
+    \ if line("'\"") > 0 && line("'\"") <= line("$") |
+    \   exe "normal g`\"" |
+    \ endif
+
+  augroup END
+else
+  set autoindent " always set autoindenting on
+endif " has("autocmd")
+#+END_SRC
+
+* Language related
+** Haskell
+*** ~/.ghci
+
+Ghci setup, mostly just cosmetics.
+
+#+BEGIN_SRC haskell :tangle tmp/.ghci :results replace
+:l ~/.ghc.hs
+:set prompt "λ "
+:set +t
+#+END_SRC
+
+*** ~/.ghc.hs
+
+What to automatically have loaded into ghci sessions.
+
+#+BEGIN_SRC haskell :tangle tmp/.ghc.hs :results replace
+import Control.Applicative
+import Control.Monad
+import Data.Monoid
+import Data.Maybe
+import Data.List
+import Data.Bool
+import qualified Data.Set as S
+import qualified Data.Map as M
+#+END_SRC
+
+** Perl
+*** ~/.perlcriticrc
+
+What to complain about by default.
+
+#+BEGIN_SRC conf :tangle tmp/.perlcritirc :results replace
+# Show the severity level
+severity = 1
+
+# Basically show what profile is complaining
+verbose = %f:%l:%c: %m, %e (%p, severity %s)\n
+
+# Don't warn on these variables
+[Variables::ProhibitPunctuationVars]
+allow = $@ $!
+
+# Ignore syscall returns on print, it not actually returning is... whatever.
+[InputOutput::RequireCheckedSyscalls]
+exclude_functions = print say
+
+# Allow things like print qx(somecmd) in a void context to work, this is ok.
+[InputOutput::ProhibitBacktickOperators]
+only_in_void_context = 1
+
+# I actually like using unless... so don't piss me off whinging about it
+[-ControlStructures::ProhibitUnlessBlocks]
+
+# The following only apply to modules
+[-Modules::RequireVersionVar]
+[-ErrorHandling::RequireCarping]
+
+# Tabs suck, no
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 0
+
+# For small regexes, no /x at the end is fine, 12 should be enough
+[RegularExpressions::RequireExtendedFormatting]
+minimum_regex_length_to_complain_about = 12
+
+# These are kosher kthxbai
+[ControlStructures::ProhibitPostfixControls]
+allow = for if until unless
+
+# For POE, we do things like my $foo = $_[HEAP]; and thats OK
+[Subroutines::RequireArgUnpacking]
+allow_subscripts = 1
+
+# For POD documentation, I don't care about required sections.
+[Documentation::RequirePodSections]
+lib_sections = NAME | SYNOPSIS | DESCRIPTION | AUTHOR | COPYRIGHT | SEE ALSO
+script_sections = NAME | SYNOPSIS | DESCRIPTION | AUTHOR | COPYRIGHT | SEE ALSO
+
+# This is for POD documentation mainly.
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 1
+#+END_SRC
+
+*** ~/.perltidyrc
+
+Control how perltidy should clean things up.
+
+#+BEGIN_SRC conf :tangle tmp/.perltidyrc :results replace
+# cuddled elses pls
+-ce
+# indent 2 spaces
+-i=2
+# for tokens with things like arrays, start the data next line down one indent in
+-lp
+# align closing tokens for things like arrays with the opening token
+-cti=1
+# default, but spaces between multiple entries, none with one arg
+-pt=1
+# line encoding
+-ole=unix
+# braces not on new line
+-nsbl
+# stack opening tokens, don't create a new line with one token, note no stacking of closing tokens
+-sot
+# no space before ;'s in for loops
+-nsfs
+# Make curly braces act more like the args param
+-bbt=1
+# Trim qw whitespaces
+-tqw
+#+END_SRC
+
+* Misc
+
+Stuff that logically doesn't fit elsewhere or in any other category.
+
+** ~/.dir_colors
+
+For BSD ps, make colors closer to what the GNU utilities produce by default.
+
 #+BEGIN_SRC conf :tangle tmp/.dir_colors :results replace
 COLOR tty
 
@@ -1586,6 +2081,15 @@ EXEC 01;32
 .7z  01;31 # app-arch/p7zip
 .rz  01;31 # app-arch/rzip
 #+END_SRC
+
+** ~/.hushlogin
+
+Because who gives a rats when and where I last logged on from?
+
+#+BEGIN_SRC conf :tangle tmp/.hushlogin :results replace
+#+END_SRC
+
+
 * Reference for babel stuff
 
 Found this STUPID useful for constructing the tangle stuff.
