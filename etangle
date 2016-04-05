@@ -1,13 +1,13 @@
-#!/usr/bin/env emacs --script
 ;; Tangle an org mode file with babel using emacs.
 (let ((default-directory "~/.emacs.d"))
   (normal-top-level-add-subdirs-to-load-path))
+
+(load-file "./options.el")
 
 (require 'org-install)
 (require 'org)
 
 ;; Iterate through all the files given and tangle them
-
 (dolist
     (file command-line-args-left)
   (princ file)

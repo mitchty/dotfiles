@@ -52,7 +52,7 @@ copy:
 	cd $(PWD)/generation/$(GEN) && cp -r . $(DEST)
 
 tangle: tmp
-	./etangle $(TANGLERS)
+	/usr/bin/env emacs --script ./etangle $(TANGLERS)
 	@echo
 
 clean:

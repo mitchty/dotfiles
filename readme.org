@@ -5,25 +5,6 @@
 #+BABEL: :cache yes
 #+PROPERTY: header-args :tangle yes :comments no :padline no
 
-Control variables for output, ALL default to no unless changed to yes.
-
-For things that need to be switched, changing to yes will work. Each subheading with options should have a property attribute to control where things get saved to.
-
-os related, aka which os type are we generating things for
-#+results: output-os
-| bsd | linux | osx |
-| no  | no    | no  |
-
-application options, aka things we may or may not have at the destination
-#+results: output-options
-| nix | x  | mosh | git | tmux |
-| no  | no | no   | no  | no   |
-
-and finally what optional programming languages do we want output files for
-#+results: output-languages
-| haskell | perl | ruby |
-| no      | no   | no   |
-
 In the long long ago (2015), I used xstow and update-dotdee to construct my
 dotfiles from tiny pieces of files.
 
@@ -92,10 +73,7 @@ to generate config files.
 #+END_SRC
 
 * ~/.profile
-:PROPERTIES:
-:header-args: :tangle yes :comments no :padline no :cache yes
-:END:
-#+BEGIN_SRC sh :tangle profile-test :results replace
+#+BEGIN_SRC sh :tangle tmp/.profile :results replace
 # -*- mode: Shell-script; -*-
 # Common .profile
 
@@ -1264,7 +1242,8 @@ notify "some command" "not ok"
 
 First param is the message, second title of the notification.
 
-#+BEGIN_SRC sh :tangle tmp/bin/notify :results replace :tangle-mode (identity #o755)
+ sh :tangle tmp/bin/notify :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/bin/notify") :results replace :tangle-mode (identity #o755)
 #!/bin/sh
 message=${1:="no message"}
 title=''
@@ -1397,11 +1376,26 @@ Common crap/build artifacts that git should always ignore.
 #+END_SRC
 
 * X
+
+** ~/.profile additions
+
+Just a silly function and call to said function to make xmodmap source
+~/.Xmodmap when it should.
+
+#+BEGIN_SRC sh :tangle (when (eq x-p t) "tmp/.profile") :results append
+modmap
+{
+	[ -f "${HOME}/.Xmodmap" ] && xmodmap "${HOME}/.Xmodmap"
+}
+
+modmap
+#+END_SRC
+
 ** ~/.Xdefaults
 
 X defaults, just urxvt for the moment. Slightly linux/bsd only but not really.
 
-#+BEGIN_SRC conf :tangle tmp/.Xdefaults :results replace
+#+BEGIN_SRC conf :tangle (when (eq x-p t) "tmp/.Xdefaults") :results replace
 ! urxvt generalish stuff
 !
 urxvt*termName:                 rxvt-256color
@@ -1425,7 +1419,7 @@ urxvt*allowWindowOps:           true
 
 Swap around left/right clicks basically.
 
-#+BEGIN_SRC conf :tangle tmp/.Xmodmap :results replace
+#+BEGIN_SRC conf :tangle (when (eq x-p t) "tmp/.Xmodmap") :results replace
 pointer = 3 2 1 4 5
 #+END_SRC
 
@@ -1433,7 +1427,7 @@ pointer = 3 2 1 4 5
 
 I can't remember why I did all this effort. But I'll remove it some year I bet.
 
-#+BEGIN_SRC conf :tangle tmp/.Xresources :results replace
+#+BEGIN_SRC conf :tangle (when (eq x-p t) "tmp/.Xresources") :results replace
 #define brightblack     #ffffff
 #define normblack       #f9f9f9
 #define normgreen       #00cc33
@@ -1475,6 +1469,24 @@ I can't remember why I did all this effort. But I'll remove it some year I bet.
 *color13: brightmagenta
 *color14: brightcyan
 *color15: #f9f9f9
+#+END_SRC
+
+
+Tmux additions
+
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) tmp/.profile) :results append
+t()
+{
+  if [ -z "$1" ]; then
+    echo "Supply a tmux session name to connect to/create"
+  else
+    tmux has-session -t "$1" 2>/dev/null
+    [ $? != 0 ] && tmux new-session -d -s "$1"
+    tmux attach-session -d -t "$1"
+  fi
+}
+
+alias tl='tmux ls'
 #+END_SRC
 
 * Zsh
