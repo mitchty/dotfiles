@@ -6,19 +6,19 @@
 ;; OS types
 (setq bsd-p nil)
 (setq linux-p nil)
-(setq osx-p nil)
+(setq osx-p t)
 
 ;; Optional things
-(setq nix-p nil)
-(setq tmux-p nil)
-(setq git-p nil)
-(setq emacs-p nil)
+(setq nix-p t)
+(setq tmux-p t)
+(setq git-p t)
+(setq emacs-p t)
 (setq vim-p nil)
-(setq zsh-p nil)
-(setq mosh-p nil)
-(setq x-p nil)
+(setq zsh-p t)
+(setq mosh-p t)
+(setq x-p t)
 
 ;; Language specific
-(setq haskell-p nil)
-(setq perl-p nil)
+(setq haskell-p t)
+(setq perl-p t)
 (setq ruby-p nil)

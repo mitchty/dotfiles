@@ -70,24 +70,59 @@ to generate config files.
 
 * ~/.profile
 :PROPERTIES:
-:header-args: :tangle /tmp/.profile :comments no :padline no :cache yes
+:header-args: :tangle tmp/.profile :comments no :padline no :cache yes :mkdirp yes
 :END:
-#+BEGIN_SRC sh :results replace
+
+** PS1
+
+#+BEGIN_SRC sh
 # -*- mode: Shell-script; -*-
 # Common .profile
-
-# Common variables for use later
+#
+# DO NOT EDIT, managed by org mode
 _uname=$(uname)
 _uname_n=$(uname -n)
 _hostname=$(hostname)
 export _uname _uname_n _hostname
+#+END_SRC
 
-# Default if not already overridden
+OSX uses hostname -s for getting hostname
+
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+_host=$(hostname -s)
+#+END_SRC
+
+Otherwise we just use what uname -n sent.
+
+#+BEGIN_SRC sh
 _host=${_host:=${_uname_n}}
+#+END_SRC
 
+** PATH
+*** osx
+OSX homebrew leftovers, need to make sure it make sense any longer as I've switched to nix.
+
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+osx_release=$(sw_vers -productVersion | sed -e 's/\.[0-9]\{1\}//2')
+brew_home=/usr/local/brew/${osx_release}
+PATH="${brew_home}/bin:/usr/local/bin:${PATH}"
+export PATH
+#+END_SRC
+*** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+PATH="${PATH}:${HOME}/.cabal/bin"
+#+END_SRC
+*** General
+#+BEGIN_SRC sh :tangle "tmp/.profile"
 PATH="${PATH}:${HOME}/bin"
 export PATH
+#+END_SRC
 
+** Functions
+*** General
+Generally useful functions.
+
+#+BEGIN_SRC sh
 # cat out a : separated env variable
 # variable is the parameter
 cat_env()
@@ -221,7 +256,124 @@ cconv()
          | grep converter_result \
              | perl -pe 's|[<]\w+ \w+[=]\w+[>]||g;' -e 's|[<][/]span[>]||'
 }
+#+END_SRC
 
+*** git
+#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+maybe_git_repo()
+{
+  # assume https if input doesn't contain a protocol
+  proto=https
+  destination=${HOME}/src
+  echo "${1}" | grep '://' > /dev/null 2>&1
+  [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
+  git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
+  rrepo="${proto}://${git_dir}"
+
+  # strip user@, :NNN, and .git from input uri's
+  repo="${destination}/"$(echo "${git_dir}" |
+    sed -e 's/\.git$//g' |
+    sed -e 's|.*\@||g' |
+    sed -e 's|\:[[:digit:]]\{1,\}\/|/|g' |
+    tr -d '~')
+
+  if [ ! -d "${repo}" ]; then
+    git ls-remote "${rrepo}" > /dev/null 2>&1
+    if [ $? = 0 ]; then
+      mkdir -p "${repo}"
+      echo "git clone ${rrepo} ${repo}"
+      git clone "${rrepo}" "${repo}"
+    else
+      echo "${rrepo} doesn't look to be a git repository"
+    fi
+  fi
+  [ -d "${repo}" ] && cd "${repo}"
+}
+
+gh()
+{
+  maybe_git_repo "https://github.com/${1}"
+}
+
+bb()
+{
+  maybe_git_repo "https://bitbucket.org/${1}"
+}
+#+END_SRC
+*** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+hmap()
+{
+  ghc -e "interact ($*)"
+}
+
+hmapl()
+{
+  hmap "unlines.($*).lines"
+}
+
+hmapw()
+{
+  hmapl "map (unwords.($*).words)"
+}
+#+END_SRC
+*** nix
+#+BEGIN_SRC sh :tangle (when (eq nix-p t) "tmp/.profile")
+mk_nix_shell()
+{
+  cabal2nix --sha256="0" . \
+    | perl -0777 -p -e 's/{.+}:/{ haskellPackages ? (import <nixpkgs> {}).haskellPackages }:/s' \
+    | sed -E -e 's/(cabal\.mkDerivation)/with haskellPackages; \1/' -e 'sXsha256 = "0";Xsrc = "./.";X' \
+          > shell.nix;
+}
+
+nix_env_setup()
+{
+  # The nix installer put something like this into the .profile.
+  # BAD INSTALLER NO COOKIE!
+  if [ -e ${HOME}/.nix-profile/etc/profile.d/nix.sh ]; then
+      . ${HOME}/.nix-profile/etc/profile.d/nix.sh;
+      export NIX_PATH=${HOME}/src/github.com/NixOS/nixpkgs:nixpkgs=${HOME}/src/github.com/NixOS/nixpkgs
+      export NIX_CFLAGS_COMPILE="-idirafter /usr/include"
+      export NIX_CFLAGS_LINK="-L/usr/lib"
+
+      NIX_GHC=$(type -p ghc > /dev/null 2>&1)
+      if [ -n "$NIX_GHC" ]; then
+          eval $(grep export "$NIX_GHC")
+      fi
+  fi
+
+  nr()
+  {
+    nix-shell --run "$(echo $@)"
+  }
+}
+
+nix_env_setup
+#+END_SRC
+*** tmux
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+t()
+{
+  if [ -z "$1" ]; then
+    echo "Supply a tmux session name to connect to/create"
+  else
+    tmux has-session -t "$1" 2>/dev/null
+    [ $? != 0 ] && tmux new-session -d -s "$1"
+    tmux attach-session -d -t "$1"
+  fi
+}
+#+END_SRC
+*** x
+#+BEGIN_SRC sh :tangle (when (eq x-p t) "tmp/.profile")
+modmap()
+{
+	[ -f "${HOME}/.Xmodmap" ] && xmodmap "${HOME}/.Xmodmap"
+}
+#+END_SRC
+** Aliases
+*** General
+#+BEGIN_SRC sh
 # general aliases
 alias s="\$(which ssh)"
 alias quit='exit'
@@ -241,6 +393,27 @@ else
 fi
 #+END_SRC
 
+*** osx
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+alias o='open -a'
+#+END_SRC
+*** git
+#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+alias g=git
+#+END_SRC
+*** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+alias ghce="ghc -e ':l ~/.ghc.hs' -e"
+#+END_SRC
+*** mosh
+#+BEGIN_SRC sh :tangle (when (eq mosh-p t) "tmp/.profile")
+alias m=mosh
+#+END_SRC
+
+*** tmux
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+alias tl='tmux ls'
+#+END_SRC
 * ~/bin
 
 ** ~/bin/cidr
@@ -1367,21 +1540,6 @@ Common crap/build artifacts that git should always ignore.
 #+END_SRC
 
 * X
-
-** ~/.profile additions
-
-Just a silly function and call to said function to make xmodmap source
-~/.Xmodmap when it should.
-
-#+BEGIN_SRC sh :tangle (when (eq x-p t) "tmp/.profile") :results append
-modmap
-{
-	[ -f "${HOME}/.Xmodmap" ] && xmodmap "${HOME}/.Xmodmap"
-}
-
-modmap
-#+END_SRC
-
 ** ~/.Xdefaults
 
 X defaults, just urxvt for the moment. Slightly linux/bsd only but not really.
@@ -1410,8 +1568,14 @@ urxvt*allowWindowOps:           true
 
 Swap around left/right clicks basically.
 
-#+BEGIN_SRC conf :tangle (when (eq x-p t) "tmp/.Xmodmap") :results replace
+#+BEGIN_SRC conf :tangle (when (and (eq x-p t) (not (eq osx-p t))) "tmp/.Xmodmap")
 pointer = 3 2 1 4 5
+#+END_SRC
+
+OSX is odd.
+
+#+BEGIN_SRC conf :tangle (when (and (eq x-p t) (eq osx-p t)) "tmp/.Xmodmap")
+pointer = 1 2 3 4 5
 #+END_SRC
 
 ** ~/.Xresources
@@ -1461,25 +1625,6 @@ I can't remember why I did all this effort. But I'll remove it some year I bet.
 *color14: brightcyan
 *color15: #f9f9f9
 #+END_SRC
-
-
-Tmux additions
-
-#+BEGIN_SRC sh :tangle (when (eq tmux-p t) tmp/.profile) :results append
-t()
-{
-  if [ -z "$1" ]; then
-    echo "Supply a tmux session name to connect to/create"
-  else
-    tmux has-session -t "$1" 2>/dev/null
-    [ $? != 0 ] && tmux new-session -d -s "$1"
-    tmux attach-session -d -t "$1"
-  fi
-}
-
-alias tl='tmux ls'
-#+END_SRC
-
 * Zsh
 ** ~/.zprofile
 
@@ -1861,6 +2006,136 @@ else
 endif " has("autocmd")
 #+END_SRC
 
+* nix
+#+BEGIN_SRC conf :mkdirp yes :tangle (when (eq nix-p t) "tmp/.nixpkgs/config.nix")
+{pkgs}: {
+  allowUnfree = true;
+  allowBroken = true;
+
+  packageOverrides = pkgs: with pkgs; {
+    pinentry = pkgs.pinentry.override {
+      gtk2 = null;
+      qt4 = null;
+      ncurses = null;
+    };
+    gnupg = pkgs.gnupg.override {
+      x11Support = false;
+      pinentry = true;
+    };
+    youtube-dl = pkgs.youtube-dl.override {
+      pandoc = null;
+    };
+
+    # haskellPackages = haskellPackages.override {
+    #   extension = self : super : {
+    #     cabal = pkgs.haskellPackages.cabalNoTest;
+    #   };
+    # };
+
+    default = with pkgs; buildEnv {
+
+      name = "default";
+
+      paths = [
+        ansible
+        ack
+        aria
+        iperf
+        cacert
+        curl
+        clang
+        clang-analyzer
+        diffutils
+        patchutils
+        gitAndTools.gitFull
+        gitAndTools.git-extras
+        bazaarTools
+        mercurial
+        subversionClient
+        gist
+        mercurial
+        docbook5
+        entr
+        emacs
+        gnupg1compat
+        gnutar
+        gnumake
+        sloccount
+        cloc
+        less
+        multitail
+        rlwrap
+        gdbm
+        mosh
+        htop
+        imagemagick
+        keychain
+        silver-searcher
+        aspell
+        aspellDicts.en
+        openssl
+        pinentry
+        pbzip2
+        pigz
+        pv
+        postgresql
+        readline
+        rsync
+        sqlite
+        texLiveFull
+        tmux
+        tree
+        wget
+        wakelan
+        unzip
+        upx
+        xz
+        p7zip
+        unrar
+        watch
+        nox
+        mutt
+        duply
+        zsh
+        pylint
+        python27Packages.howdoi
+        python27Packages.youtube-dl
+        python27Packages.pyflakes
+        python27Packages.flake8
+        python27Packages.virtualenv
+        python27Packages.pip
+#        xhyve        compiles normally, figure out hypervisor framework issue
+#        lastpass-cli no worky on osx TODO fix this it works on homebrew
+      ];
+    };
+    env_hs =
+      pkgs.haskell.packages.ghc7102.ghcWithPackages
+          (haskellPackages: with haskellPackages; [
+              alex
+              happy
+              bake
+              cabal-dependency-licenses
+              cabal-install
+              cabal-meta
+              ghc-core
+              ghc-mod
+              hasktags
+              hindent
+              hoogle
+              hspec
+              idris
+              pandoc
+              shake
+              ShellCheck
+              stack
+              stylish-haskell
+              nats
+              transformers-compat
+              ]
+          );
+  };
+}
+#+END_SRC
 * Language related
 ** Haskell
 *** ~/.ghci

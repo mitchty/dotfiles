@@ -8,6 +8,7 @@ NEXTGEN:=$(PWD)/generation/$(NEXT)
 LASTGEN:=$(PWD)/generation/$(LAST)
 TANGLERS:=readme.org
 GEN:=$(LAST)
+OPTIONS:=
 
 all: clean tangle-next
 
