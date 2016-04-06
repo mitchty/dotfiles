@@ -68,12 +68,11 @@ compile/tangle files that can then be trivially rsynced to remote machines,
 or to tar/xz the files as needed. The key here is emacs is only required
 to generate config files.
 
-#+BEGIN_SRC sh :tangle (make-directory "tmp" ".")
-# cheap hack to work around org-mode shenanigans
-#+END_SRC
-
 * ~/.profile
-#+BEGIN_SRC sh :tangle tmp/.profile :results replace
+:PROPERTIES:
+:header-args: :tangle /tmp/.profile :comments no :padline no :cache yes
+:END:
+#+BEGIN_SRC sh :results replace
 # -*- mode: Shell-script; -*-
 # Common .profile
 
@@ -240,15 +239,9 @@ if [ $? -eq 0 ]; then
 else
   alias T="\$(which tail) -f"
 fi
-
 #+END_SRC
+
 * ~/bin
-
-Mkdir on tmp/bin to start
-
-#+BEGIN_SRC sh :tangle (make-directory "tmp/bin" ".")
-# you'll see a lot of these cheap hacks ahead
-#+END_SRC
 
 ** ~/bin/cidr
 
@@ -256,7 +249,7 @@ A stupid script I wrote ages ago to help me be lazy with cidr
 notation for stuff. Setup the wrong netmask a few times and
 you too, will wish for something similar.
 
-#+BEGIN_SRC perl :tangle tmp/bin/cidr :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/cidr :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Convert input ip/cidr|netmask|hexnetmask to useable network information.
@@ -414,7 +407,7 @@ $ dns 216.58.216.206
 ord31s21-in-f206.1e100.net is 216.58.216.206
 ord31s21-in-f206.1e100.net is also ord31s21-in-f206.1e100.net
 
-#+BEGIN_SRC perl :tangle tmp/bin/dns :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/dns :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Stupid script to help with dns information. Solaris 9/8 lack the host utility.
@@ -457,7 +450,7 @@ exit 0;
 
 Stupid simple timestamp script that just takes input, and prefixes a timestamp to to output. Thats it.
 
-#+BEGIN_SRC perl :tangle tmp/bin/ts :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ts :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Timestamp stdin and then print to stdout and flush.
@@ -507,7 +500,7 @@ $ diskhog -n 4 /tmp
 420.57k  /private/tmp/sysp.xml
 161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
 
-#+BEGIN_SRC perl :tangle tmp/bin/diskhog :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/diskhog :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Find out who is hogging disk space and where.
@@ -675,7 +668,7 @@ bridge100@1500   192.168.64.1/24    a:b:c:d:e:f
 
 Comes in slightly handy, no guarantees it parses ifconfig right tho.
 
-#+BEGIN_SRC perl :tangle tmp/bin/ifinfo :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ifinfo :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Because ifconfig output is... overly verbose.
@@ -891,7 +884,7 @@ if (scalar(@output) < 1){
 Mostly because I use iso8601 timestamps and its nice to use them
 generally without depending on gnu date.
 
-#+BEGIN_SRC perl :tangle tmp/bin/iso8601 :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/iso8601 :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #-*-mode: Perl; coding: utf-8;-*-
 use strict;
@@ -909,7 +902,7 @@ exit 0;
 
 Basically getent passwd $username/$uid to show who is on a system.
 
-#+BEGIN_SRC perl :tangle tmp/bin/whoson :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/whoson :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Because i'm lazy and sick of typing in getent passwd $someusername/uid
@@ -946,7 +939,7 @@ foreach my $user (keys %users){
 
 Silly wrapper perl script that makes it easier to get at the gecos string for a $user/$uid.
 
-#+BEGIN_SRC perl :tangle tmp/bin/gecos :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/gecos :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Dumb wrapper to get the gecos information from a uid/username.
@@ -968,7 +961,7 @@ foreach my $input (@ARGV){
 
 Stupid perl script to mimic hatimerun for systems that don't have it.
 
-#+BEGIN_SRC perl :tangle tmp/bin/hatimerun :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/hatimerun :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # hatimerun in perl, sorta
@@ -1037,7 +1030,7 @@ if ($@){
 
 Silly perl based ptree alike implementation. Mad old code that should be avoided at all costs but it works and I'm not fixing it unless I need to.
 
-#+BEGIN_SRC perl :tangle tmp/bin/ptree.pl :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ptree.pl :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # ptree for linux/darwin/solaris. I got sick of ps and pstree on linux.
@@ -1215,7 +1208,7 @@ exit 0;
 
 Just find out if a port responds to anything tcp related or not.
 
-#+BEGIN_SRC perl :tangle tmp/bin/portchk :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/portchk :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env perl
 #
 # Dumb wrapper to get the gecos information from a uid/username.
@@ -1242,8 +1235,7 @@ notify "some command" "not ok"
 
 First param is the message, second title of the notification.
 
- sh :tangle tmp/bin/notify :results replace :tangle-mode (identity #o755)
-#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/bin/notify") :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC sh :mkdirp yes :tangle (when (eq osx-p t) "tmp/bin/notify") :results replace :tangle-mode (identity #o755)
 #!/bin/sh
 message=${1:="no message"}
 title=''
@@ -1261,8 +1253,7 @@ osascript -e "${notification}"
 
 Stupid ruby script I wrote to highlight the week/day in a calendar.
 
-
-#+BEGIN_SRC ruby :tangle tmp/bin/today :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC ruby :mkdirp yes :tangle tmp/bin/today :results replace :tangle-mode (identity #o755)
 #!/usr/bin/env ruby
 cal, today, week_color, day_color, reset = %x(cal).split(%r(\n)), Time.now.day, %x(tput sgr0;tput setab 4;tput setaf 7), %x(tput sgr0; tput setab 0;tput setaf 7;tput bold), %x(tput sgr0)
 done=false
