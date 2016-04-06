@@ -3,7 +3,7 @@
   (normal-top-level-add-subdirs-to-load-path))
 
 (load-file (if (getenv "OPTIONS")
-               (getenv "OPTIONS")
+               (concat (concat "./" (getenv "OPTIONS")) ".el")
                "./options.el"))
 
 (require 'org-install)
