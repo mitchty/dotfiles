@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+#-*-mode: Shell-script; coding: utf-8;-*-
+# File: ddiff.sh
+# Copyright: 2016 Mitch Tishmack
+# Description: Stupid recursive directory diff
+export script=$(basename "$0")
+export dir=$(cd "$(dirname "$0")"; pwd)
+export iam=${dir}/${script}
+rc=0
+src="$1"
+dest="$2"
+
+cd "$src" || exit 1
+for file in $(find . -type f -print); do
+  ffile=$(echo "$file" | sed -e 's|\.\/||')
+  dfile=$(echo "${dest}/${file}" | sed -e 's|\.\/||')
+  if [ -e "${dfile}" ]; then
+    diff -u "${ffile}" "${dfile}"
+    rc=$((rc + $?))
+  else
+    echo "source file ${ffile} not found in ${dest} as ${dfile}, ignoring"
+  fi
+done
+
+exit $rc

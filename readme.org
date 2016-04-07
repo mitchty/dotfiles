@@ -1,0 +1,2375 @@
+#+TITLE: Dotfiles Everywhere
+#+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
+#+BABEL: :cache yes
+#+PROPERTY: header-args :tangle yes :comments no :padline no
+
+In the long long ago (2015), I used xstow and update-dotdee to construct my
+dotfiles from tiny pieces of files.
+
+I have since evolved to this setup. Originally the intention was to make it easy
+for me to compile dotfiles based on certain parameters. Aka, my dotfiles are the
+same for x, y, and z, whatever those are, but for certain cases z should have
+one section be different or added etc... as the case may be.
+
+Aka it was just a glorified program or templating system.
+
+Since I already use org-mode to build my emacs configuration,
+why not just do the same for the dotfiles. Bonus, now I can have ALL
+my dotfiles in one logical file that can build itself.
+
+So now if you want to look at my dotfiles, they're all in here. With one
+caveat that my emacs configuration is not. That is still separate, I might
+change that at some point in the future, but that day is not today.
+
+* Use
+
+Use of this setup is simple. There really is one step:
+- make
+
+??? HOW ???
+
+Well the Makefile is pretty basic, start there. But generally here is how
+the sausage is being made.
+
+There are a couple helper scripts:
+- etangle, aka emacs tangle, which is just a wrapper around emacs+org for
+  the commandline/makefile to use.
+- ddiff, a rather stupid shell script that recursively diffs directory a
+  to directory b, ignoring files that do not exist in directory b but
+  exist in a (aka new files).
+
+NOTE: Removal of files is YOUR job, not this thing. One could
+theoretically look at what changed between two generations and
+remove that. BUT that sounds janky and error prone. Removal of
+files is the users job, not this setup.
+
+** Explanation of what is happening
+
+The prelude controls org variables that change how files get tangled to files.
+
+This allows me to tangle files that would be useful for linux/bsd/etc...
+without affecting the existing files.
+
+The general idea is this (look at Makefile for details):
+- increment generation count from last generation
+- tangle files to tmp/$filename based on current settings
+- copy tmp to generation/N
+- iff generation/(N-1) exists, diff each file there to what exists at DEST
+- If diffing fails, the destination files have been updated, STOP, might lose
+  hand edited changes. Note, if destination does not exist, this is ignored.
+  Also setting FORCE will ignore this check.
+- If diffing does not fail, hardlink generation/N/$files to DEST/$files
+- Update last with current generation.
+
+Note, the destination can be anywhere, not just $HOME. This allows one to
+compile/tangle files that can then be trivially rsynced to remote machines,
+or to tar/xz the files as needed. The key here is emacs is only required
+to generate config files.
+
+* ~/.profile
+:PROPERTIES:
+:header-args: :tangle tmp/.profile :comments no :padline no :cache yes :mkdirp yes
+:END:
+
+** PS1
+
+#+BEGIN_SRC sh
+# -*- mode: Shell-script; -*-
+# Common .profile
+#
+# DO NOT EDIT, managed by org mode
+_uname=$(uname)
+_uname_n=$(uname -n)
+_hostname=$(hostname)
+export _uname _uname_n _hostname
+#+END_SRC
+
+OSX uses hostname -s for getting hostname
+
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+_host=$(hostname -s)
+#+END_SRC
+
+Otherwise we just use what uname -n sent.
+
+#+BEGIN_SRC sh
+_host=${_host:=${_uname_n}}
+#+END_SRC
+
+** PATH
+*** osx
+OSX homebrew leftovers, need to make sure it make sense any longer as I've switched to nix.
+
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+osx_release=$(sw_vers -productVersion | sed -e 's/\.[0-9]\{1\}//2')
+brew_home=/usr/local/brew/${osx_release}
+PATH="${brew_home}/bin:/usr/local/bin:${PATH}"
+export PATH
+#+END_SRC
+*** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+PATH="${PATH}:${HOME}/.cabal/bin"
+#+END_SRC
+*** General
+#+BEGIN_SRC sh :tangle "tmp/.profile"
+PATH="${PATH}:${HOME}/bin"
+export PATH
+#+END_SRC
+
+** Functions
+*** General
+Generally useful functions.
+
+#+BEGIN_SRC sh
+# cat out a : separated env variable
+# variable is the parameter
+cat_env()
+{
+  set | grep '^'"$1"'=' > /dev/null 2>&1 && eval "echo \$$1" | tr ':' '
+' | awk '!/^\s+$/' | awk '!/^$/'
+}
+
+# Convert a line delimited input to : delimited
+to_env()
+{
+  awk '!a[$0]++' < /dev/stdin | tr -s '
+' ':' | sed -e 's/\:$//' | awk 'NF > 0'
+}
+
+# Unshift a new value onto the env var
+# first arg is ENV second is value to unshift
+# basically prepend value to the ENV variable
+unshift_env()
+{
+  new=$(eval "echo $2; echo \$$1" | to_env)
+  eval "$1=${new}; export $1"
+}
+
+# Opposite of above, but echos what was shifted off
+shift_env()
+{
+  first=$(cat_env "$1" | head -n 1)
+  rest=$(cat_env "$1" | awk '{if (NR!=1) {print}}' | to_env)
+  eval "$1=$rest; export $1"
+  echo "${first}"
+}
+
+# push $2 to $1 on the variable
+push_env()
+{
+  have=$(cat_env "$1")
+  new=$(printf "%s
+%s" "$have" "$2" | to_env)
+  eval "$1=$new; export $1"
+}
+
+# Remove a line matched in $HOME/.ssh/known_hosts for when there are legit
+# host key changes.
+nukehost()
+{
+  if [ -z "$1" ]; then
+    echo "Usage: nukehost <hostname>"
+    echo "       Removes <hostname> from ssh known_host file."
+  else
+    sed -i -e "/$1/d" ~/.ssh/known_hosts
+  fi
+}
+
+# Cheap copy function to make copying a file via ssh from one host
+# to another less painful, use pipeviewer to give some idea as to progress.
+ssh-copyfile()
+{
+  if [ -z "$1" -o -z "$2" ]; then
+    echo "Usage: copy source:/file/location destination:/file/location"
+  else
+    srchost="$(echo "$1" | awk -F: '{print $1}')"
+    src="$(echo "$1" | awk -F: '{print $2}')"
+    dsthost="$(echo "$2" | awk -F: '{print $1}')"
+    dst="$(echo "$2" | awk -F: '{print $2}')"
+    size=$(ssh "$srchost" du -hs "$src" 2> /dev/null)
+    size=$(echo "${size}" | awk '{print $1}')
+    echo "Copying $size to $dst"
+    ssh "$srchost" "/bin/cat \$src" 2> /dev/null | pv -cb -N copied - | ssh "$dsthost" "/bin/cat - > \$dst" 2> /dev/null
+  fi
+}
+
+# extract function to automate being lazy at extracting archives.
+extract()
+{
+  if [ -f "$1" ]; then
+    case ${1} in
+      *.tar.bz2|*.tbz2|*.tbz)  bunzip2 -c "$1" | tar xvf -;;
+      *.tar.gz|*.tgz)          gunzip -c "$1" | tar xvf -;;
+      *.tz|*.tar.z)            zcat "$1" | tar xvf -;;
+      *.tar.xz|*.txz|*.tpxz)   xz -d -c "$1" | tar xvf -;;
+      *.bz2)                   bunzip2 "$1";;
+      *.gz)                    gunzip "$1";;
+      *.jar|*.zip)             unzip "$1";;
+      *.rar)                   unrar x "$1";;
+      *.tar)                   tar -xvf "$1";;
+      *.z)                     uncompress "$1";;
+      *.rpm)                   rpm2cpio "$1" | cpio -idv;;
+      *)                       echo "Unable to extract <$1> Unknown extension."
+    esac
+  else
+    print "File <$1> does not exist."
+  fi
+}
+
+# Tcsh compatibility so I can be a lazy bastard and paste things directly
+# if/when I need to.
+setenv()
+{
+  export "$1=$2"
+}
+
+# Just to be lazy, set/unset the DEBUG env variable used in my scripts
+debug()
+{
+  if [ -z "$DEBUG" ]; then
+    if [ -z "$1" ]; then
+      echo Setting DEBUG to "$1"
+      setenv DEBUG "$1"
+    else
+      echo Setting DEBUG to default
+      setenv DEBUG default
+    fi
+  else
+    echo Unsetting DEBUG
+    unset DEBUG
+  fi
+}
+
+login_shell()
+{
+  [ "$-" = "*i*" ]
+}
+
+# Yeah, sick of using the web browser for this crap
+# Use is NUM FROM TO and boom get the currency converted from goggle.
+cconv()
+{
+  curl -L --silent\
+       "https://www.google.com/finance/converter?a=$1&from=$2&to=$3" \
+         | grep converter_result \
+             | perl -pe 's|[<]\w+ \w+[=]\w+[>]||g;' -e 's|[<][/]span[>]||'
+}
+#+END_SRC
+
+*** git
+#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+maybe_git_repo()
+{
+  # assume https if input doesn't contain a protocol
+  proto=https
+  destination=${HOME}/src
+  echo "${1}" | grep '://' > /dev/null 2>&1
+  [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
+  git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
+  rrepo="${proto}://${git_dir}"
+
+  # strip user@, :NNN, and .git from input uri's
+  repo="${destination}/"$(echo "${git_dir}" |
+    sed -e 's/\.git$//g' |
+    sed -e 's|.*\@||g' |
+    sed -e 's|\:[[:digit:]]\{1,\}\/|/|g' |
+    tr -d '~')
+
+  if [ ! -d "${repo}" ]; then
+    git ls-remote "${rrepo}" > /dev/null 2>&1
+    if [ $? = 0 ]; then
+      mkdir -p "${repo}"
+      echo "git clone ${rrepo} ${repo}"
+      git clone "${rrepo}" "${repo}"
+    else
+      echo "${rrepo} doesn't look to be a git repository"
+    fi
+  fi
+  [ -d "${repo}" ] && cd "${repo}"
+}
+
+gh()
+{
+  maybe_git_repo "https://github.com/${1}"
+}
+
+bb()
+{
+  maybe_git_repo "https://bitbucket.org/${1}"
+}
+#+END_SRC
+*** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+hmap()
+{
+  ghc -e "interact ($*)"
+}
+
+hmapl()
+{
+  hmap "unlines.($*).lines"
+}
+
+hmapw()
+{
+  hmapl "map (unwords.($*).words)"
+}
+#+END_SRC
+*** nix
+#+BEGIN_SRC sh :tangle (when (eq nix-p t) "tmp/.profile")
+mk_nix_shell()
+{
+  cabal2nix --sha256="0" . \
+    | perl -0777 -p -e 's/{.+}:/{ haskellPackages ? (import <nixpkgs> {}).haskellPackages }:/s' \
+    | sed -E -e 's/(cabal\.mkDerivation)/with haskellPackages; \1/' -e 'sXsha256 = "0";Xsrc = "./.";X' \
+          > shell.nix;
+}
+
+nix_env_setup()
+{
+  # The nix installer put something like this into the .profile.
+  # BAD INSTALLER NO COOKIE!
+  if [ -e ${HOME}/.nix-profile/etc/profile.d/nix.sh ]; then
+      . ${HOME}/.nix-profile/etc/profile.d/nix.sh;
+      export NIX_PATH=${HOME}/src/github.com/NixOS/nixpkgs:nixpkgs=${HOME}/src/github.com/NixOS/nixpkgs
+      export NIX_CFLAGS_COMPILE="-idirafter /usr/include"
+      export NIX_CFLAGS_LINK="-L/usr/lib"
+
+      NIX_GHC=$(type -p ghc > /dev/null 2>&1)
+      if [ -n "$NIX_GHC" ]; then
+          eval $(grep export "$NIX_GHC")
+      fi
+  fi
+
+  nr()
+  {
+    nix-shell --run "$(echo $@)"
+  }
+}
+
+nix_env_setup
+#+END_SRC
+*** tmux
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+t()
+{
+  if [ -z "$1" ]; then
+    echo "Supply a tmux session name to connect to/create"
+  else
+    tmux has-session -t "$1" 2>/dev/null
+    [ $? != 0 ] && tmux new-session -d -s "$1"
+    tmux attach-session -d -t "$1"
+  fi
+}
+#+END_SRC
+*** x
+#+BEGIN_SRC sh :tangle (when (eq x-p t) "tmp/.profile")
+modmap()
+{
+	[ -f "${HOME}/.Xmodmap" ] && xmodmap "${HOME}/.Xmodmap"
+}
+#+END_SRC
+** Aliases
+*** General
+#+BEGIN_SRC sh
+# general aliases
+alias s="\$(which ssh)"
+alias quit='exit'
+alias cr='reset; clear'
+alias a=ag
+alias n=noglob
+alias l=ls
+alias L='ls -dal'
+alias cleandir="find . -type f \( -name '*~' -o -name '#*#' -o -name '.*~' -o -name '.#*#' -o -name 'core' -o -name 'dead.letter*' \) | grep -v auto-save-list | xargs -t rm"
+
+# Prefer less for paging duties.
+which less > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  alias T="\$(which less) -f +F"
+else
+  alias T="\$(which tail) -f"
+fi
+#+END_SRC
+
+*** osx
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+alias o='open -a'
+#+END_SRC
+*** git
+#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+alias g=git
+#+END_SRC
+*** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+alias ghce="ghc -e ':l ~/.ghc.hs' -e"
+#+END_SRC
+*** mosh
+#+BEGIN_SRC sh :tangle (when (eq mosh-p t) "tmp/.profile")
+alias m=mosh
+#+END_SRC
+
+*** tmux
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+alias tl='tmux ls'
+#+END_SRC
+* ~/bin
+
+** ~/bin/cidr
+
+A stupid script I wrote ages ago to help me be lazy with cidr
+notation for stuff. Setup the wrong netmask a few times and
+you too, will wish for something similar.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/cidr :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Convert input ip/cidr|netmask|hexnetmask to useable network information.
+#
+
+use strict;
+use warnings;
+use Socket;
+use Sys::Hostname;
+
+#
+# Globalish vars
+#
+$ENV{PATH} = '/usr/bin:/bin:/usr/sbin:/sbin'; # Paranoia, know thy name!
+my ($fqdn_regexp) = qr/([0-9,a-z,A-Z,\-,\_]+)\.([0-9,a-z,A-Z,\-,\_]+)\.(com|gov)/;
+
+#
+# converts a 1-word (4 byte) signed or unsigned integer into a dotted decimal
+# ip address.
+#
+sub int2ip {
+  my $n=int(pop);
+  return(sprintf("%d.%d.%d.%d", ($n>>24)&0xff,($n>>16)&0xff,
+    ($n>>8)&0xff,$n&0xff));
+};
+
+#
+# Convert a host/ip/netmask/cidr/etc.... to a hash of information
+# Example: host.domain.tld/24 will get the ip and calculate the netmask info
+#  equally if host.domain.tld corresponds with 1.2.3.4 the following is valid
+#  1.2.3.4/255.255.255.0 would obtain the same information.
+#
+# die()'s if anything isn't kosher.
+#
+# Ultra long function, probably needs to be looked at for condensing/splitting.
+#
+sub cidr2raw {
+  my $rawinput = pop;
+  my ($lhs, $rhs, $j, $uip) = (undef, undef, undef, undef);
+  my ($ucidr) = 0;
+  my ($network, $bits, $netmask, $broadcast, $low, $high);
+
+  if ($rawinput =~ qr/(.*)\/(.*)/){
+      $lhs = $1; $rhs = $2;
+  }else{
+    die "Input: $rawinput not expected.\n";
+  };
+
+  #
+  # Handle ip/hostname for left hand side.
+  if ($lhs =~ qr/(\d+)\.(\d+)\.(\d+)\.(\d+)/){
+    foreach my $dotted (($1,$2,$3,$4)){
+      if (($dotted > 255) or ($dotted < 0)){
+        die "FATAL: ipv4 address entered, $lhs entered is impossible, $dotted is not between 0-255.\n";
+      };
+    };
+    $uip = inet_ntoa(scalar gethostbyname($lhs));
+    die "FATAL: Cannot determine hostname for $lhs$!\n" if (!defined($lhs));
+  }elsif ($lhs =~ $fqdn_regexp){
+    my $tmp = gethostbyname($lhs);
+    die "FATAL: Cannot determine ip for $lhs" if (!defined($tmp));
+    $uip = inet_ntoa($tmp);
+  }else{
+    die "FATAL: host value not fully qualified, or not an ip <$lhs>\n";
+  };
+
+  #
+  # Handle the netmask/cidr for the right hand side,
+  #
+  # All input netmasks are converted to a cidr address for notation
+  if ($rhs =~ qr/^(\d+)$/){ # /cidr
+    $ucidr = $1;
+    die "FATAL: Invalid CIDR <$ucidr>.$!\n" if (($ucidr > 32) or ($ucidr < 0));
+  }elsif ($rhs =~ qr/(0[xX])?([0-9,a-f,A-F]{7})/){ # /0xhexnetmask
+    my $trimmed = $2;
+    my $insane = 0;
+    foreach my $byte (split('', unpack("B32", pack("H*", $trimmed)))){
+      ($byte) ? $ucidr++ : $insane++;
+      die "FATAL: $rhs is not a valid hex netmask.$!\n" if ($insane and $byte);
+    };
+  }elsif ($rhs =~ qr/(\d+)\.(\d+)\.(\d+)\.(\d+)/){ # /255.255.255.0 form
+    my @a = ($1, $2, $3, $4);
+    my $insane = 0;
+    foreach my $t (@a){
+      die "FATAL: Netmask out of range. Input <$rhs> Invalid <$t>$!\n" if (($t < 0) or ($t > 255));
+    };
+    foreach my $byte (split('', unpack("B32", pack("C4", @a)))){
+      ($byte) ? $ucidr++ : $insane++;
+      die "FATAL: $rhs is not a valid netmask.$!\n" if ($insane and $byte);
+    };
+  }else{
+    die "FATAL: Unknown or invalid netmask value entered. <$rhs>\n";
+  };
+
+  #
+  # Network math GO! This is the meat of the function.
+  my (@uip) = split(/\./, $uip);
+  $network = 0;
+  for ($j = 0; $j <= $#uip; $j++){
+    $network += int($uip[$j])<<((3-$j)*8);
+  };
+
+  $bits = 0; $j = 0;
+  for ($j = 31 - $ucidr; $j >= 0; $j--){
+    $bits |= 1<<$j;
+  };
+
+  $netmask = 0xffffffff^$bits;
+  $low = ($network&$netmask);
+  $high = ($network&$netmask)+$bits-1;
+  $broadcast = ($network&$netmask)|$bits;
+  my ($guessed_hostname,undef,undef,undef,undef) = gethostbyaddr(inet_aton($uip), AF_INET);
+
+  #
+  # Throw the info back, they get a hash with zie info they may/may not need.
+  # All up to the caller what they want to use.
+  #
+  return ("inet4" => $uip,
+          "netmask" => int2ip($netmask),
+          "broadcast" => int2ip($broadcast),
+          "cidr" => $ucidr,
+          "router" => int2ip($low+1),
+          "network" => int2ip($low),
+          "high" => int2ip($high),
+          "hostname" => $guessed_hostname,
+          );
+};
+
+#package Main; # future use
+
+foreach my $arg (@ARGV){
+  my %stuff = cidr2raw($arg);
+  printf("%s/%s is %s/%s\n%-12s\t%s\n%-12s\t%s\n%-12s\t%s\n%-12s\t%s\n%-12s\t%s\n",
+             $stuff{"inet4"},$stuff{"cidr"},
+             $stuff{"network"},$stuff{"cidr"},
+             "Netmask",$stuff{"netmask"},
+             "Broadcast",$stuff{"broadcast"},
+             "Network",$stuff{"network"},
+             "Router",$stuff{"router"},
+             "HighUsable",$stuff{"high"},
+      );
+};
+#+END_SRC
+
+** ~/bin/dns
+
+Just a silly dns script that slighly mimics the old host utility
+of yore. Can also do reverse lookups.
+
+Example:
+$ dns google.com
+google.com is 216.58.216.206
+google.com is also google.com
+$ dns 216.58.216.206
+ord31s21-in-f206.1e100.net is 216.58.216.206
+ord31s21-in-f206.1e100.net is also ord31s21-in-f206.1e100.net
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/dns :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Stupid script to help with dns information. Solaris 9/8 lack the host utility.
+# Which this (kinda) mimics, except the mx record crap
+use strict;
+use warnings;
+use Socket;
+use Sys::Hostname;
+
+my $input = shift || hostname();
+my $lookup = $input;
+
+if ( $lookup =~ /\d+[.]\d+[.]\d+[.]\d+/smx ) {
+  $lookup = ( gethostbyaddr inet_aton($lookup), AF_INET )[0];
+  die "Error: Unable to reverse lookup ip $input.\n" if ( $lookup eq q{} );
+}
+
+my $ipv4 = gethostbyname $lookup;
+
+die "Error: $lookup doesn't have any known ip addresses\n"
+  if ( !defined $ipv4 );
+
+$ipv4 = inet_ntoa($ipv4);
+
+my ( $short_name, $aliases, $addrtype, $len, @addrs ) = gethostbyname $lookup;
+
+foreach my $ipv4 (@addrs) {
+  $ipv4 = inet_ntoa($ipv4);
+  print "$lookup is $ipv4\n";
+}
+
+print "$lookup is also $short_name\n";
+if ( defined $aliases and "$aliases" ne q{} ) {
+  print "aliases are ($aliases)\n";
+}
+exit 0;
+#+END_SRC
+
+** ~/bin/ts
+
+Stupid simple timestamp script that just takes input, and prefixes a timestamp to to output. Thats it.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ts :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Timestamp stdin and then print to stdout and flush.
+#
+# Thats about it. Might add a quick and dirty option to allow you to
+# specify the time output whatnot. But this is intended to be simple.
+use strict;
+use warnings;
+use POSIX qw(strftime);
+use IO::Handle;
+STDOUT->autoflush(1);
+
+while(<STDIN>){
+  my $now       = time;
+  my $tz        = strftime(('%z', (localtime $now)));
+  $tz =~ s/(\d{2})(\d{2})/$1:$2/smx;
+  my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
+  print "$time$tz ".$_;
+};
+#+END_SRC
+
+** ~/bin/diskhog
+
+Old script I wrote after I had to figure out where space was used and it was mostly all in a directory with a ton of small files.
+
+Written in anger. Not all that useful nominally.
+
+Defaults to /tmp if you don't specify where, also defaults to the top 10 offenders/users of space.
+
+Its not particuarly bright, or even good code. If you want ALL THE THINGS, pass -n -1 in and you will get a ton of output. Good luck with that.
+
+Example:
+$ diskhog
+1.79m    /private/tmp
+1.38m    /private/tmp/wifi-Ea5Y9F.log
+420.57k  /private/tmp/sysp.xml
+161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=/ksfetch
+161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
+0.00k    /private/tmp/com.apple.launchd.yaVsd6J1re
+0.00k    /private/tmp/cvcd
+0.00k    /private/tmp/com.apple.launchd.IPS1lPqGTD
+0.00k    /private/tmp/com.apple.launchd.voZH6WFol3
+0.00k    /private/tmp/ct.shutdown
+$ diskhog -n 4 /tmp
+1.79m    /private/tmp
+1.38m    /private/tmp/wifi-Ea5Y9F.log
+420.57k  /private/tmp/sysp.xml
+161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/diskhog :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Find out who is hogging disk space and where.
+#
+# Argument is the directory to start from. Only calculates size of files.
+# Adds the size of files in a directory to the size of the parent directory only.
+#
+# Defaults to top 10 directories/files.
+#
+# Override with -n num to list whatever amount of large things you desire.
+# Or if you want to abuse the parser, use -1 for all files/directories.
+#
+# Defaults to pwd for space.
+#
+
+use File::Find;
+use Getopt::Long;
+use Cwd;
+
+my $debug;
+my $statbug;
+(exists($ENV{"DEBUG"})) ? $debug++ : undef;
+my $dir = Cwd::abs_path($ARGV[-1] || Cwd::getcwd());
+my %diskhogs = ();
+my %inodes = ();
+my ($topdev,undef,undef,undef,undef,undef,undef,undef) = lstat($dir);
+local $opt_displaynum = 10;
+
+GetOptions( 'n=i',  => \$opt_displaynum,
+      );
+
+find(\&sieve, $dir);
+
+#
+# For outputing the size of a bunch of bytes in g/m/k depending upon the size
+#
+sub byte_print {
+  my $byte_k = 1_024;
+  my $byte_m = $byte_k**2;
+  my $byte_g = $byte_k**3;
+  my $bytes = pop;
+  my $base = $bytes;
+  my $suffix = "nil";
+  my $out_string = "BUG";
+  if($bytes > $byte_g){
+    $base = $bytes / $byte_g;
+    $suffix = "g";
+  }elsif($bytes > $byte_m){
+    $base = $bytes / $byte_m;
+    $suffix = "m";
+  }else{
+    $base = $bytes / $byte_k;
+    $suffix = "k";
+  };
+  $out_string = sprintf("%.2f%s", $base, $suffix);
+  return $out_string;
+};
+
+#
+# Dumb function to return if an inode has already been seen.
+# So we handle hard links sane(er-ish-ly) in size calculations.
+# This has more truthiness(tm).
+#
+sub seeninode{
+  my $what = pop();
+  my $ret = 0;
+  unless(exists($inodes{$what})){
+    $inodes{$what} = 0;
+    print "New inode $what added to seen inodes.\n" if $debug;
+  }else{
+    $inodes{$what}++;
+    $ret++;
+    print "Found a hardlink for $what.\n" if $debug;
+  };
+  return $ret;
+};
+
+sub sieve {
+  my $file = $File::Find::name;
+  my $filedir = $File::Find::dir;
+  my @statinfo = lstat($file);
+  my $dev = $statinfo[0];
+  my $inode = $statinfo[1];
+  my $size = $statinfo[7];
+  my $blocksize = 512; # field 11 is the "preferred" block size, which appears
+                       # to not match the actual blocksize of the filesystems
+                       # in use. For now every hard drive uses 512bytes/block.
+                       # Will revisit this when 4096byte/block hard drives arrive
+  my $apparentsize = $statinfo[12] * $blocksize;
+
+  print "$file\@$filedir \<$topdev\>\=\<$dev\>\n" if $debug;
+  print "size,apparentsize,blocksize = <$statinfo[7],$apparentsize\,$blocksize\>\n" if $debug;
+  #
+  # Try to handle sparse files.
+  #
+  if ($size > $apparentsize) {
+    print "Sparse file $file!\n" if $debug;
+    $size = $apparentsize;
+  };
+
+  $dev = (-l $file) ? 0xdeadbeef : $dev;
+  if (($file =~ m/\/proc|\/chroot|udev\/devices/) ||
+      ($dev != $topdev) || seeninode($inode)){
+    print "Pruned $file.\n" if $debug;
+    $File::Find::prune = 1;
+    next;
+  };
+  unless ($dev){
+    # Yay, we can't l(stat) files. This version of perl is broken.
+    # Snag information from ls, assume it's a file. Thanks Solaris 8, you suck.
+    $statbug++;
+    warn "Hit empty device statbug while stat()ing file <$file>.\n";
+    my $ls = qx(ls -ld $file);
+    my @raw = split(/\s+/, $ls);
+    $diskhogs{"$file"} = $raw[4];
+    $diskhogs{"$filedir"} += $raw[4];
+  }elsif (-f){
+    if ($debug){
+      print "Adding $file size ", &byte_print($size), " to $filedir.\n";
+      print "Adding $file size ", &byte_print($size), "\n";
+    };
+    $diskhogs{"$file"} = $size;
+    $diskhogs{"$filedir"} += $size;
+  }elsif (-d){
+    print "Adding $file size ".&byte_print($size)."\n" if $debug;
+    $diskhogs{"$file"} += $size;
+  };
+  if ($debug) {
+    print "$file from $filedir has size ".&byte_print($diskhogs{"$file"})."\n";
+  };
+};
+
+#
+# Reverse sort the keys by size.
+#
+my @sorted = sort {$diskhogs{$b} <=> $diskhogs{$a}} keys %diskhogs;
+
+splice @sorted, $opt_displaynum if @sorted > $opt_displaynum;
+
+warn "Found one or more instances of the stat() call statbug. This is normally only present on Solaris 8 with stock perl.\n" if $statbug;
+
+foreach (@sorted){
+  printf "%-9s%s\n", &byte_print($diskhogs{$_}), $_;
+};
+
+if ($debug){
+  print "DEBUG INFORMATION:\n";
+  foreach (keys %diskhogs){
+    printf "%-9s%s\n", &byte_print($diskhogs{$_}), $_;
+  };
+};
+#+END_SRC
+** ~/bin/ifinfo
+
+I don't remember now why I wrote this but its just a simpler view
+of interfaces on a system.
+
+Probably some old solaris holdover thing I can nuke.
+
+Example:
+$ ifinfo
+gif0@1280        127.0.0.1/8        a:b:c:d:e:f
+en1@1500         10.1.10.15/24      a:b:c:d:e:f
+bridge100@1500   192.168.64.1/24    a:b:c:d:e:f
+
+Comes in slightly handy, no guarantees it parses ifconfig right tho.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ifinfo :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Because ifconfig output is... overly verbose.
+#
+# Output information from ifconfig -a like so:
+#   interface:mtu ipv4/cidr mac_address ipv6_addr(if applicable)
+#   ipv6 is not yet in place due to a: lazy, b: can't use it yet.
+#
+
+use strict;
+use Socket;
+use Sys::Hostname;
+$ENV{'PATH'}='/sbin:/usr/sbin:/bin:/usr/bin';
+
+my ($fqdn_regexp) = qr/([0-9,a-z,A-Z,\-,\_]+)\.([0-9,a-z,A-Z,\-,\_]+)\.(com|gov)/;
+
+#
+# converts a 1-word (4 byte) signed or unsigned integer into a dotted decimal
+# ip address.
+#
+sub int2ip {
+  my $n=int(pop);
+  return(sprintf("%d.%d.%d.%d", ($n>>24)&0xff,($n>>16)&0xff,
+    ($n>>8)&0xff,$n&0xff));
+};
+
+#
+# Convert a host/ip/netmask/cidr/etc.... to a hash of information
+# Example: host.domain.tld/24 will get the ip and calculate the netmask info
+#  equally if host.domain.tld corresponds with 1.2.3.4 the following is valid
+#  1.2.3.4/255.255.255.0 would obtain the same information.
+#
+# die()'s if anything isn't kosher.
+#
+# Ultra long function, probably needs to be looked at for condensing/splitting.
+#
+sub cidr2raw {
+  my $rawinput = pop;
+  my ($lhs, $rhs, $j, $uip) = (undef, undef, undef, undef);
+  my ($ucidr) = 0;
+  my ($network, $bits, $netmask, $broadcast, $low, $high);
+
+  if ($rawinput =~ qr/(.*)\/(.*)/){
+      $lhs = $1; $rhs = $2;
+  }else{
+    die "Input: $rawinput not expected.\n";
+  };
+
+  #
+  # Handle ip/hostname for left hand side.
+  if ($lhs =~ qr/(\d+)\.(\d+)\.(\d+)\.(\d+)/){
+    foreach my $dotted (($1,$2,$3,$4)){
+      if (($dotted > 255) or ($dotted < 0)){
+        die "FATAL: ipv4 address entered, $lhs entered is impossible, $dotted is not between 0-255.\n";
+      };
+    };
+    $uip = "$1.$2.$3.$4";
+  };
+  #
+  # Handle the netmask/cidr for the right hand side,
+  #
+  # All input netmasks are converted to a cidr address for notation
+  if ($rhs =~ qr/^(\d+)$/){ # /cidr
+    $ucidr = $1;
+    die "FATAL: Invalid CIDR <$ucidr>.$!\n" if (($ucidr > 32) or ($ucidr < 0));
+  }elsif ($rhs =~ qr/(0[xX])?([0-9,a-f,A-F]{7})/){ # /0xhexnetmask
+    my $trimmed = $2;
+    my $insane = 0;
+    foreach my $byte (split('', unpack("B32", pack("H*", $trimmed)))){
+      ($byte) ? $ucidr++ : $insane++;
+      die "FATAL: $rhs is not a valid hex netmask.$!\n" if ($insane and $byte);
+    };
+  }elsif ($rhs =~ qr/(\d+)\.(\d+)\.(\d+)\.(\d+)/){ # /255.255.255.0 form
+    my @a = ($1, $2, $3, $4);
+    my $insane = 0;
+    foreach my $t (@a){
+      die "FATAL: Netmask out of range. Input <$rhs> Invalid <$t>$!\n" if (($t < 0) or ($t > 255));
+    };
+    foreach my $byte (split('', unpack("B32", pack("C4", @a)))){
+      ($byte) ? $ucidr++ : $insane++;
+      die "FATAL: $rhs is not a valid netmask.$!\n" if ($insane and $byte);
+    };
+  }else{
+    die "FATAL: Unknown or invalid netmask value entered. <$rhs>\n";
+  };
+
+  #
+  # Network math GO! This is the meat of the function.
+  my (@uip) = split(/\./, $uip);
+  $network = 0;
+  for ($j = 0; $j <= $#uip; $j++){
+    $network += int($uip[$j])<<((3-$j)*8);
+  };
+
+  $bits = 0; $j = 0;
+  for ($j = 31 - $ucidr; $j >= 0; $j--){
+    $bits |= 1<<$j;
+  };
+
+  $netmask = 0xffffffff^$bits;
+  $low = ($network&$netmask);
+  $high = ($network&$netmask)+$bits-1;
+  $broadcast = ($network&$netmask)|$bits;
+
+  #
+  # Throw the info back, they get a hash with zie info they may/may not need.
+  # All up to the caller what they want to use.
+  #
+  return ("inet4" => $uip,
+          "netmask" => int2ip($netmask),
+          "broadcast" => int2ip($broadcast),
+          "cidr" => $ucidr,
+          "router" => int2ip($low+1),
+          "network" => int2ip($low),
+          "high" => int2ip($high),
+          );
+};
+
+my @ifout;
+if ($ENV{'TESTING'} ne '') {
+    while(<>){
+        chomp($_);
+        last if ($_ eq '');
+        push(@ifout, $_);
+#        sleep 1;
+#        print STDERR $_ . "\n";
+    }
+}else{
+    open IFCONFIG, "ifconfig -a |";
+    @ifout = <IFCONFIG>;
+    close IFCONFIG;
+}
+
+# This seems wrong but it makes parsing easier due to solaris
+# non root ifconfig not displaying the mac address. Reverse the output.
+#
+@ifout = reverse(@ifout);
+
+my @output = ();
+
+my ($ifname, $ifether, $ifmtu, $ifipv4, $ifnetmask, $ifipv6) = (undef,undef,undef,undef,undef,undef);
+sub printiface{
+  # assume a /32 if we don't know it
+  unless (defined($ifnetmask)) {
+    warn "$ifname has indeterminant netmask assuming /32\n";
+    $ifnetmask = '32';
+  }
+
+  unless (defined($ifnetmask)) {
+    $ifether = 'unknown';
+  }
+
+  unless ($ifname =~ m/lo.*/){
+    my %netinfo = cidr2raw("$ifipv4\/$ifnetmask");
+    $ifnetmask = $netinfo{"cidr"};
+    $ifether = lc($ifether);
+    my $line = sprintf "%-16s %-18s %-17s\n", "$ifname\@$ifmtu", "$ifipv4\/$ifnetmask", $ifether;
+    push @output, $line;
+  }
+
+  # reset vars
+  ($ifname, $ifether, $ifmtu, $ifipv4, $ifnetmask, $ifipv6) = (undef,undef,undef,undef,undef,undef);
+};
+
+foreach my $line (@ifout) {
+  if ($line =~ /inet\s+(\d+[.]\d+[.]\d+[.]\d+)\s+/){
+    $ifipv4 = $1;
+  }
+  if ($line =~ m/ether\s([:,0-9,a-f,A-F]{11,})/){
+    $ifether =$1;
+  }
+  if ($line =~ m/^([\w,\:\d+]+)\s+.*HWaddr\s([:,0-9,a-f,A-F]{11,})/){
+    $ifname = $1;
+    $ifether = $2;
+  }
+  if ($line =~ m/^(.*)\:\s+.*mtu\s(\d+)/){
+    $ifname = $1;
+    $ifmtu = $2;
+  }
+  if ($line =~ m/MTU[:](\d+)/){
+    $ifmtu = $1;
+  }
+  if ($line =~ m/inet\saddr\:(\d+[.]\d+[.]\d+[.]\d+)/){
+    $ifipv4 = $1;
+  }
+  if ($line =~ m/netmask\s+(0[xX])?([a-f,A-F,0-9]{8})/){
+    $ifnetmask = $2;
+  }
+  if ($line =~ m/Mask[:](\d+\.\d+\.\d+\.\d+)/){
+    $ifnetmask = $1;
+  }
+  if ($line =~ m/netmask\s+(\d+[.]\d+[.]\d+[.]\d+)/){
+    $ifnetmask = $1;
+  }
+  if ($line =~ m/netmask\s+0\s+broadcast/){
+    $ifnetmask = '0';
+  }
+
+  print ":$ifether:$ifname:$ifmtu:$ifipv4:$ifnetmask:$ifipv6:\n" if ($ENV{'DEBUG'} ne '');
+  printiface() if ($ifname and $ifmtu and $ifipv4 );
+};
+
+if (scalar(@output) < 1){
+  warn "No interfaces? Scripts busted yo.\n";
+}else{
+  foreach my $line (reverse(@output)){
+    print $line;
+  }
+}
+#+END_SRC
+** ~/bin/iso8601
+
+Mostly because I use iso8601 timestamps and its nice to use them
+generally without depending on gnu date.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/iso8601 :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#-*-mode: Perl; coding: utf-8;-*-
+use strict;
+use warnings;
+use POSIX qw(strftime);
+
+my $now       = time;
+my $tz        = strftime(('%z', (localtime $now)));
+$tz =~ s/(\d{2})(\d{2})/$1:$2/smx;
+my $time = strftime('%Y-%m-%dT%H:%M:%S', (localtime $now));
+print "$time$tz\n";
+exit 0;
+#+END_SRC
+** ~/bin/whoson
+
+Basically getent passwd $username/$uid to show who is on a system.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/whoson :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Because i'm lazy and sick of typing in getent passwd $someusername/uid
+#
+
+my %who_cmds = ("solaris", "/bin/who -q",
+                "linux", "/usr/bin/who -q",
+                "darwin", "/usr/bin/who -q",
+               );
+
+my $who_cmd = $who_cmds{$^O};
+
+local %users = ();
+
+foreach my $l (qx/$who_cmd/){
+  next if($l =~ m/^\#.*/);
+  foreach my $user (split(/\s+/,$l)){
+    unless(exists($users{$user})){
+      $users{$user} = 0;
+    }else{
+      $users{$user}++;
+    };
+  };
+};
+
+foreach my $user (keys %users){
+  my $gecos = ( getpwnam($user) )[6];
+  my $count = $users{$user} + 1;
+  my $output = "$user\, ".((defined($gecos)) ? "$gecos, " : '')."is logged in on $count tty".(($count>1) ? "\'s" : '')."\n";
+  print $output;
+};
+#+END_SRC
+** ~/bin/gecos
+
+Silly wrapper perl script that makes it easier to get at the gecos string for a $user/$uid.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/gecos :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Dumb wrapper to get the gecos information from a uid/username.
+
+foreach my $input (@ARGV){
+  my $gecos = undef;
+  my $uid = undef;
+  my $name = undef;
+  if ( $input =~ m/^\d+$/ ) {
+    ( $name,$uid,$gecos ) = ( getpwuid($input) )[0,2,6];
+  } else {
+    ( $name,$uid,$gecos ) = ( getpwnam($input) )[0,2,6];
+  }
+  print "$name is '$gecos' uid '$uid'\n" if $gecos;
+}
+#+END_SRC
+
+** ~/bin/hatimerun
+
+Stupid perl script to mimic hatimerun for systems that don't have it.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/hatimerun :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# hatimerun in perl, sorta
+#
+use Getopt::Long;
+
+my $opt_exitcode = 99;
+my $opt_killcode = 9;
+my $opt_timeout = 60;
+
+GetOptions( 'e=i' => \$opt_exitcode,
+            'k=i' => \$opt_killcode,
+            't=i' => \$opt_timeout,
+            'h' => \&opt_help,
+            'help' => \&opt_help,
+);
+
+sub opt_help{
+  my $message = <<__END__;
+UX: ERROR: invalid syntax
+usage: [-e return code][-k kill signal][-t seconds to wait]
+       [-h][--help]
+
+  Options
+      --help, -h     Prints this help text.
+      -e             Exit code to return on timeout.
+                     NOTE: 99 by default.
+      -k             Signal number to send via kill.
+                     NOTE: 9 by default.
+      -t             Timeout in seconds before alarming.
+                     NOTE: 60 by default.
+
+__END__
+  print $message;
+  exit 1;
+};
+
+my $pid;
+
+local $SIG{ALRM} = sub { kill $opt_killcode, $pid or die "Kill failed: $!";
+                         die "Timeout!\n"};
+
+eval{
+  my $x = defined($pid = fork());
+
+  unless ($pid){
+    print qx(@ARGV);
+    die "Exec of ", join(' ', @ARGV), " failed at $!\n";
+  };
+
+  alarm $opt_timeout;
+  waitpid $pid => 0;
+  alarm 0;
+  exit 0;
+};
+
+if ($@){
+  die "Nothing to do!\n" unless $@ eq "Timeout!\n";
+  exit $opt_exitcode;
+}else{
+  exit 0;
+};
+#+END_SRC
+
+** ~/bin/ptree.pl
+
+Silly perl based ptree alike implementation. Mad old code that should be avoided at all costs but it works and I'm not fixing it unless I need to.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ptree.pl :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# ptree for linux/darwin/solaris. I got sick of ps and pstree on linux.
+# ptree works on solaris fine, but doesn't exist for darwin/linux/etc...
+#
+# TODO: Allow passing a regexp instead of a pid and passing multiple pids.
+#
+
+local $ENV{"PATH"} = '/bin:/usr/bin:/sbin:/usr/sbin';
+local $debug = 0;
+
+(exists($ENV{"DEBUG"})) ? $debug = 1 : undef;
+($debug) ? local $| = 1 : undef; # disable buffering for STDERR and STDOUT
+
+sub debug_print {
+  ($debug) && warn pop;
+};
+
+local @cmd = ('/bin/ps');
+local $init = 0;
+local $start = 1;
+
+if ($^O eq "linux"){
+  push(@cmd, 'ajxSw');
+  $start = 0;
+}elsif ($^O =~ m/darwin|freebsd/){
+  push(@cmd, 'Ajwww');
+}elsif ($^O eq "solaris"){
+  @cmd = ('/usr/ucb/ps');
+  if ((-x "/bin/zonename") && !(qx(zonename) eq "global\n")){
+    $init = qx(pgrep zsched);
+    chomp($init);
+    $start = $init;
+  };
+  push(@cmd, 'laxwww');
+}else{
+  die "$^O isn't a known os to this script\n";
+};
+
+local @ps = qx(@cmd);
+($?) ? die $cmd[0]." posix return code $?\n" : undef;
+
+local %proc;
+local @trail;
+
+(defined($ARGV[0])) ? $start = $ARGV[0] : undef;
+
+debug_print("Dump of raw line array data:\n");
+
+foreach my $x (@ps){
+  my $cmd_index = 9;
+  my $ppid = -1;
+  my $pid = -1;
+  next if ($x =~ m/.*PID.*/);
+  my @line = split(m/\s+/,$x);
+  splice(@line, 0, 1) unless ($line[0] =~ m/\d+/);
+  splice(@line, 0, 1) if ("$line[0]" eq "");
+
+  if ($^O eq "linux"){
+    ($ppid,$pid) = @line;
+    $cmd_index = 9;
+  }elsif ($^O =~ m/darwin|freebsd/){
+    ($pid,$ppid) = @line;
+    $cmd_index = 8;
+  }elsif ($^O eq "solaris"){
+    (undef, undef, $pid,$ppid) = @line;
+    for($x=$cmd_index; $x < 14; $x++){
+      $cmd_index = ($line[$x] =~ m/\d+\:\d+/) ? ($x + 1) : $cmd_index;
+    };
+  };
+
+  my $command = join(' ', @line[$cmd_index..$#line++]);
+  (!defined $proc{$pid}) ? $proc{$pid}->{"children"} = [ ] : undef;
+  (!defined $proc{$ppid}) ? $proc{$ppid}->{"children"} = [ ] : undef;
+  $proc{$pid}->{"pid"} = $pid;
+  $proc{$pid}->{"command"} = $command;
+  $proc{$pid}->{"ppid"} = $ppid;
+  push(@{$proc{$ppid}->{"children"}},$pid);
+  debug_print(join(',', @line[0..($#line-1)])."\n");
+};
+
+if ($debug){
+  debug_print("Done reading ps output\nDump of Hash\n");
+  foreach my $key (sort({$a <=> $b} (keys %proc))){
+    $ppid = $proc{$key}->{"ppid"};
+    $command = $proc{$key}->{"command"};
+    $children = join(',', @{$proc{$key}->{"children"}});
+    debug_print("PID<$key> PPID<$ppid> Children<$children> Command<$command>\n");
+  };
+};
+
+sub intrail{
+  my $crumb = pop;
+  my $ret = 0;
+  map {$ret++ if ($crumb == $_)} @trail;
+  return $ret;
+};
+
+sub addchildren{
+  my $start_node = pop;
+  foreach my $child (@{$proc{$start_node}->{"children"}}){
+    next if (!defined($child) || ($start_node == $child));
+    debug_print("Start ($start_node) Add child $child.\n");
+    push(@trail, $child);
+    addchildren($child);
+  };
+};
+
+sub addparents{
+  my $start_node = pop;
+  my $parent = $proc{$start_node}->{"ppid"};
+  return unless (defined($start_node));
+  return if (($parent == $start_node) || !(defined($parent))); # At the top of the tree, or in a zone
+  debug_print("Start ($start_node) Add parent $parent.\n");
+  push(@trail, $parent);
+  addparents($parent) if ($parent != $init);
+};
+
+sub printnode{
+  my $start_node = pop;
+  my $indent = pop;
+  if (intrail($start_node)){
+    my $pid = $proc{$start_node}->{"pid"};
+    my $ppid = $proc{$start_node}->{"ppid"};
+    my $cmdline = $proc{$start_node}->{"command"};
+    my $indentation = '  'x($indent);
+    if ($pid == $init){
+      my $s = $^O." kernel";
+      if ($cmdline ne ''){
+        $s = $s." <$cmdline>";
+      };
+      $cmdline = $s;
+    };
+    printf("%s%d   %s\n", $indentation, $pid, $cmdline);
+    foreach my $child (@{$proc{$start_node}->{"children"}}){
+      next if ($pid == $child);
+      printnode($indent+1,$child);
+    };
+  };
+};
+
+my $valid = 0;
+foreach my $j (keys %proc){ ($j == $start) ? $valid++ : undef; };
+
+debug_print("Starting from <$start>, validity is<$valid>\n");
+
+if ($valid){
+  if (!$start){
+    @trail = keys %proc;
+    push(@trail, $start); push(@trail, 1);
+    debug_print("Done with adding $start to trail.\n");
+  }else{
+    push(@trail, $start);
+    debug_print("Adding children from $start.\n");
+    addchildren($start);
+    debug_print("Adding parents from $start.\n");
+    addparents($start);
+  };
+
+  @trail = sort(@trail);
+
+  debug_print("Trail is: ".join(',', @trail)."\nStarting at pid $start\ninit pid $init\n");
+  print "PID COMMAND\n";
+  my $startindent = 0;
+  (intrail($startindent)) ? $startindent = -1 : undef;
+  printnode($startindent,$init);
+}else{
+  die "pid $start doesn't exist.\n";
+};
+
+exit 0;
+#+END_SRC
+
+** ~/bin/portchk
+
+Just find out if a port responds to anything tcp related or not.
+
+#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/portchk :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env perl
+#
+# Dumb wrapper to get the gecos information from a uid/username.
+
+foreach my $input (@ARGV){
+  my $gecos = undef;
+  my $uid = undef;
+  my $name = undef;
+  if ( $input =~ m/^\d+$/ ) {
+    ( $name,$uid,$gecos ) = ( getpwuid($input) )[0,2,6];
+  } else {
+    ( $name,$uid,$gecos ) = ( getpwnam($input) )[0,2,6];
+  }
+  print "$name is '$gecos' uid '$uid'\n" if $gecos;
+}
+#+END_SRC
+
+** ~/bin/notify
+
+OSX only really, just fires off a notification when its ran.
+
+Example:
+notify "some command" "not ok"
+
+First param is the message, second title of the notification.
+
+#+BEGIN_SRC sh :mkdirp yes :tangle (when (eq osx-p t) "tmp/bin/notify") :results replace :tangle-mode (identity #o755)
+#!/bin/sh
+message=${1:="no message"}
+title=''
+if [ "${2}" != "" ]; then
+  message="${2}"
+  title="${1}"
+fi
+notification="display notification \"${message}\""
+[ "${title}" != "" ] && notification="${notification} with title \"${title}\""
+
+osascript -e "${notification}"
+#+END_SRC
+
+** ~/bin/today
+
+Stupid ruby script I wrote to highlight the week/day in a calendar.
+
+#+BEGIN_SRC ruby :mkdirp yes :tangle tmp/bin/today :results replace :tangle-mode (identity #o755)
+#!/usr/bin/env ruby
+cal, today, week_color, day_color, reset = %x(cal).split(%r(\n)), Time.now.day, %x(tput sgr0;tput setab 4;tput setaf 7), %x(tput sgr0; tput setab 0;tput setaf 7;tput bold), %x(tput sgr0)
+done=false
+cal.each do |line|
+  if done then
+    puts line
+    next
+  end
+  if(line =~ /^(.*\s+?)#{today}(\s+?.*)$/ or
+     line =~ /^(.*\s+?)#{today}$/ or
+     line =~ /^()#{today}(\s+?.*)$/ or
+     line =~ /^#{today}$/ ) then
+    puts "#{week_color}#{$1}#{day_color}#{today}#{week_color}#{$2}#{reset}"
+    done=true
+  else
+    puts line
+  end
+end
+#+END_SRC
+
+* Git
+** ~/.gitconfig
+
+General git configuration.
+
+#+BEGIN_SRC conf :tangle tmp/.gitconfig :results replace
+[pager]
+  color = true
+[color]
+  status = auto
+  diff = auto
+  branch = auto
+[color "status"]
+  added = green
+  changed = blue
+  untracked = red
+[color "branch"]
+  current = green
+  local = blue
+  remote = red
+[color "diff"]
+  meta = blue bold
+  frag = black reverse
+  old = red reverse
+  new = green reverse
+[alias]
+  begin = !sh -c 'git init && git commit --allow-empty -m "Initial commit"'
+  up = !sh -c 'git pull --rebase && git push'
+  wsdiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space --ignore-all-space
+  wdiff = diff --color-words
+  ci = commit
+  ciu = commit --all
+  co = checkout
+  ds = diff --stat
+  ba = branch --all
+  st = status --short --branch
+  s = status --short --branch --untracked-files=no
+  unstage = reset HEAD
+  tlog = log --graph --color=always --abbrev-commit --date=relative --pretty=oneline
+  hist = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  slog = log --oneline --decorate
+  fixup = commit --fixup
+  squash = commit --squash
+  ri = rebase --interactive --autosquash
+  ra = rebase --abort
+  effit = reset --hard
+  # What commits differ between branches, note, equivalent commits are omitted.
+  # Use this with three dot operator aka master...origin/master
+  cdiff = log --left-right --graph --cherry-pick --oneline
+  # Same as ^ only equivalent commits are listed with a = sign.
+  cmdiff = log --left-right --graph --cherry-mark --oneline
+[github]
+  user = mitchty
+[credential]
+  helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc
+[advice]
+  statushints = false
+[gui]
+  fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+  fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+[http]
+  postBuffer = 209715200
+  sslcainfo = ~/.nix-profile/etc/ca-bundle.crt
+[push]
+  default = simple
+[url "https://github.com/"]
+  insteadOf = git://github.com/
+[user]
+  name = Mitch Tishmack
+  email = mitch.tishmack@gmail.com
+#+END_SRC
+
+** ~/.gitignore
+
+Common crap/build artifacts that git should always ignore.
+
+#+BEGIN_SRC conf :tangle tmp/.gitignore :results replace
+.*~
+*~
+.\#*
+\#*
+\#*\#
+.\#*\#
+.DS_Store
+*.pyc
+*.rbc
+*.elc
+*.swp
+*.[oa]
+*.hi
+#+END_SRC
+
+* X
+** ~/.Xdefaults
+
+X defaults, just urxvt for the moment. Slightly linux/bsd only but not really.
+
+#+BEGIN_SRC conf :tangle (when (eq x-p t) "tmp/.Xdefaults") :results replace
+! urxvt generalish stuff
+!
+urxvt*termName:                 rxvt-256color
+urxvt*font:                     xft:menlo:size=12:antialias=true
+urxvt*perl-ext-common:          default,matcher
+urxvt*jumpScroll:               true
+urxvt*cursorColor:              pink
+urxvt*loginShell:               true
+urxvt*scrollBar:                true
+urxvt*scrollstyle:              next
+urxvt*scrollBar_right:          true
+urxvt*scrollTtyOutput:          false
+urxvt*cursorBlink:              true
+urxvt*saveLines:                10000
+urxvt*urlLauncher:              /usr/bin/google-chrome
+urxvt*matcher.button:           1
+urxvt*allowWindowOps:           true
+#+END_SRC
+
+** ~/.Xmodmap
+
+Swap around left/right clicks basically.
+
+#+BEGIN_SRC conf :tangle (when (and (eq x-p t) (not (eq osx-p t))) "tmp/.Xmodmap")
+pointer = 3 2 1 4 5
+#+END_SRC
+
+OSX is odd.
+
+#+BEGIN_SRC conf :tangle (when (and (eq x-p t) (eq osx-p t)) "tmp/.Xmodmap")
+pointer = 1 2 3 4 5
+#+END_SRC
+
+** ~/.Xresources
+
+I can't remember why I did all this effort. But I'll remove it some year I bet.
+
+#+BEGIN_SRC conf :tangle (when (eq x-p t) "tmp/.Xresources") :results replace
+#define brightblack     #ffffff
+#define normblack       #f9f9f9
+#define normgreen       #00cc33
+#define brightgreen     #00cc99
+#define normblue        #f00033
+#define brightblue      #0099ff
+#define normcyan        #66ccff
+#define brightcyan      #66ccff
+#define normwhite       #060606
+#define brightwhite     #000000
+#define normyellow      #ffcc33
+#define brightyellow    #ffcc33
+#define normred         #ff3300
+#define brightred       #ff3300
+#define normmagenta     #ff66ff
+#define brightmagenta   #ff66ff
+
+*background:            normblack
+*foreground:            normwhite
+*fading:                40
+*fadeColor:             brightblack
+*cursorColor:           brightcyan
+*pointerColorBackground: #3f3f3f
+*pointerColorForeground: #f3f3f3
+
+*color0: #090909
+*color1: #f00000
+*color2: normgreen
+*color3: normyellow
+*color4: #0066ff
+*color5: normmagenta
+*color6: normcyan
+*color7: #c8c8c8
+*color8: #888888
+*color9: #f00033
+*color10: brightgreen
+*color11: brightyellow
+*color12: #0099ff
+*color13: brightmagenta
+*color14: brightcyan
+*color15: #f9f9f9
+#+END_SRC
+* Zsh
+** ~/.zprofile
+
+Make sure that zsh sources ~/.profile correctly on login.
+
+#+BEGIN_SRC sh :tangle tmp/.zprofile :results replace
+emulate sh
+source ~/.profile
+emulate zsh
+
+# zsh does this differently
+login_shell()
+{
+  [[ -o login ]]
+}
+#+END_SRC
+
+** ~/.zshrc
+
+Zsh configuration, its not too crazy... I think. Don't judge me.
+
+#+BEGIN_SRC sh :tangle tmp/.zshrc :results replace
+#-*-mode: Shell-script; coding: utf-8;-*-
+# zsh specific global aliases
+alias -g silent="> /dev/null 2>&1"
+alias -g noerr="2> /dev/null"
+alias -g stdboth="2>&1"
+
+# mainly for firefox, because it can suck up the cycles, but not when
+# in a SIGSTOP state you can't use any power then firefox.
+alias -g sigcont='kill -CONT '
+alias -g sigstop='kill -STOP '
+
+# Keybindings, what few there are.
+bindkey -v
+bindkey '^P' push-line # Saves the current line and returns to it afterwards.
+
+# General history options
+export HISTSIZE=5000
+export SAVEHIST=${HISTSIZE}
+export HISTFILE=~/.zsh_history
+
+# I like my options
+setopt append_history
+setopt extended_history
+setopt hist_reduce_blanks
+setopt hist_no_store
+setopt hist_ignore_dups
+setopt histignorespace
+setopt no_hist_beep
+setopt no_list_beep
+setopt share_history
+setopt inc_append_history
+setopt auto_menu
+setopt bash_auto_list
+
+# Options that don't need to be set.
+unsetopt bad_pattern # No, don't warn me on bad file patterns kthxbai.
+
+# The rest of the story (tm) (c) (r) in option settings.
+setopt equals
+setopt notify
+setopt auto_cd
+setopt glob_dots
+setopt print_exit_value # I love you zsh for this, print out non zero exits.
+
+other_term()
+{
+  case $TERM in
+  *xterm*|*rxvt*|(dt|k|e)term)
+    print -Pn "\e]2;%~\a"
+    ;;
+  sun-cmd)
+    print -Pn "\e]l%~\e\\"
+    ;;
+  *)
+    ;;
+  esac
+}
+
+chpwd()
+{
+  [[ -o interactive ]] || return
+  case $TERM in
+  eterm-color) # getting emacs terminal to not be annoying... sucks
+    print -Pn ""
+    ;;
+  *)
+    if [[ $SSH_TTY != '' ]]; then
+      case $ORIG_TERM in
+      eterm-color)
+        print -Pn ""
+        ;;
+      *)
+        other_term
+        ;;
+      esac
+    fi
+    ;;
+  esac
+}
+
+# Needs to be reviewed a bit.
+zstyle ':completion:*' squeeze-slashes true
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:*:*:*:processes' force-list always
+
+# No need to setup ssh known host parsing as root, just regular users.
+# This is pretty old using compctl, need to update eventually.
+
+if [[ "$LOGNAME" != "root" ]]; then
+    zmodload zsh/mathfunc
+    if [[ -f "$HOME/.ssh/known_hosts" ]]; then
+        hosts=(${${${${(f)"$(<$HOME/.ssh/known_hosts)"}:#[0-9]*}%%\ *}%%,*})
+        zstyle ':completion:*:(ssh|scp|cssh):*' hosts $hosts
+        zstyle ':completion:*:*:*:hosts-host' ignored-patterns '|1|*' loopback localhost
+    fi
+    zstyle ':completion:::complete*' use-cache 1
+
+    # This really should be closer to the definition of extract.
+    compctl -g '*.tar.bz2 *.tbz2 *.tbz *.tar.gz *.tgz *.bz2 *.gz *.jar *.zip *.rar *.tar *.Z *.tZ *.tar.Z' + -g '*(-/)' extract
+fi
+
+# More history options for newer zsh versions
+setopt share_history
+setopt hist_save_no_dups
+setopt hist_find_no_dups
+setopt hist_no_functions
+setopt hist_expire_dups_first
+
+bindkey ' ' magic-space # Complete spaces too dammit, i'm lazy.
+
+alias edirs='ls -d **/*(/^F)' # empty directories
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:kill:*' force-list always
+zstyle ':completion:*:kill:*:processes' command "ps x"
+zstyle ':completion:*' menu select=2
+
+autoload -U compinit
+autoload -U colors && colors
+autoload -Uz vcs_info
+
+bindkey -e
+
+local userat="%{$fg[blue]%}%n%(!.%{$fg[red]%}.%{$fg[blue]%})%{$reset_color%}%B@%b%{$fg[blue]%}%m%b"
+local pwd="%B%~%b"
+local userchar="%(!.#.$)"
+
+zstyle ':vcs_info:*' enable git
+zstyle ':vcs_info:*' check-for-changes true
+setopt prompt_subst
+
+precmd()
+{
+    vcs_info
+}
+
+# +N/-N upstream info
+function +vi-git-st() {
+    local ahead behind
+    local -a gitstatus
+
+    ahead=$(git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l | sed -e 's|^ *||g')
+    behind=$(git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l | sed -e 's|^ *||g')
+
+    (( $ahead )) && gitstatus+=( "+${ahead}" )
+    (( $behind )) && gitstatus+=( "-${behind}" )
+
+    hook_com[misc]+=${(j:/:)gitstatus}
+}
+
+# Untracked crap in the repo not covered by .gitignore?
+function +vi-git-untracked(){
+    if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == 'true' ]] && \
+        git status --porcelain | grep '??' &> /dev/null ; then
+        hook_com[staged]+="%{$fg[red]%}N"
+    fi
+}
+
+local branch="%{$fg[green]%}%b%c%u%{$fg[green]%}%{$reset_color%}"
+zstyle ':vcs_info:*' formats "%m $branch"
+zstyle ':vcs_info:*' actionformats "%a $branch"
+zstyle ':vcs_info:*' stagedstr "%{$fg[blue]%}S"
+zstyle ':vcs_info:*' unstagedstr "%{$fg[blue]%}M"
+zstyle ':vcs_info:git*+set-message:*' hooks git-untracked git-st
+PROMPT="%(!.#.$) " # $ as a user # as root
+RPROMPT='${vcs_info_msg_0_} ${PWD/#$HOME/~}'
+#+END_SRC
+
+* Tmux
+** ~/.tmux.conf
+
+Tmux configuration. Pretty boring in most ways.
+
+#+BEGIN_SRC conf :tangle tmp/.tmux.conf :results replace
+# Setup utf8 by default and vi mode
+set-window-option -g utf8 on
+set-window-option -g mode-keys vi
+set-window-option -g aggressive-resize on
+
+set-option -g default-command zsh
+set-option -g default-terminal 'xterm-256color'
+
+# Status line options, mainly coloring
+set-window-option -g window-status-bg colour6
+set-window-option -g window-status-fg black
+set-window-option -g window-status-current-bg white
+
+# Status line options
+set-option -g status-bg black
+set-option -g status-fg colour7
+set-option -g status-left-length 24
+set-option -g status-left ''
+set-option -g status-right-length 13
+set-option -g status-right "%a %H:%M:%S"
+set-option -g status-interval 7
+set-option -g status-utf8 on
+
+# Pane border options, mimics the status line coloring
+set-option -g pane-border-bg colour15
+set-option -g pane-border-fg colour82
+set-option -g pane-active-border-bg colour15
+set-option -g pane-active-border-fg colour2
+
+# Alert related things
+set-option -g visual-activity on
+set-option -g visual-bell on
+set-option -g message-bg colour7
+set-option -g message-fg black
+
+# Pass through the window title and display it automatically on changes.
+set-option -g set-titles on
+set-option -g set-titles-string '#T'
+set-window-option -g automatic-rename on
+
+# Key rebinding to make things more au naturalle
+bind-key R \
+  source-file ~/.tmux.conf \;\
+  display 'reloaded tmux config'
+
+# Log pane output to a file, save with an iso8601 datestamp
+bind-key o \
+  pipe-pane -o "cat >> $HOME/tmux-`iso8601`.log" \;\
+  set-window-option window-status-current-fg green \;
+
+bind-key O \
+  pipe-pane \;\
+  set-window-option window-status-current-fg default \;
+
+bind-key N new-session -t default
+
+# Using s for synchronizing panes, means that s for choosing sessions
+# is now e
+unbind-key s # interactive select sessions
+bind-key e choose-tree
+
+# (un)synchronize panes with prefix-s
+bind-key s \
+  if-shell \
+    "tmux show-window-options | grep 'synchronize-panes on'" \
+      "set-window-option window-status-current-bg colour7; \
+      set-window-option pane-active-border-fg colour2; \
+      set-window-option pane-active-border-bg colour15; \
+      set-window-option synchronize-panes off; \
+      display 'synchronization off'" \
+      "set-window-option window-status-current-bg red; \
+      set-window-option pane-active-border-fg red; \
+      set-window-option pane-active-border-bg colour15; \
+      set-window-option synchronize-panes on; \
+      display 'synchronizing'"
+
+# same thing as ^ so it sets up things if we were started with
+# something else that set synchronization.
+if-shell \
+  "tmux show-window-options | grep 'synchronize-panes on' || /bin/true" \
+  "set-window-option window-status-current-bg red; \
+  set-window-option pane-active-border-fg yellow; \
+  set-window-option pane-active-border-bg red"
+
+# Setup splits to be less annoying
+bind-key \ split-window -h
+bind-key - split-window -v
+
+# vi keybindings for pane navigation
+bind-key k select-pane -U
+bind-key j select-pane -D
+bind-key h select-pane -L
+bind-key l select-pane -R
+
+# Make it so that I can detach/etc while holding control down,
+# PURE LAZY
+bind-key C-d detach
+bind-key C-n next-window
+bind-key C-p previous-window
+
+bind-key C-k select-pane -U
+bind-key C-j select-pane -D
+bind-key C-h select-pane -L
+bind-key C-l select-pane -R
+
+# Non confirming kill pane plskthxbai
+bind-key x kill-pane
+
+# In case something I run exits straight away, i'd like to know about it.
+set-option -g set-remain-on-exit on
+
+# Lets change the prefix key so we don't clobber emacs back one char key
+unbind-key C-b
+
+# hacky, but C-\ isn't used by anything overly important in emacs
+set-option -g prefix 'C-\'
+
+# two C-\'s == C-\, if i need it, likely not
+bind 'C-\' send-prefix
+
+# Delay in sending things is dumb
+set-option -s escape-time 1
+
+# so we can scroll the mouse, select panes, etc...
+set -g mouse on
+bind -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e'"
+bind-key m \
+  if-shell \
+    "tmux show-options -g | grep 'mouse on'" \
+      "set -g mouse off; \
+       display 'Mouse modes off'" \
+      "set -g mouse on; \
+      display 'Mouse modes on'"
+
+# Assume linux for things, load osx stuff only on osx
+bind C-p run "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
+bind C-y run "tmux save-buffer - | xclip -i"
+
+# TODO: FIXME replace rainbarf with a not perl dependency magnet.
+# Linux specific. Now that I installed rainbarf on things, why not use it.
+# if-shell 'test "$(uname)" = "Linux"' \
+#     "set-option -g status-right-length 55; \
+#      set-option -g status-right '#(rainbarf --bright --width 25) %a %H:%M:%S'; "
+
+# osx specific
+# Have to modify default command so I can ssh in.
+# that and rainbarf output is 42 chars long (utf8) but helpful.
+# if-shell 'test "$(uname)" = "Darwin"' \
+#     "set-option -g default-command 'zsh -l'; \
+#      set-option -g status-right-length 55; \
+#      set-option -g status-right '#(rainbarf --remaining --bolt --bright --width 25) %a %H:%M:%S'; "
+#+END_SRC
+* Vim
+** ~/.vimrc
+
+What remains of my days from being a vim user.
+
+#+BEGIN_SRC conf :tangle tmp/.vimrc :results replace
+set nocompatible
+set backspace=indent,eol,start
+set history=50 " keep 50 lines of command line history
+set ruler " show the cursor position all the time
+set showcmd " display incomplete commands
+set incsearch " do incremental searching
+map Q gq
+if &t_Co > 2 || has("gui_running")
+  syntax on
+  set hlsearch
+endif
+if has("autocmd")
+  filetype plugin indent on
+  augroup vimrcEx
+  au!
+  autocmd FileType text setlocal textwidth=78
+  autocmd BufReadPost *
+    \ if line("'\"") > 0 && line("'\"") <= line("$") |
+    \   exe "normal g`\"" |
+    \ endif
+
+  augroup END
+else
+  set autoindent " always set autoindenting on
+endif " has("autocmd")
+#+END_SRC
+
+* nix
+#+BEGIN_SRC conf :mkdirp yes :tangle (when (eq nix-p t) "tmp/.nixpkgs/config.nix")
+{pkgs}: {
+  allowUnfree = true;
+  allowBroken = true;
+
+  packageOverrides = pkgs: with pkgs; {
+    pinentry = pkgs.pinentry.override {
+      gtk2 = null;
+      qt4 = null;
+      ncurses = null;
+    };
+    gnupg = pkgs.gnupg.override {
+      x11Support = false;
+      pinentry = true;
+    };
+    youtube-dl = pkgs.youtube-dl.override {
+      pandoc = null;
+    };
+
+    # haskellPackages = haskellPackages.override {
+    #   extension = self : super : {
+    #     cabal = pkgs.haskellPackages.cabalNoTest;
+    #   };
+    # };
+
+    default = with pkgs; buildEnv {
+
+      name = "default";
+
+      paths = [
+        ansible
+        ack
+        aria
+        iperf
+        cacert
+        curl
+        clang
+        clang-analyzer
+        diffutils
+        patchutils
+        gitAndTools.gitFull
+        gitAndTools.git-extras
+        bazaarTools
+        mercurial
+        subversionClient
+        gist
+        mercurial
+        docbook5
+        entr
+        emacs
+        gnupg1compat
+        gnutar
+        gnumake
+        sloccount
+        cloc
+        less
+        multitail
+        rlwrap
+        gdbm
+        mosh
+        htop
+        imagemagick
+        keychain
+        silver-searcher
+        aspell
+        aspellDicts.en
+        openssl
+        pinentry
+        pbzip2
+        pigz
+        pv
+        postgresql
+        readline
+        rsync
+        sqlite
+        texLiveFull
+        tmux
+        tree
+        wget
+        wakelan
+        unzip
+        upx
+        xz
+        p7zip
+        unrar
+        watch
+        nox
+        mutt
+        duply
+        zsh
+        pylint
+        python27Packages.howdoi
+        python27Packages.youtube-dl
+        python27Packages.pyflakes
+        python27Packages.flake8
+        python27Packages.virtualenv
+        python27Packages.pip
+#        xhyve        compiles normally, figure out hypervisor framework issue
+#        lastpass-cli no worky on osx TODO fix this it works on homebrew
+      ];
+    };
+    env_hs =
+      pkgs.haskell.packages.ghc7102.ghcWithPackages
+          (haskellPackages: with haskellPackages; [
+              alex
+              happy
+              bake
+              cabal-dependency-licenses
+              cabal-install
+              cabal-meta
+              ghc-core
+              ghc-mod
+              hasktags
+              hindent
+              hoogle
+              hspec
+              idris
+              pandoc
+              shake
+              ShellCheck
+              stack
+              stylish-haskell
+              nats
+              transformers-compat
+              ]
+          );
+  };
+}
+#+END_SRC
+* Language related
+** Haskell
+*** ~/.ghci
+
+Ghci setup, mostly just cosmetics.
+
+#+BEGIN_SRC haskell :tangle tmp/.ghci :results replace
+:l ~/.ghc.hs
+:set prompt "λ "
+:set +t
+#+END_SRC
+
+*** ~/.ghc.hs
+
+What to automatically have loaded into ghci sessions.
+
+#+BEGIN_SRC haskell :tangle tmp/.ghc.hs :results replace
+import Control.Applicative
+import Control.Monad
+import Data.Monoid
+import Data.Maybe
+import Data.List
+import Data.Bool
+import qualified Data.Set as S
+import qualified Data.Map as M
+#+END_SRC
+
+** Perl
+*** ~/.perlcriticrc
+
+What to complain about by default.
+
+#+BEGIN_SRC conf :tangle tmp/.perlcritirc :results replace
+# Show the severity level
+severity = 1
+
+# Basically show what profile is complaining
+verbose = %f:%l:%c: %m, %e (%p, severity %s)\n
+
+# Don't warn on these variables
+[Variables::ProhibitPunctuationVars]
+allow = $@ $!
+
+# Ignore syscall returns on print, it not actually returning is... whatever.
+[InputOutput::RequireCheckedSyscalls]
+exclude_functions = print say
+
+# Allow things like print qx(somecmd) in a void context to work, this is ok.
+[InputOutput::ProhibitBacktickOperators]
+only_in_void_context = 1
+
+# I actually like using unless... so don't piss me off whinging about it
+[-ControlStructures::ProhibitUnlessBlocks]
+
+# The following only apply to modules
+[-Modules::RequireVersionVar]
+[-ErrorHandling::RequireCarping]
+
+# Tabs suck, no
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 0
+
+# For small regexes, no /x at the end is fine, 12 should be enough
+[RegularExpressions::RequireExtendedFormatting]
+minimum_regex_length_to_complain_about = 12
+
+# These are kosher kthxbai
+[ControlStructures::ProhibitPostfixControls]
+allow = for if until unless
+
+# For POE, we do things like my $foo = $_[HEAP]; and thats OK
+[Subroutines::RequireArgUnpacking]
+allow_subscripts = 1
+
+# For POD documentation, I don't care about required sections.
+[Documentation::RequirePodSections]
+lib_sections = NAME | SYNOPSIS | DESCRIPTION | AUTHOR | COPYRIGHT | SEE ALSO
+script_sections = NAME | SYNOPSIS | DESCRIPTION | AUTHOR | COPYRIGHT | SEE ALSO
+
+# This is for POD documentation mainly.
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 1
+#+END_SRC
+
+*** ~/.perltidyrc
+
+Control how perltidy should clean things up.
+
+#+BEGIN_SRC conf :tangle tmp/.perltidyrc :results replace
+# cuddled elses pls
+-ce
+# indent 2 spaces
+-i=2
+# for tokens with things like arrays, start the data next line down one indent in
+-lp
+# align closing tokens for things like arrays with the opening token
+-cti=1
+# default, but spaces between multiple entries, none with one arg
+-pt=1
+# line encoding
+-ole=unix
+# braces not on new line
+-nsbl
+# stack opening tokens, don't create a new line with one token, note no stacking of closing tokens
+-sot
+# no space before ;'s in for loops
+-nsfs
+# Make curly braces act more like the args param
+-bbt=1
+# Trim qw whitespaces
+-tqw
+#+END_SRC
+
+* Misc
+
+Stuff that logically doesn't fit elsewhere or in any other category.
+
+** ~/.dir_colors
+
+For BSD ps, make colors closer to what the GNU utilities produce by default.
+
+#+BEGIN_SRC conf :tangle tmp/.dir_colors :results replace
+COLOR tty
+
+TERM ansi
+TERM color-xterm
+TERM con132x25
+TERM con132x30
+TERM con132x43
+TERM con132x60
+TERM con80x25
+TERM con80x28
+TERM con80x30
+TERM con80x43
+TERM con80x50
+TERM con80x60
+TERM cons25
+TERM console
+TERM cygwin
+TERM dtterm
+TERM eterm-color
+TERM Eterm
+TERM gnome
+TERM konsole
+TERM kterm
+TERM linux
+TERM linux-c
+TERM mach-color
+TERM putty
+TERM rxvt
+TERM rxvt-cygwin
+TERM rxvt-cygwin-native
+TERM rxvt-unicode
+TERM screen
+TERM screen-bce
+TERM screen-w
+TERM screen.linux
+TERM vt100
+TERM xterm
+TERM xterm-256color
+TERM xterm-color
+TERM xterm-debian
+
+# Below are the color init strings for the basic file types. A color init
+# string consists of one or more of the following numeric codes:
+# Attribute codes:
+# 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
+# Text color codes:
+# 30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
+# Background color codes:
+# 40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
+NORMAL 00           # global default, although everything should be something.
+FILE 00             # normal file
+DIR 01;34           # directory
+LINK 01;36          # symbolic link.  (If you set this to 'target' instead of a
+                    # numerical value, the color will match the file pointed to)
+FIFO 40;33          # pipe
+SOCK 01;35          # socket
+DOOR 01;35          # door
+BLK 40;33;01        # block device driver
+CHR 40;33;01        # character device driver
+ORPHAN 01;05;37;41  # orphaned syminks
+MISSING 01;05;37;41 # ... and the files they point to
+
+# This is for files with execute permission:
+EXEC 01;32
+
+# List any file extensions like '.gz' or '.tar' that you would like ls
+# to colorize below. Put the extension, a space, and the color init string.
+# (and any comments you want to add after a '#')
+
+.cmd 01;32 # executables (bright green)
+.exe 01;32
+.com 01;32
+.btm 01;32
+.bat 01;32
+.sh  01;32
+.csh 01;32
+.ksh 01;32
+.zsh 01;32
+
+.tar 01;31 # archives / compressed (bright red)
+.tgz 01;31
+.arj 01;31
+.taz 01;31
+.lzh 01;31
+.zip 01;31
+.z   01;31
+.Z   01;31
+.gz  01;31
+.bz2 01;31
+.bz  01;31
+.tbz2 01;31
+.tz  01;31
+.deb 01;31
+.rpm 01;31
+.rar 01;31 # app-arch/rar
+.ace 01;31 # app-arch/unace
+.zoo 01;31 # app-arch/zoo
+.cpio 01;31 # app-arch/cpio
+.7z  01;31 # app-arch/p7zip
+.rz  01;31 # app-arch/rzip
+#+END_SRC
+
+** ~/.hushlogin
+
+Because who gives a rats when and where I last logged on from?
+
+#+BEGIN_SRC conf :tangle tmp/.hushlogin :results replace
+#+END_SRC
+
+
+* Reference for babel stuff
+
+Found this STUPID useful for constructing the tangle stuff.
+
+[[https://raw.githubusercontent.com/eschulte/babel-dev/master/scraps.org][babel scraps link]]

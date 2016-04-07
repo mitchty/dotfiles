@@ -1,68 +1,63 @@
-DOTDEE=update-dotdee
-STOW=xstow
-PWD=$(shell pwd)
-STOWOPTS=-f -target $(HOME) -d $(PWD) 
-DOTGITCONFIG=~/.gitconfig
-DOTPROFILE=~/.profile
+# Makefile is here to make it possible to use this whole shebang
+# outside of emacs.
+.PHONY: tangle tangle-next
+DEST:=$(HOME)
+LAST:=$(shell cat last || echo 0)
+NEXT:=$(shell l=$(LAST); ((l=l+1)); echo $$l)
+NEXTGEN:=$(PWD)/generation/$(NEXT)
+LASTGEN:=$(PWD)/generation/$(LAST)
+TANGLERS:=readme.org
+GEN:=$(LAST)
+OPTIONS:=
 
-.PHONY: mosh common emacs git ruby haskell perl tmux vim zsh list osx linux ws nix
+all: clean tangle-next
 
-all: common
+tmp:
+	install -dm755 $@
+	$(MAKE) emacs
 
-common: $(DOTPROFILE)
+#special target to handle emacs configuration
+emacs:
+	install -dm755 tmp/.emacs.d
+	install -m400 init.el tmp/emacs.d/init.el
+	install -m400 emacs.org tmp/emacs.d/emacs.org
 
-ws: emacs nix mosh git ruby haskell perl tmux vim zsh common
+$(NEXTGEN):
+	install -dm755 $@
 
-$(DOTGITCONFIG):
-	$(STOW) $(STOWOPTS) git
-	touch $(DOTGITCONFIG)
-	$(DOTDEE) $(DOTGITCONFIG)
+$(LASTGEN):
+	install -dm755 $@
+
+generation/$(GEN):
+	install -dm755 $@
+
+generation: $(NEXTGEN) $(LASTGEN) tmp
+	cd tmp && cp -av . $(NEXTGEN)
+
+check:
+
+diff: generation/$(GEN)
+	./ddiff $(PWD)/generation/$(GEN) $(DEST)
+
+next: diff
+
+tangle-next:
+	$(MAKE) tangle
+	$(MAKE) generation
+	$(MAKE) next
+	$(MAKE) copy GEN=$(NEXT)
+	@echo $(NEXT) > last
+
+copy:
+	cd $(PWD)/generation/$(GEN) && find . -type f -exec rm -f $(DEST)/{} \;
+	cd $(PWD)/generation/$(GEN) && cp -r . $(DEST)
+
+tangle: tmp
+	/usr/bin/env emacs --script ./etangle $(TANGLERS)
+	@echo
 
 clean:
-	$(STOW) $(STOWOPTS) -D mosh common emacs git ruby haskell perl tmux vim zsh osx
-	-rm $(DOTGITCONFIG) $(DOTPROFILE)
-	-rm -fr $(DOTCONFIG).d $(DOTPROFILE).d
-	-find $(PWD) -type f -name ".checksum" -exec rm {} \;
+	-rm -fr tmp
 
-$(DOTPROFILE):
-	$(STOW) $(STOWOPTS) common
-	touch $(DOTPROFILE)
-	$(DOTDEE) $(DOTPROFILE)
-
-git: $(DOTGITCONFIG)
-
-emacs:
-	$(STOW) $(STOWOPTS) emacs # $@?
-
-osx:
-	$(STOW) $(STOWOPTS) osx
-
-linux:
-	$(STOW) $(STOWOPTS) linux
-
-x:
-	$(STOW) $(STOWOPTS) x
-
-ruby:
-	$(STOW) $(STOWOPTS) ruby
-
-mosh:
-	$(STOW) $(STOWOPTS) mosh
-
-zsh:
-	$(STOW) $(STOWOPTS) zsh
-
-tmux:
-	$(STOW) $(STOWOPTS) tmux
-
-vim:
-	$(STOW) $(STOWOPTS) vim
-
-haskell:
-	$(STOW) $(STOWOPTS) haskell
-
-perl:
-	$(STOW) $(STOWOPTS) perl
-
-nix:
-	$(STOW) $(STOWOPTS) nix
+nuke: clean
+	-rm -fr last generation

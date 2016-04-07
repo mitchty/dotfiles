@@ -1,5 +1,0 @@
-[advice]
-  statushints = false
-[gui]
-  fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
-  fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
