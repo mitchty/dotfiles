@@ -54,7 +54,6 @@ copy:
 
 tangle: tmp
 	/usr/bin/env emacs --script ./etangle $(TANGLERS)
-	/usr/bin/env emacs --script (byte-compile-file (concat user-emacs-directory "init.el")
 	@echo
 
 clean:
