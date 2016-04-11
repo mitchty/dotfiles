@@ -21,4 +21,3 @@
 ;; Language specific
 (setq haskell-p nil)
 (setq perl-p nil)
-(setq ruby-p nil)

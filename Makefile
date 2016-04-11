@@ -2,11 +2,11 @@
 # outside of emacs.
 .PHONY: tangle tangle-next
 DEST:=$(HOME)
-LAST:=$(shell cat last || echo 0)
+LAST:=$(shell cat .last || echo 0)
 NEXT:=$(shell l=$(LAST); ((l=l+1)); echo $$l)
 NEXTGEN:=$(PWD)/generation/$(NEXT)
 LASTGEN:=$(PWD)/generation/$(LAST)
-TANGLERS:=readme.org
+TANGLERS:=readme.org emacs.org
 GEN:=$(LAST)
 OPTIONS:=
 
@@ -46,7 +46,7 @@ tangle-next:
 	$(MAKE) generation
 	$(MAKE) next
 	$(MAKE) copy GEN=$(NEXT)
-	@echo $(NEXT) > last
+	@echo $(NEXT) > .last
 
 copy:
 	cd $(PWD)/generation/$(GEN) && find . -type f -exec rm -f $(DEST)/{} \;
@@ -60,4 +60,4 @@ clean:
 	-rm -fr tmp
 
 nuke: clean
-	-rm -fr last generation
+	-rm -fr .last generation
