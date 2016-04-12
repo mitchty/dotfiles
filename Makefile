@@ -14,13 +14,6 @@ all: clean tangle-next
 
 tmp:
 	install -dm755 $@
-	$(MAKE) emacs
-
-#special target to handle emacs configuration
-emacs:
-	install -dm755 tmp/.emacs.d
-	install -m400 init.el tmp/emacs.d/init.el
-	install -m400 emacs.org tmp/emacs.d/emacs.org
 
 $(NEXTGEN):
 	install -dm755 $@

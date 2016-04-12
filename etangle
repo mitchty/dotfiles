@@ -1,9 +1,6 @@
 ;;-*-mode: emacs-lisp; coding: utf-8;-*-
 ;; Copyright: 2016 Mitchell Tishmack
 ;; Tangle an org mode file with babel using emacs.
-(let ((default-directory "~/.emacs.d"))
-  (normal-top-level-add-subdirs-to-load-path))
-
 (load-file (if (getenv "OPTIONS")
                (concat (concat "./" (getenv "OPTIONS")) ".el")
                "./options.el"))
