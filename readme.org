@@ -1522,12 +1522,19 @@ end
 
 * git
 ** ~/.gitconfig
+:PROPERTIES:
+:header-args: :tangle tmp/.gitconfig :comments no :padline no :cache yes :mkdirp yes
+:END:
 
 General git configuration.
 
-#+BEGIN_SRC conf :tangle tmp/.gitconfig :results replace
+*** pager
+#+BEGIN_SRC conf
 [pager]
   color = true
+#+END_SRC
+*** color
+#+BEGIN_SRC conf
 [color]
   status = auto
   diff = auto
@@ -1545,48 +1552,86 @@ General git configuration.
   frag = black reverse
   old = red reverse
   new = green reverse
-[alias]
-  begin = !sh -c 'git init && git commit --allow-empty -m "Initial commit"'
-  up = !sh -c 'git pull --rebase && git push'
-  wsdiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space --ignore-all-space
-  wdiff = diff --color-words
-  ci = commit
-  ciu = commit --all
-  co = checkout
-  ds = diff --stat
-  ba = branch --all
-  st = status --short --branch
-  s = status --short --branch --untracked-files=no
-  unstage = reset HEAD
-  tlog = log --graph --color=always --abbrev-commit --date=relative --pretty=oneline
-  hist = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
-  slog = log --oneline --decorate
-  fixup = commit --fixup
-  squash = commit --squash
-  ri = rebase --interactive --autosquash
-  ra = rebase --abort
-  effit = reset --hard
-  # What commits differ between branches, note, equivalent commits are omitted.
-  # Use this with three dot operator aka master...origin/master
-  cdiff = log --left-right --graph --cherry-pick --oneline
-  # Same as ^ only equivalent commits are listed with a = sign.
-  cmdiff = log --left-right --graph --cherry-mark --oneline
+#+END_SRC
+*** alias
+#+BEGIN_SRC conf
+  [alias]
+    begin = !git init && git commit --allow-empty -m 'Initial empty commit'
+    up = !git pull --rebase && git push
+    wsdiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space --ignore-all-space
+    wdiff = diff --color-words
+    ci = commit
+    ciu = commit --all
+    co = checkout
+    ds = diff --stat
+    ba = branch --all
+    st = status --short --branch
+    s = status --short --branch --untracked-files=no
+    unstage = reset HEAD
+    tlog = log --graph --color=always --abbrev-commit --date=relative --pretty=oneline
+    hist = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+    slog = log --oneline --decorate
+    fixup = commit --fixup
+    squash = commit --squash
+    ri = rebase --interactive --autosquash
+    ra = rebase --abort
+    effit = reset --hard
+    # What commits differ between branches, note, equivalent commits are omitted.
+    # Use this with three dot operator aka master...origin/master
+    cpdiff = log --no-merges --left-right --graph --cherry-pick --oneline
+    # Same as ^ only equivalent commits are listed with a = sign.
+    cmdiff = log --no-merges --left-right --graph --cherry-mark --oneline
+    # git update with submodule update
+    sup = !git checkout master && git pull && git submodule update --init --recursive
+    # git clone with submodules
+    sc = !git clone --recursive $1
+    # what files are getting updated a lot
+    churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort | awk 'BEGIN {print "count,file"} {print $1 "," $2}'
+    # help the gc a bit and get a bit more space back for a local clone
+    trim = !git reflog expire --expire=now --all && git gc --prune=now
+#+END_SRC
+*** github
+#+BEGIN_SRC conf
 [github]
   user = mitchty
+#+END_SRC
+*** credential
+#+BEGIN_SRC conf
 [credential]
   helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc
+#+END_SRC
+*** advice
+#+BEGIN_SRC conf
 [advice]
   statushints = false
+#+END_SRC
+*** gui
+#+BEGIN_SRC
 [gui]
   fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
   fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+#+END_SRC
+*** http
+#+BEGIN_SRC
 [http]
   postBuffer = 209715200
+#+END_SRC
+*** nix
+#+BEGIN_SRC conf :tangle (when (eq nix-p t) "tmp/.gitconfig")
   sslcainfo = ~/.nix-profile/etc/ca-bundle.crt
+#+END_SRC
+*** push
+#+BEGIN_SRC conf
 [push]
   default = simple
+#+END_SRC
+*** url rewrites
+#+BEGIN_SRC conf
 [url "https://github.com/"]
   insteadOf = git://github.com/
+#+END_SRC
+*** username/email
+#+BEGIN_SRC conf
 [user]
   name = Mitch Tishmack
   email = mitch.tishmack@gmail.com
