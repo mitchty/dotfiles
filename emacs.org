@@ -38,6 +38,7 @@ This configuration is using *use-package* extensively. Install it straight away.
       (package-initialize)))
 
   (require 'use-package)
+  (setq use-package-verbose t)
 #+END_SRC
 
 *** match end of string function
