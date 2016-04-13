@@ -416,6 +416,22 @@ nix_env_setup()
 
 nix_env_setup
 #+END_SRC
+
+Workaround stupid ssl crap with recent nix.
+
+#+BEGIN_SRC sh :tangle (when (and (eq nix-p t) (eq osx-p t)) "tmp/.profile")
+SSL_CERT_FILE="${HOME}/.nix-profile/etc/ssl/certs/ca-bundle.crt"
+GIT_SSL_CAINFO=$SSL_CERT_FILE
+export SSL_CERT_FILE
+export GIT_SSL_CAINFO
+#+END_SRC
+
+TODO Add linux ca-bundle detection
+  if test  -e /etc/ssl/certs/ca-bundle.crt ;  # Fedora, NixOS
+      set -xg SSL_CERT_FILE /etc/ssl/certs/ca-bundle.crt ;
+  else if test -e /etc/ssl/certs/ca-certificates.crt ;  # Ubuntu, Debian
+      set -xg SSL_CERT_FILE /etc/ssl/certs/ca-certificates.crt
+
 *** tmux
 #+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
 t()
@@ -1615,10 +1631,6 @@ General git configuration.
 #+BEGIN_SRC
 [http]
   postBuffer = 209715200
-#+END_SRC
-*** nix
-#+BEGIN_SRC conf :tangle (when (eq nix-p t) "tmp/.gitconfig")
-  sslcainfo = ~/.nix-profile/etc/ca-bundle.crt
 #+END_SRC
 *** push
 #+BEGIN_SRC conf
