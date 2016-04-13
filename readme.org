@@ -347,7 +347,7 @@ maybe_git_repo()
     if [ $? = 0 ]; then
       mkdir -p "${repo}"
       echo "git clone ${rrepo} ${repo}"
-      git clone "${rrepo}" "${repo}"
+      git clone --recursive "${rrepo}" "${repo}"
     else
       echo "${rrepo} doesn't look to be a git repository"
     fi
