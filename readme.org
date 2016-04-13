@@ -2208,6 +2208,9 @@ endif " has("autocmd")
         unzip
         upx
         xz
+        multimarkdown
+        jq
+#        rtags broken again on osx, fix it
         p7zip
         unrar
         watch
@@ -2227,7 +2230,7 @@ endif " has("autocmd")
       ];
     };
     env_hs =
-      pkgs.haskell.packages.ghc7102.ghcWithPackages
+      pkgs.haskell.packages.ghc7103.ghcWithPackages
           (haskellPackages: with haskellPackages; [
               alex
               happy
@@ -2241,7 +2244,7 @@ endif " has("autocmd")
               hindent
               hoogle
               hspec
-              idris
+#              idris # zlib is complaining for some reason, hmmm
               pandoc
               shake
               ShellCheck
