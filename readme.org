@@ -1950,13 +1950,14 @@ RPROMPT='${vcs_info_msg_0_} ${PWD/#$HOME/~}'
 
 Tmux configuration. Pretty boring in most ways.
 
-#+BEGIN_SRC conf :tangle tmp/.tmux.conf :results replace
+#+BEGIN_SRC conf :tangle tmp/.tmux.conf
 # Setup utf8 by default and vi mode
 set-window-option -g utf8 on
 set-window-option -g mode-keys vi
 set-window-option -g aggressive-resize on
 
-set-option -g default-command zsh
+# Force zsh to be a login shell
+set-option -g default-command 'zsh -l'
 set-option -g default-terminal 'xterm-256color'
 
 # Status line options, mainly coloring
@@ -2084,24 +2085,12 @@ bind-key m \
        display 'Mouse modes off'" \
       "set -g mouse on; \
       display 'Mouse modes on'"
+#+END_SRC
 
+#+BEGIN_SRC  conf :tangle (when (not (eq osx-p t)) "tmp/.tmux.conf")
 # Assume linux for things, load osx stuff only on osx
 bind C-p run "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
 bind C-y run "tmux save-buffer - | xclip -i"
-
-# TODO: FIXME replace rainbarf with a not perl dependency magnet.
-# Linux specific. Now that I installed rainbarf on things, why not use it.
-# if-shell 'test "$(uname)" = "Linux"' \
-#     "set-option -g status-right-length 55; \
-#      set-option -g status-right '#(rainbarf --bright --width 25) %a %H:%M:%S'; "
-
-# osx specific
-# Have to modify default command so I can ssh in.
-# that and rainbarf output is 42 chars long (utf8) but helpful.
-# if-shell 'test "$(uname)" = "Darwin"' \
-#     "set-option -g default-command 'zsh -l'; \
-#      set-option -g status-right-length 55; \
-#      set-option -g status-right '#(rainbarf --remaining --bolt --bright --width 25) %a %H:%M:%S'; "
 #+END_SRC
 * vim
 ** ~/.vimrc
