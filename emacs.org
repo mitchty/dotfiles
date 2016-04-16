@@ -606,13 +606,13 @@ Org-mode keybindings and settings, pretty sparse really.
                       ("C-c c" . org-capture)
                       ("C-c l" . org-store-link)
                       ("C-c p" . org-latex-export-to-pdf))
+               :init (use-package org-bullets)
                :config
                (progn
                  (custom-set-variables
                   '(org-log-done t)
                   '(org-hide-leading-stars t)
                   )
-                 (use-package org-bullets :ensure t)
                  (org-reload)
                  )
                )
