@@ -731,7 +731,7 @@ Desktop saving of session information handy to keep the same buffers between ses
 
 Highlight TODO/FIXME type messages in comments.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package fic-mode
     :ensure t
     :init
