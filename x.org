@@ -1,0 +1,103 @@
+#+TITLE: X Configuration
+#+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
+#+BABEL: :cache yes
+#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no
+
+X related configuration, nothing overly huge to be honest just stupid configuration.
+
+* ~/.Xdefaults
+:PROPERTIES:
+:header-args: :tangle (when (eq x-p t) "tmp/.Xdefaults") :comments no :padline no :cache yes :mkdirp yes
+:END:
+
+X defaults, just urxvt for the moment. Slightly linux/bsd only but not really.
+
+#+BEGIN_SRC conf
+! urxvt generalish stuff
+!
+urxvt*termName:                 rxvt-256color
+urxvt*font:                     xft:menlo:size=12:antialias=true
+urxvt*perl-ext-common:          default,matcher
+urxvt*jumpScroll:               true
+urxvt*cursorColor:              pink
+urxvt*loginShell:               true
+urxvt*scrollBar:                true
+urxvt*scrollstyle:              next
+urxvt*scrollBar_right:          true
+urxvt*scrollTtyOutput:          false
+urxvt*cursorBlink:              true
+urxvt*saveLines:                10000
+urxvt*urlLauncher:              /usr/bin/google-chrome
+urxvt*matcher.button:           1
+urxvt*allowWindowOps:           true
+#+END_SRC
+
+* ~/.Xmodmap
+:PROPERTIES:
+:header-args: :tangle (when (eq x-p t) "tmp/.Xmodmap") :comments no :padline no :cache yes :mkdirp yes
+:END:
+
+Swap around left/right clicks basically.
+
+#+BEGIN_SRC conf :tangle (when (not (and (eq x-p t) (eq osx-p t))) "tmp/.Xmodmap")
+pointer = 3 2 1 4 5
+#+END_SRC
+
+OSX is odd/inverted cause reasons (who cares why).
+
+#+BEGIN_SRC conf :tangle (when (and (eq x-p t) (eq osx-p t)) "tmp/.Xmodmap")
+pointer = 1 2 3 4 5
+#+END_SRC
+
+* ~/.Xresources
+:PROPERTIES:
+:header-args: :tangle (when (eq x-p t) "tmp/.Xresources") :comments no :padline no :cache yes :mkdirp yes
+:END:
+
+I can't remember why I did all this effort. But I'll remove it some year I bet.
+
+#+BEGIN_SRC conf
+#define brightblack     #ffffff
+#define normblack       #f9f9f9
+#define normgreen       #00cc33
+#define brightgreen     #00cc99
+#define normblue        #f00033
+#define brightblue      #0099ff
+#define normcyan        #66ccff
+#define brightcyan      #66ccff
+#define normwhite       #060606
+#define brightwhite     #000000
+#define normyellow      #ffcc33
+#define brightyellow    #ffcc33
+#define normred         #ff3300
+#define brightred       #ff3300
+#define normmagenta     #ff66ff
+#define brightmagenta   #ff66ff
+
+*background:            normblack
+*foreground:            normwhite
+*fading:                40
+*fadeColor:             brightblack
+*cursorColor:           brightcyan
+*pointerColorBackground: #3f3f3f
+*pointerColorForeground: #f3f3f3
+
+*color0: #090909
+*color1: #f00000
+*color2: normgreen
+*color3: normyellow
+*color4: #0066ff
+*color5: normmagenta
+*color6: normcyan
+*color7: #c8c8c8
+*color8: #888888
+*color9: #f00033
+*color10: brightgreen
+*color11: brightyellow
+*color12: #0099ff
+*color13: brightmagenta
+*color14: brightcyan
+*color15: #f9f9f9
+#+END_SRC

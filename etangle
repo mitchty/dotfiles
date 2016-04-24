@@ -1,12 +1,12 @@
 ;;-*-mode: emacs-lisp; coding: utf-8;-*-
 ;; Copyright: 2016 Mitchell Tishmack
 ;; Tangle an org mode file with babel using emacs.
-(load-file (if (getenv "OPTIONS")
-               (concat (concat "./" (getenv "OPTIONS")) ".el")
-               "./options.el"))
-
 (require 'org-install)
 (require 'org)
+
+(load-file "./tangle.el")
+
+(load-defaults-or-options)
 
 ;; Iterate through all the files given and tangle them
 (dolist

@@ -22,4 +22,7 @@ for file in $(find . -type f -print); do
   fi
 done
 
+if [ $rc != 0 ]; then
+  echo differences between ${src} and ${dest}
+fi
 exit $rc

@@ -6,22 +6,16 @@ LAST:=$(shell cat .last || echo 0)
 NEXT:=$(shell l=$(LAST); ((l=l+1)); echo $$l)
 NEXTGEN:=$(PWD)/generation/$(NEXT)
 LASTGEN:=$(PWD)/generation/$(LAST)
-TANGLERS:=readme.org emacs.org
+CUSTOM:=
+TANGLERS:=$(CUSTOM) readme.org emacs.org tmux.org git.org x.org nix.org
 GEN:=$(LAST)
 OPTIONS:=
 
+INSTALLDIRS=tmp $(NEXTGEN) $(LASTGEN) generation/$(GEN)
+
 all: clean tangle-next
 
-tmp:
-	install -dm755 $@
-
-$(NEXTGEN):
-	install -dm755 $@
-
-$(LASTGEN):
-	install -dm755 $@
-
-generation/$(GEN):
+$(INSTALLDIRS):
 	install -dm755 $@
 
 generation: $(NEXTGEN) $(LASTGEN) tmp

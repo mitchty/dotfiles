@@ -1,0 +1,171 @@
+#+TITLE: Nix Configuration
+#+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
+#+BABEL: :cache yes
+#+PROPERTY: header-args :tangle tmp/.nixpkgs/config.nix :cache yes :padline no :mkdirp yes :comments no
+
+Nix user config.nix setup.
+
+#+BEGIN_SRC conf :tangle (when (eq nix-p t) "tmp/.nixpkgs/config.nix")
+{
+  allowUnfree = true;
+  allowBroken = true;
+
+  packageOverrides = pkgs: rec {
+    pinentry = pkgs.pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
+    gnupg = pkgs.gnupg.override { x11Support = false; pinentry = false; };
+    youtube-dl = pkgs.youtube-dl.override { pandoc = null; };
+
+    # This didn't work
+    # haskell = pkgs.haskell // {
+    #   packages = pkgs.haskell.packages // {
+    #     ghc = pkgs.haskell.packages.ghc.override {
+    #       overrides = self: pkgs: {
+    #         idris = self.callPackage ./idris-0.10.nix {};
+    #       };
+    #     };
+    #   };
+    # };
+
+    # Nor this
+  # idris = pkgs.haskell.lib.overrideCabal pkgs.idris (oldAttrs: {
+  #     version = "0.10";
+  #     sha256 = "043adsnadjxfyk8lqkv6dgq3l6qijsj5s4rpky0zy06x5k5gx4sm";
+  #   });
+
+
+    default = with pkgs; buildEnv {
+      name = "default";
+      paths = [
+        ansible
+        ack
+        aria
+        iperf
+        cacert
+        curl
+        clang
+        clang-analyzer
+        diffutils
+        patchutils
+        gitAndTools.gitFull
+        gitAndTools.git-extras
+        bazaarTools
+        mercurial
+        subversionClient
+        gist
+        mercurial
+        docbook5
+        entr
+        emacs
+        gnupg1compat
+        gnutar
+        gnumake
+        sloccount
+        cloc
+        less
+        multitail
+        rlwrap
+        gdbm
+        mosh
+        htop
+#        imagemagick also busted on osx now
+        keychain
+        silver-searcher
+        aspell
+        aspellDicts.en
+        openssl
+        pinentry
+        pbzip2
+        pigz
+        pv
+        postgresql
+        readline
+        rsync
+        sqlite
+#        texLiveFull and now this things broken on osx nix, sigh
+        tmux
+        tree
+        wget
+        wakelan
+        unzip
+        upx
+        xz
+        multimarkdown
+        jq
+#        rtags broken again on osx, fix it
+#        p7zip broken again on osx, god nix is terribad at keeping things working
+        unrar
+        watch
+        nox
+        mutt
+        duply
+        zsh
+        pylint
+        python27Packages.howdoi
+        python27Packages.youtube-dl
+        python27Packages.pyflakes
+        python27Packages.flake8
+        python27Packages.virtualenv
+        python27Packages.pip
+#        xhyve        compiles normally, figure out hypervisor framework issue
+        lastpass-cli
+        haskellPackages.alex
+        haskellPackages.happy
+        haskellPackages.bake
+        haskellPackages.cabal-dependency-licenses
+        haskellPackages.cabal-install
+        haskellPackages.cabal-meta
+        haskellPackages.ghc-core
+        haskellPackages.ghc-mod
+        haskellPackages.hasktags
+        haskellPackages.hindent
+        haskellPackages.hoogle
+        haskellPackages.hspec
+        haskellPackages.pandoc
+        haskellPackages.shake
+        haskellPackages.ShellCheck
+        haskellPackages.stack
+        haskellPackages.nats
+        haskellPackages.transformers-compat
+      ];
+    };
+  };
+}
+#+END_SRC
+
+Because idris 0.11 fails its testsuite, got no time to figure it out right now.
+
+#+END_SRC conf :tangle (when (eq nix-p t) ".nixpkgs/idris-0.10.nix")
+{ mkDerivation, annotated-wl-pprint, ansi-terminal, ansi-wl-pprint
+, async, base, base64-bytestring, binary, blaze-html, blaze-markup
+, bytestring, cheapskate, containers, deepseq, directory, filepath
+, fingertree, fsnotify, haskeline, mtl, network
+, optparse-applicative, parsers, pretty, process, safe, split
+, stdenv, text, time, transformers, transformers-compat, trifecta
+, uniplate, unix, unordered-containers, utf8-string, vector
+, vector-binary-instances, zip-archive, zlib
+}:
+mkDerivation {
+  pname = "idris";
+  version = "0.10";
+  sha256 = "043adsnadjxfyk8lqkv6dgq3l6qijsj5s4rpky0zy06x5k5gx4sm";
+  isLibrary = true;
+  isExecutable = true;
+  libraryHaskellDepends = [
+    annotated-wl-pprint ansi-terminal ansi-wl-pprint async base
+    base64-bytestring binary blaze-html blaze-markup bytestring
+    cheapskate containers deepseq directory filepath fingertree
+    fsnotify haskeline mtl network optparse-applicative parsers pretty
+    process safe split text time transformers transformers-compat
+    trifecta uniplate unix unordered-containers utf8-string vector
+    vector-binary-instances zip-archive zlib
+  ];
+  executableHaskellDepends = [
+    base directory filepath haskeline transformers
+  ];
+  homepage = "http://www.idris-lang.org/";
+  description = "Functional Programming Language with Dependent Types";
+  license = stdenv.lib.licenses.bsd3;
+}
+#+END_SRC
