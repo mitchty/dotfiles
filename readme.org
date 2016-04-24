@@ -177,22 +177,13 @@ _host=${_host:=${_uname_n}}
 #+END_SRC
 
 ** PATH
-*** osx
-OSX homebrew leftovers, need to make sure it make sense any longer as I've switched to nix.
-
-#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
-osx_release=$(sw_vers -productVersion | sed -e 's/\.[0-9]\{1\}//2')
-brew_home=/usr/local/brew/${osx_release}
-PATH="${brew_home}/bin:/usr/local/bin:${PATH}"
-export PATH
-#+END_SRC
 *** haskell
 #+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
 PATH="${PATH}:${HOME}/.cabal/bin"
 #+END_SRC
 *** General
 #+BEGIN_SRC sh :tangle "tmp/.profile"
-PATH="${PATH}:${HOME}/bin"
+PATH="${PATH}:${HOME}/bin:${HOME}/.local/bin"
 export PATH
 #+END_SRC
 
