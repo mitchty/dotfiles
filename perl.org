@@ -1,0 +1,93 @@
+#+TITLE: Perl Configuration
+#+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
+#+BABEL: :cache yes
+#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no
+
+Mostly old holdovers from the days of perl, just perlcritic and perltidy configuration.
+
+* ~/.perlcriticrc
+
+What to complain about by default.
+
+#+BEGIN_SRC conf :tangle tmp/.perlcritirc :results replace
+# Show the severity level
+severity = 1
+
+# Basically show what profile is complaining
+verbose = %f:%l:%c: %m, %e (%p, severity %s)\n
+
+# Don't warn on these variables
+[Variables::ProhibitPunctuationVars]
+allow = $@ $!
+
+# Ignore syscall returns on print, it not actually returning is... whatever.
+[InputOutput::RequireCheckedSyscalls]
+exclude_functions = print say
+
+# Allow things like print qx(somecmd) in a void context to work, this is ok.
+[InputOutput::ProhibitBacktickOperators]
+only_in_void_context = 1
+
+# I actually like using unless... so don't piss me off whinging about it
+[-ControlStructures::ProhibitUnlessBlocks]
+
+# The following only apply to modules
+[-Modules::RequireVersionVar]
+[-ErrorHandling::RequireCarping]
+
+# Tabs suck, no
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 0
+
+# For small regexes, no /x at the end is fine, 12 should be enough
+[RegularExpressions::RequireExtendedFormatting]
+minimum_regex_length_to_complain_about = 12
+
+# These are kosher kthxbai
+[ControlStructures::ProhibitPostfixControls]
+allow = for if until unless
+
+# For POE, we do things like my $foo = $_[HEAP]; and thats OK
+[Subroutines::RequireArgUnpacking]
+allow_subscripts = 1
+
+# For POD documentation, I don't care about required sections.
+[Documentation::RequirePodSections]
+lib_sections = NAME | SYNOPSIS | DESCRIPTION | AUTHOR | COPYRIGHT | SEE ALSO
+script_sections = NAME | SYNOPSIS | DESCRIPTION | AUTHOR | COPYRIGHT | SEE ALSO
+
+# This is for POD documentation mainly.
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 1
+#+END_SRC
+
+* ~/.perltidyrc
+
+Control how perltidy should clean things up.
+
+#+BEGIN_SRC conf :tangle tmp/.perltidyrc :results replace
+# cuddled elses pls
+-ce
+# indent 2 spaces
+-i=2
+# for tokens with things like arrays, start the data next line down one indent in
+-lp
+# align closing tokens for things like arrays with the opening token
+-cti=1
+# default, but spaces between multiple entries, none with one arg
+-pt=1
+# line encoding
+-ole=unix
+# braces not on new line
+-nsbl
+# stack opening tokens, don't create a new line with one token, note no stacking of closing tokens
+-sot
+# no space before ;'s in for loops
+-nsfs
+# Make curly braces act more like the args param
+-bbt=1
+# Trim qw whitespaces
+-tqw
+#+END_SRC

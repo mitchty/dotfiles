@@ -1,0 +1,365 @@
+#+TITLE: .profile
+#+AUTHOR: Mitch Tishmack
+#+STARTUP: hidestars
+#+STARTUP: odd
+#+BABEL: :cache yes
+#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no :tangle tmp/.profile
+
+~/.profile setup in all its peculiarities.
+
+* PS1
+
+#+BEGIN_SRC sh
+  # -*- mode: Shell-script; -*-
+  # Common .profile
+  #
+  # DO NOT EDIT, managed by org mode
+  _uname=$(uname)
+  _uname_n=$(uname -n)
+  _hostname=$(hostname)
+  export _uname _uname_n _hostname
+#+END_SRC
+
+OSX uses hostname -s for getting hostname
+
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+_host=$(hostname -s)
+#+END_SRC
+
+Otherwise we just use what uname -n sent.
+
+#+BEGIN_SRC sh
+_host=${_host:=${_uname_n}}
+#+END_SRC
+
+* PATH
+** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+PATH="${PATH}:${HOME}/.cabal/bin"
+#+END_SRC
+** General
+#+BEGIN_SRC sh :tangle "tmp/.profile"
+PATH="${PATH}:${HOME}/bin:${HOME}/.local/bin"
+export PATH
+#+END_SRC
+
+* Functions
+** General
+Generally useful functions.
+
+#+BEGIN_SRC sh
+# cat out a : separated env variable
+# variable is the parameter
+cat_env()
+{
+  set | grep '^'"$1"'=' > /dev/null 2>&1 && eval "echo \$$1" | tr ':' '
+' | awk '!/^\s+$/' | awk '!/^$/'
+}
+
+# Convert a line delimited input to : delimited
+to_env()
+{
+  awk '!a[$0]++' < /dev/stdin | tr -s '
+' ':' | sed -e 's/\:$//' | awk 'NF > 0'
+}
+
+# Unshift a new value onto the env var
+# first arg is ENV second is value to unshift
+# basically prepend value to the ENV variable
+unshift_env()
+{
+  new=$(eval "echo $2; echo \$$1" | to_env)
+  eval "$1=${new}; export $1"
+}
+
+# Opposite of above, but echos what was shifted off
+shift_env()
+{
+  first=$(cat_env "$1" | head -n 1)
+  rest=$(cat_env "$1" | awk '{if (NR!=1) {print}}' | to_env)
+  eval "$1=$rest; export $1"
+  echo "${first}"
+}
+
+# push $2 to $1 on the variable
+push_env()
+{
+  have=$(cat_env "$1")
+  new=$(printf "%s
+%s" "$have" "$2" | to_env)
+  eval "$1=$new; export $1"
+}
+
+# Remove a line matched in $HOME/.ssh/known_hosts for when there are legit
+# host key changes.
+nukehost()
+{
+  if [ -z "$1" ]; then
+    echo "Usage: nukehost <hostname>"
+    echo "       Removes <hostname> from ssh known_host file."
+  else
+    sed -i -e "/$1/d" ~/.ssh/known_hosts
+  fi
+}
+
+# Cheap copy function to make copying a file via ssh from one host
+# to another less painful, use pipeviewer to give some idea as to progress.
+ssh-copyfile()
+{
+  if [ -z "$1" -o -z "$2" ]; then
+    echo "Usage: copy source:/file/location destination:/file/location"
+  else
+    srchost="$(echo "$1" | awk -F: '{print $1}')"
+    src="$(echo "$1" | awk -F: '{print $2}')"
+    dsthost="$(echo "$2" | awk -F: '{print $1}')"
+    dst="$(echo "$2" | awk -F: '{print $2}')"
+    size=$(ssh "$srchost" du -hs "$src" 2> /dev/null)
+    size=$(echo "${size}" | awk '{print $1}')
+    echo "Copying $size to $dst"
+    ssh "$srchost" "/bin/cat \$src" 2> /dev/null | pv -cb -N copied - | ssh "$dsthost" "/bin/cat - > \$dst" 2> /dev/null
+  fi
+}
+
+# extract function to automate being lazy at extracting archives.
+extract()
+{
+  if [ -f "$1" ]; then
+    case ${1} in
+      *.tar.bz2|*.tbz2|*.tbz)  bunzip2 -c "$1" | tar xvf -;;
+      *.tar.gz|*.tgz)          gunzip -c "$1" | tar xvf -;;
+      *.tz|*.tar.z)            zcat "$1" | tar xvf -;;
+      *.tar.xz|*.txz|*.tpxz)   xz -d -c "$1" | tar xvf -;;
+      *.bz2)                   bunzip2 "$1";;
+      *.gz)                    gunzip "$1";;
+      *.jar|*.zip)             unzip "$1";;
+      *.rar)                   unrar x "$1";;
+      *.tar)                   tar -xvf "$1";;
+      *.z)                     uncompress "$1";;
+      *.rpm)                   rpm2cpio "$1" | cpio -idv;;
+      *)                       echo "Unable to extract <$1> Unknown extension."
+    esac
+  else
+    print "File <$1> does not exist."
+  fi
+}
+
+# Tcsh compatibility so I can be a lazy bastard and paste things directly
+# if/when I need to.
+setenv()
+{
+  export "$1=$2"
+}
+
+# Just to be lazy, set/unset the DEBUG env variable used in my scripts
+debug()
+{
+  if [ -z "$DEBUG" ]; then
+    if [ -z "$1" ]; then
+      echo Setting DEBUG to "$1"
+      setenv DEBUG "$1"
+    else
+      echo Setting DEBUG to default
+      setenv DEBUG default
+    fi
+  else
+    echo Unsetting DEBUG
+    unset DEBUG
+  fi
+}
+
+login_shell()
+{
+  [ "$-" = "*i*" ]
+}
+
+# Yeah, sick of using the web browser for this crap
+# Use is NUM FROM TO and boom get the currency converted from goggle.
+cconv()
+{
+  curl -L --silent\
+       "https://www.google.com/finance/converter?a=$1&from=$2&to=$3" \
+         | grep converter_result \
+             | perl -pe 's|[<]\w+ \w+[=]\w+[>]||g;' -e 's|[<][/]span[>]||'
+}
+#+END_SRC
+
+** git
+#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+maybe_git_repo()
+{
+  # assume https if input doesn't contain a protocol
+  proto=https
+  destination=${HOME}/src
+  echo "${1}" | grep '://' > /dev/null 2>&1
+  [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
+  git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
+  rrepo="${proto}://${git_dir}"
+
+  # strip user@, :NNN, and .git from input uri's
+  repo="${destination}/"$(echo "${git_dir}" |
+    sed -e 's/\.git$//g' |
+    sed -e 's|.*\@||g' |
+    sed -e 's|\:[[:digit:]]\{1,\}\/|/|g' |
+    tr -d '~')
+
+  if [ ! -d "${repo}" ]; then
+    git ls-remote "${rrepo}" > /dev/null 2>&1
+    if [ $? = 0 ]; then
+      mkdir -p "${repo}"
+      echo "git clone ${rrepo} ${repo}"
+      git clone --recursive "${rrepo}" "${repo}"
+    else
+      echo "${rrepo} doesn't look to be a git repository"
+    fi
+  fi
+  [ -d "${repo}" ] && cd "${repo}"
+}
+
+gh()
+{
+  maybe_git_repo "https://github.com/${1}"
+}
+
+bb()
+{
+  maybe_git_repo "https://bitbucket.org/${1}"
+}
+#+END_SRC
+** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+hmap()
+{
+  ghc -e "interact ($*)"
+}
+
+hmapl()
+{
+  hmap "unlines.($*).lines"
+}
+
+hmapw()
+{
+  hmapl "map (unwords.($*).words)"
+}
+#+END_SRC
+** nix
+#+BEGIN_SRC sh :tangle (when (eq nix-p t) "tmp/.profile")
+mk_nix_shell()
+{
+  cabal2nix --sha256="0" . \
+    | perl -0777 -p -e 's/{.+}:/{ haskellPackages ? (import <nixpkgs> {}).haskellPackages }:/s' \
+    | sed -E -e 's/(cabal\.mkDerivation)/with haskellPackages; \1/' -e 'sXsha256 = "0";Xsrc = "./.";X' \
+          > shell.nix;
+}
+
+nix_env_setup()
+{
+  # The nix installer put something like this into the .profile.
+  # BAD INSTALLER NO COOKIE!
+  if [ -e ${HOME}/.nix-profile/etc/profile.d/nix.sh ]; then
+      . ${HOME}/.nix-profile/etc/profile.d/nix.sh;
+      export NIX_PATH=${HOME}/src/github.com/NixOS/nixpkgs:nixpkgs=${HOME}/src/github.com/NixOS/nixpkgs
+      export NIX_CFLAGS_COMPILE="-idirafter /usr/include"
+      export NIX_CFLAGS_LINK="-L/usr/lib"
+
+      NIX_GHC=$(type -p ghc > /dev/null 2>&1)
+      if [ -n "$NIX_GHC" ]; then
+          eval $(grep export "$NIX_GHC")
+      fi
+  fi
+
+  nr()
+  {
+    nix-shell --run "$(echo $@)"
+  }
+}
+
+nix_env_setup
+#+END_SRC
+
+Workaround stupid ssl crap with recent nix.
+
+#+BEGIN_SRC sh :tangle (when (and (eq nix-p t) (eq osx-p t)) "tmp/.profile")
+SSL_CERT_FILE="${HOME}/.nix-profile/etc/ssl/certs/ca-bundle.crt"
+GIT_SSL_CAINFO=$SSL_CERT_FILE
+export SSL_CERT_FILE
+export GIT_SSL_CAINFO
+#+END_SRC
+
+TODO Add linux ca-bundle detection
+  if test  -e /etc/ssl/certs/ca-bundle.crt ;  # Fedora, NixOS
+      set -xg SSL_CERT_FILE /etc/ssl/certs/ca-bundle.crt ;
+  else if test -e /etc/ssl/certs/ca-certificates.crt ;  # Ubuntu, Debian
+      set -xg SSL_CERT_FILE /etc/ssl/certs/ca-certificates.crt
+
+** tmux
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+t()
+{
+  if [ -z "$1" ]; then
+    echo "Supply a tmux session name to connect to/create"
+  else
+    tmux has-session -t "$1" 2>/dev/null
+    [ $? != 0 ] && tmux new-session -d -s "$1"
+    tmux attach-session -d -t "$1"
+  fi
+}
+#+END_SRC
+** x
+#+BEGIN_SRC sh :tangle (when (eq x-p t) "tmp/.profile")
+modmap()
+{
+  [ -f "${HOME}/.Xmodmap" ] && xmodmap "${HOME}/.Xmodmap"
+}
+#+END_SRC
+* Aliases
+** General
+#+BEGIN_SRC sh
+# general aliases
+alias s="\$(which ssh)"
+alias quit='exit'
+alias cr='reset; clear'
+alias a=ag
+alias n=noglob
+alias l=ls
+alias L='ls -dal'
+alias cleandir="find . -type f \( -name '*~' -o -name '#*#' -o -name '.*~' -o -name '.#*#' -o -name 'core' -o -name 'dead.letter*' \) | grep -v auto-save-list | xargs -t rm"
+
+# Prefer less for paging duties.
+which less > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  alias T="\$(which less) -f +F"
+else
+  alias T="\$(which tail) -f"
+fi
+
+alias e=emacs
+alias de=emacs --debug-init -nw
+alias ec=emacsclient
+alias ect=emacsclient -t
+alias oec=emacsclient -n -c
+alias stope=emacsclient -t -e "(save-buffers-kill-emacs)(kill-emacs)"
+alias kille=emacsclient -e "(kill-emacs)"
+#+END_SRC
+
+** osx
+#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+alias o='open -a'
+#+END_SRC
+** git
+#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+alias g=git
+#+END_SRC
+** haskell
+#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+alias ghce="ghc -e ':l ~/.ghc.hs' -e"
+#+END_SRC
+** mosh
+#+BEGIN_SRC sh :tangle (when (eq mosh-p t) "tmp/.profile")
+alias m=mosh
+#+END_SRC
+
+** tmux
+#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+alias tl='tmux ls'
+#+END_SRC

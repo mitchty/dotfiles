@@ -6,8 +6,7 @@ LAST:=$(shell cat .last || echo 0)
 NEXT:=$(shell l=$(LAST); ((l=l+1)); echo $$l)
 NEXTGEN:=$(PWD)/generation/$(NEXT)
 LASTGEN:=$(PWD)/generation/$(LAST)
-CUSTOM:=
-TANGLERS:=$(CUSTOM) readme.org emacs.org tmux.org git.org x.org nix.org
+TANGLERS:=$(shell ls -d *.org)
 GEN:=$(LAST)
 OPTIONS:=
 
