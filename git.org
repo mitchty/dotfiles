@@ -72,6 +72,7 @@ General git configuration split out into sections mostly.
     churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort | awk 'BEGIN {print "count,file"} {print $1 "," $2}'
     # help the gc a bit and get a bit more space back for a local clone
     trim = !git reflog expire --expire=now --all && git gc --prune=now
+    aliases = !git config --list | grep 'alias\\.' | sed 's/alias\\.\\([^=]*\\)=\\(.*\\)/\\1\\ \t => \\2/' | sort
 #+END_SRC
 ** github
 #+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
