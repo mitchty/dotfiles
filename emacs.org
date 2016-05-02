@@ -506,7 +506,7 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
        '(global-semantic-stickyfunc-mode f)
        )
       )
-    :init(semantic-mode t)
+    :init (semantic-mode t)
     )
 #+END_SRC
 
