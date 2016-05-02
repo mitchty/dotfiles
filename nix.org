@@ -46,6 +46,8 @@ Nix user config.nix setup.
         curl
         clang
         clang-analyzer
+        cscope
+        ctags
         diffutils
         patchutils
         gitAndTools.gitFull
@@ -69,7 +71,7 @@ Nix user config.nix setup.
         gdbm
         mosh
         htop
-#        imagemagick also busted on osx now
+        imagemagick
         keychain
         silver-searcher
         aspell
@@ -94,22 +96,21 @@ Nix user config.nix setup.
         multimarkdown
         jq
 #        rtags broken again on osx, fix it
-#        p7zip broken again on osx, god nix is terribad at keeping things working
+        p7zip
         unrar
         watch
         nox
         mutt
         duply
-        zsh
         pylint
+#        xhyve        compiles normally, figure out hypervisor framework issue
+        lastpass-cli
         python27Packages.howdoi
         python27Packages.youtube-dl
         python27Packages.pyflakes
         python27Packages.flake8
         python27Packages.virtualenv
         python27Packages.pip
-#        xhyve        compiles normally, figure out hypervisor framework issue
-        lastpass-cli
         haskellPackages.alex
         haskellPackages.happy
         haskellPackages.bake
