@@ -516,33 +516,37 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
   (use-package expand-region :ensure t :bind ("C-]" . er/expand-region))
 #+END_SRC
 
-*** helm
+*** ivy/swiper
 
-By Helms Deep use Helm to do ALL THE THINGS. IDO is ass in comparison.
+Switching to ivy mode+swiper
 
 #+BEGIN_SRC emacs-lisp
-  (use-package helm
+  (use-package counsel
     :ensure t
-    :diminish helm-mode
-    :bind (("M-x" . helm-M-x)
-           ("M-y" . helm-show-kill-ring)
-           ("C-x b" . helm-mini)
-           ("C-x C-b" . helm-buffers-list)
-           ("C-x C-f" . helm-find-files)
-           ("C-x C-r" . helm-recentf)
-           ("C-x c o" . helm-occur))
-    :init (progn
-            (require 'helm-config)
-            (helm-mode 1)
-            (use-package helm-descbinds
-              :ensure t
-              :bind (("C-h b" . helm-descbinds)
-                     ("C-h w" . helm-descbinds))
-              )
-            (use-package helm-ag :ensure t)
-            (use-package helm-projectile :ensure t)
-            )
-    )
+    :bind (("C-x C-f" . counsel-find-file)
+           ("C-c g" . counsel-git)
+           ("C-c j" . counsel-git-grep)
+           ("C-c k" . counsel-ag)
+           ("C-x l" . counsel-locate)
+           ("C-S-o" . counsel-rhythmbox)
+           ("C-c C-r" . ivy-resume))
+    :config (custom-set-variables '(counsel-find-file-at-point t)))
+    (use-package swiper
+      :ensure t
+      :diminish ivy-mode
+      :bind (("C-s" . swiper)
+             ("M-x" . counsel-M-x))
+      :config (progn
+                (custom-set-variables
+                 '(projectile-completion-system 'ivy)
+                 '(magit-completing-read-function 'ivy-completing-read)
+                 '(ivy-use-virtual-buffers t)
+                 '(ivy-height 10)
+                 '(ivy-count-format "(%d/%d) ")
+                 )
+                (ivy-mode 1)
+                )
+      )
 #+END_SRC
 
 *** magit
