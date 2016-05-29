@@ -1297,3 +1297,8 @@ Load this up last to allow for local customization if needed and to keep from cu
   (setq custom-file "~/.emacs.d/custom.el")
   (load custom-file 'noerror)
 #+END_SRC
+
+* Load any local definitions
+#+BEGIN_SRC emacs-lisp
+(load-file "~/.emacs.d/local.el")
+#+END_SRC
