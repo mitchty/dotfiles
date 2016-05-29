@@ -8,35 +8,27 @@
 Nix user config.nix setup.
 
 #+BEGIN_SRC conf :tangle (when (eq nix-p t) "tmp/.nixpkgs/config.nix")
+let
+  pkgs = import <nixpkgs> {};
+in
 {
-  allowUnfree = true;
-  allowBroken = true;
 
-  packageOverrides = pkgs: rec {
-    pinentry = pkgs.pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
-    gnupg = pkgs.gnupg.override { x11Support = false; pinentry = false; };
-    youtube-dl = pkgs.youtube-dl.override { pandoc = null; };
+  packageOverrides = pkgs: with pkgs;
+  let in rec {
+    my-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
+    my-gnupg = gnupg.override { x11Support = false; pinentry = false; };
+    my-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
 
-    # This didn't work
-    # haskell = pkgs.haskell // {
-    #   packages = pkgs.haskell.packages // {
-    #     ghc = pkgs.haskell.packages.ghc.override {
-    #       overrides = self: pkgs: {
-    #         idris = self.callPackage ./idris-0.10.nix {};
-    #       };
-    #     };
-    #   };
-    # };
+    my-git = git.override {
+      pythonSupport = false;
+      svnSupport = true;
+      guiSupport = false;
+      sendEmailSupport = true;
+    };
 
-    # Nor this
-  # idris = pkgs.haskell.lib.overrideCabal pkgs.idris (oldAttrs: {
-  #     version = "0.10";
-  #     sha256 = "043adsnadjxfyk8lqkv6dgq3l6qijsj5s4rpky0zy06x5k5gx4sm";
-  #   });
-
-
-    default = with pkgs; buildEnv {
+    default = buildEnv {
       name = "default";
+      ignoreCollisions = true;
       paths = [
         ansible
         ack
@@ -46,10 +38,10 @@ Nix user config.nix setup.
         curl
         clang
         clang-analyzer
-#        cscope
         ctags
         diffutils
         patchutils
+        my-git
         gitAndTools.gitFull
         gitAndTools.git-extras
         bazaarTools
@@ -60,7 +52,8 @@ Nix user config.nix setup.
         docbook5
         entr
         emacs
-        gnupg1compat
+        my-gnupg
+#        gnupg1compat
         gnutar
         gnumake
         sloccount
@@ -77,7 +70,7 @@ Nix user config.nix setup.
         aspell
         aspellDicts.en
         openssl
-        pinentry
+        my-pinentry
         pbzip2
         pigz
         pv
@@ -85,8 +78,8 @@ Nix user config.nix setup.
         readline
         rsync
         sqlite
-        texlive.combined.scheme-full
         tmux
+        texlive.combined.scheme-full
         tree
         wget
         wakelan
@@ -95,18 +88,16 @@ Nix user config.nix setup.
         xz
         multimarkdown
         jq
-#        rtags broken again on osx, fix it
         p7zip
         unrar
         watch
         nox
         mutt
         duply
-#        pylint       Also broken now. Nix is really not my friend here
 #        xhyve        compiles normally, figure out hypervisor framework issue
         lastpass-cli
+        my-youtube-dl
         python27Packages.howdoi
-        python27Packages.youtube-dl
         python27Packages.pyflakes
         python27Packages.flake8
         python27Packages.virtualenv
@@ -129,44 +120,16 @@ Nix user config.nix setup.
         haskellPackages.stack
         haskellPackages.nats
         haskellPackages.transformers-compat
+      ] ++ stdenv.lib.optionals stdenv.isLinux [
+      # some of these are broken on osx, fix them
+        rtags
+        pylint
+        texLiveFull
+        cscope
       ];
     };
   };
-}
-#+END_SRC
-
-Because idris 0.11 fails its testsuite, got no time to figure it out right now.
-
-#+END_SRC conf :tangle (when (eq nix-p t) ".nixpkgs/idris-0.10.nix")
-{ mkDerivation, annotated-wl-pprint, ansi-terminal, ansi-wl-pprint
-, async, base, base64-bytestring, binary, blaze-html, blaze-markup
-, bytestring, cheapskate, containers, deepseq, directory, filepath
-, fingertree, fsnotify, haskeline, mtl, network
-, optparse-applicative, parsers, pretty, process, safe, split
-, stdenv, text, time, transformers, transformers-compat, trifecta
-, uniplate, unix, unordered-containers, utf8-string, vector
-, vector-binary-instances, zip-archive, zlib
-}:
-mkDerivation {
-  pname = "idris";
-  version = "0.10";
-  sha256 = "043adsnadjxfyk8lqkv6dgq3l6qijsj5s4rpky0zy06x5k5gx4sm";
-  isLibrary = true;
-  isExecutable = true;
-  libraryHaskellDepends = [
-    annotated-wl-pprint ansi-terminal ansi-wl-pprint async base
-    base64-bytestring binary blaze-html blaze-markup bytestring
-    cheapskate containers deepseq directory filepath fingertree
-    fsnotify haskeline mtl network optparse-applicative parsers pretty
-    process safe split text time transformers transformers-compat
-    trifecta uniplate unix unordered-containers utf8-string vector
-    vector-binary-instances zip-archive zlib
-  ];
-  executableHaskellDepends = [
-    base directory filepath haskeline transformers
-  ];
-  homepage = "http://www.idris-lang.org/";
-  description = "Functional Programming Language with Dependent Types";
-  license = stdenv.lib.licenses.bsd3;
+  allowUnfree = true;
+  allowBroken = true;
 }
 #+END_SRC
