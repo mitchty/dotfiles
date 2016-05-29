@@ -41,13 +41,15 @@ General git configuration split out into sections mostly.
   [alias]
     begin = !git init && git commit --allow-empty -m 'Initial empty commit'
     up = !git pull --rebase && git push
-    wsdiff = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space --ignore-all-space
-    wdiff = diff --color-words
+    wsd = diff --color-words --ignore-space-at-eol --ignore-space-change --ignore-all-space
+    wd = diff --color-words
+    fa = fetch --all
     ci = commit
     ciu = commit --all
     co = checkout
     ds = diff --stat
     ba = branch --all
+    b = branch
     st = status --short --branch
     s = status --short --branch --untracked-files=no
     unstage = reset HEAD
@@ -59,13 +61,14 @@ General git configuration split out into sections mostly.
     ri = rebase --interactive --autosquash
     ra = rebase --abort
     effit = reset --hard
+    cp = log --no-merges --cherry --graph --oneline
     # What commits differ between branches, note, equivalent commits are omitted.
     # Use this with three dot operator aka master...origin/master
-    cpdiff = log --no-merges --left-right --graph --cherry-pick --oneline
+    cpd = log --no-merges --left-right --graph --cherry-pick --oneline
     # Same as ^ only equivalent commits are listed with a = sign.
-    cmdiff = log --no-merges --left-right --graph --cherry-mark --oneline
+    cmd = log --no-merges --left-right --graph --cherry-mark --oneline
     # git update with submodule update
-    sup = git pull && git submodule update --init --recursive
+    sup = git pull --rebase && git submodule update --init --recursive
     # git clone with submodules
     sc = !git clone --recursive $1
     # what files are getting updated a lot
