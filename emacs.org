@@ -671,6 +671,7 @@ Org-mode keybindings and settings, pretty sparse really.
         (emacs-lisp . t)
         (sh . t)
         (haskell . t)
+        (latex . t)
         (ditaa . t)
         (perl . t)
         (python . t)
