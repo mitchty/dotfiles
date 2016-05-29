@@ -85,7 +85,7 @@ Nix user config.nix setup.
         readline
         rsync
         sqlite
-#        texLiveFull and now this things broken on osx nix, sigh
+        texlive.combined.scheme-full
         tmux
         tree
         wget
