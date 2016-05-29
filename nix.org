@@ -46,7 +46,7 @@ Nix user config.nix setup.
         curl
         clang
         clang-analyzer
-        cscope
+#        cscope
         ctags
         diffutils
         patchutils
@@ -102,7 +102,7 @@ Nix user config.nix setup.
         nox
         mutt
         duply
-        pylint
+#        pylint       Also broken now. Nix is really not my friend here
 #        xhyve        compiles normally, figure out hypervisor framework issue
         lastpass-cli
         python27Packages.howdoi
