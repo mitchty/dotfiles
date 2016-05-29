@@ -504,6 +504,28 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
     )
 #+END_SRC
 
+*** yasnippet
+#+BEGIN_SRC emacs-lisp
+  (use-package yasnippet
+    :ensure t
+    :init
+    (progn
+      (setq yas-snippet-dirs
+            '("~/.emacs.d/snippets"
+              "~/.emacs.d/snippets-upstream"
+              )))
+    :config
+    (progn
+      (yas/reload-all)
+      (add-hook 'prog-mode-hook
+                '(lambda ()
+                   (yas-minor-mode)))
+      (add-hook 'org-mode-hook
+                '(lambda ()
+                   (yas-minor-mode))))
+    )
+#+END_SRC
+
 *** semantic
 
 #+BEGIN_SRC emacs-lisp
