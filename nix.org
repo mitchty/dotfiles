@@ -118,6 +118,7 @@ in
         haskellPackages.shake
         haskellPackages.ShellCheck
         haskellPackages.stack
+        haskellPackages.idris
         haskellPackages.nats
         haskellPackages.transformers-compat
       ] ++ stdenv.lib.optionals stdenv.isLinux [
