@@ -441,7 +441,7 @@ All the packages I use.
 
 #+BEGIN_SRC emacs-lisp
   (use-package tramp
-    :ensure t
+    :defer t
     :config (custom-set-variables '(tramp-default-method "ssh"))
     )
 #+END_SRC
