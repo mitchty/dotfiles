@@ -104,7 +104,7 @@ nukehost()
 
 # Cheap copy function to make copying a file via ssh from one host
 # to another less painful, use pipeviewer to give some idea as to progress.
-ssh-copyfile()
+sshcopy()
 {
   if [ -z "$1" -o -z "$2" ]; then
     echo "Usage: copy source:/file/location destination:/file/location"
@@ -114,9 +114,13 @@ ssh-copyfile()
     dsthost="$(echo "$2" | awk -F: '{print $1}')"
     dst="$(echo "$2" | awk -F: '{print $2}')"
     size=$(ssh "$srchost" du -hs "$src" 2> /dev/null)
+    if [ "${size}" = "" ]; then
+      echo "${src} doesn't seem to exist on ${srchost}"
+      return 1
+    fi
     size=$(echo "${size}" | awk '{print $1}')
     echo "Copying $size to $dst"
-    ssh "$srchost" "/bin/cat \$src" 2> /dev/null | pv -cb -N copied - | ssh "$dsthost" "/bin/cat - > \$dst" 2> /dev/null
+    (ssh "$srchost" "/bin/cat $src" | pv -cb -N copied - | ssh "$dsthost" "/bin/cat - > $dst") 2> /dev/null
   fi
 }
 
