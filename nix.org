@@ -15,11 +15,11 @@ in
 
   packageOverrides = pkgs: with pkgs;
   let in rec {
-    my-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
-    my-gnupg = gnupg.override { x11Support = false; pinentry = false; };
-    my-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
+    custom-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
+    custom-gnupg = gnupg.override { x11Support = false; };
+    custom-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
 
-    my-git = git.override {
+    custom-git = git.override {
       pythonSupport = false;
       svnSupport = true;
       guiSupport = false;
@@ -41,7 +41,7 @@ in
         ctags
         diffutils
         patchutils
-        my-git
+        custom-git
         gitAndTools.gitFull
         gitAndTools.git-extras
         bazaarTools
@@ -52,8 +52,8 @@ in
         docbook5
         entr
         emacs
-        my-gnupg
-#        gnupg1compat
+        gnupg
+        gnupg1compat
         gnutar
         gnumake
         sloccount
@@ -70,10 +70,13 @@ in
         aspell
         aspellDicts.en
         openssl
-        my-pinentry
+        custom-pinentry
+        poppler_utils
+        ghostscript
         pbzip2
         pigz
         pv
+        pkgconfig
         postgresql
         readline
         rsync
@@ -92,22 +95,20 @@ in
         unrar
         watch
         nox
+        graphviz-nox
         mutt
         duply
-#        xhyve        compiles normally, figure out hypervisor framework issue
         lastpass-cli
-        my-youtube-dl
+        custom-youtube-dl
         python27Packages.howdoi
         python27Packages.pyflakes
         python27Packages.flake8
         python27Packages.virtualenv
         python27Packages.pip
-        haskellPackages.alex
-        haskellPackages.happy
+        python27Packages.pylint
         haskellPackages.bake
         haskellPackages.cabal-dependency-licenses
-        haskellPackages.cabal-install
-        haskellPackages.cabal-meta
+#        haskellPackages.cabal-install
         haskellPackages.ghc-core
         haskellPackages.ghc-mod
         haskellPackages.hasktags
@@ -118,15 +119,14 @@ in
         haskellPackages.shake
         haskellPackages.ShellCheck
         haskellPackages.stack
-        haskellPackages.idris
-        haskellPackages.nats
-        haskellPackages.transformers-compat
       ] ++ stdenv.lib.optionals stdenv.isLinux [
-      # some of these are broken on osx, fix them
+        # some of these are broken on osx, fix them
         rtags
-        pylint
-        texLiveFull
         cscope
+        gcc
+# disabled for now
+#      ] ++ stdenv.lib.optionals stdenv.isDarwin [
+#        xhyve        compiles normally, figure out hypervisor framework issue
       ];
     };
   };

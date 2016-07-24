@@ -278,16 +278,30 @@ nix_env_setup()
   }
 }
 
-nix_env_setup
+nix-on() {
+  rm ~/.nonix
+}
+
+nix-off() {
+  touch ~/.nonix
+}
 #+END_SRC
 
 Workaround stupid ssl crap with recent nix.
 
 #+BEGIN_SRC sh :tangle (when (and (eq nix-p t) (eq osx-p t)) "tmp/.profile")
-SSL_CERT_FILE="${HOME}/.nix-profile/etc/ssl/certs/ca-bundle.crt"
-GIT_SSL_CAINFO=$SSL_CERT_FILE
-export SSL_CERT_FILE
-export GIT_SSL_CAINFO
+if [ ! -e ${HOME}/.nonix ]; then
+  SSL_CERT_FILE="${HOME}/.nix-profile/etc/ssl/certs/ca-bundle.crt"
+  GIT_SSL_CAINFO=$SSL_CERT_FILE
+  export SSL_CERT_FILE
+  export GIT_SSL_CAINFO
+fi
+#+END_SRC
+
+#+BEGIN_SRC sh :tangle (when (eq nix-p t) "tmp/.profile")
+if [ ! -e ${HOME}/.nonix ]; then
+  nix_env_setup
+fi
 #+END_SRC
 
 TODO Add linux ca-bundle detection
