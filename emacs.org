@@ -51,9 +51,10 @@ Add in the standard package archive urls.
   (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
 #+END_SRC
 
-*** use-package bootstrap
+*** use-package/diminish bootstrap
 
-This configuration is using *use-package* extensively. Install it straight away.
+This configuration is using *use-package* extensively. Install it and diminish
+straight away so we can use it elsewhere.
 
 #+BEGIN_SRC emacs-lisp
   (unless (package-installed-p 'use-package)
@@ -64,6 +65,11 @@ This configuration is using *use-package* extensively. Install it straight away.
 
   (require 'use-package)
   (setq use-package-verbose t)
+  (use-package diminish :ensure t)
+  ;; diminish away builtin modes right away as well
+  (diminish 'flyspell-mode)
+  (diminish 'whitespace-mode)
+  (diminish 'visual-line-mode)
 #+END_SRC
 
 *** match end of string function
@@ -75,24 +81,6 @@ This configuration is using *use-package* extensively. Install it straight away.
                        string)
          t)
     )
-#+END_SRC
-
-*** always babel tangle and byte compile emacs.org to init.el
-
-Add a save hook to always tangle and byte compile emacs.org file when we save it.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-  (defun tangle-init ()
-    "If the current buffer is 'emacs.org' the code-blocks are
-  tangled, and the tangled file is compiled."
-    (when (string/ends-with (buffer-file-name)  ".emacs.d/emacs.org")
-      (let ((prog-mode-hook nil))
-        (org-babel-tangle)
-        (byte-compile-file (concat user-emacs-directory "init.el")))
-      )
-    )
-
-  (add-hook 'after-save-hook 'tangle-init)
 #+END_SRC
 
 *** debug on error
@@ -206,6 +194,9 @@ Because its derp to have to chmod 755 stuff after I save. Honestly, do it for me
 #+END_SRC
 
 *** misc text related
+#+BEGIN_SRC emacs-lisp
+  (put 'upcase-region 'disabled nil)
+#+END_SRC
 *** line wrap
 
 Line wrapping is useful. Enable it globally for a start.
@@ -252,7 +243,7 @@ If I selected text, delete the selection, I probably meant it emacs.
   (custom-set-variables '(fill-column 80))
 #+END_SRC
 
-*** we aren't banging rocks anymore
+*** we aren't banging rocks together anymore emacs
 
 Double spacing after a line isn't needed. We aren't animals emacs, we have computers.
 
@@ -440,12 +431,16 @@ All the packages I use.
 *** tramp
 
 #+BEGIN_SRC emacs-lisp
-  (use-package tramp
-    :defer t
-    :config (custom-set-variables '(tramp-default-method "ssh"))
-    )
+    (use-package tramp
+      :defer t
+      :config
+(progn
+(custom-set-variables '(tramp-default-method "ssh"))
+                (add-to-list 'tramp-default-proxies-alist '(".*" "\`root\'" "/ssh:%h:")))
+)
 #+END_SRC
 
+                (add-to-list 'tramp-default-proxies-alist '(".*" "\`root\'" "/ssh:%h:")))
 *** exec-path-from-shell
 
 Turns out that someone wrote this exact thing already. Yay get to drop my own crap.
@@ -471,42 +466,18 @@ Turns out that someone wrote this exact thing already. Yay get to drop my own cr
     )
 #+END_SRC
 
-*** smart-mode-line
+*** spaceline theme
+
+Just use the silly spacemacs smart modeline theme cause I'm lazy.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package smart-mode-line
-    :ensure t
-    :config
-    (progn
-      (custom-set-variables '(sml/name-width 20)
-                            '(sml/mode-width 'full)
-                            '(sml/shorten-modes t)
-                            '(sml/shorten-directory t)
-                            '(sml/hidden-modes
-                              '(" GitGutter"
-                                " Fill"
-                                " $"
-                                " Wrap"
-                                " MRev"
-                                " Ind"
-                                " Projectile"
-                                " SP"
-                                " Undo-Tree"
-                                " yas"
-                                " WSC"))
-                            )
-      (sml/toggle-shorten-modes)
-      (add-to-list 'sml/replacer-regexp-list
-                   '("^~/src/" ":src:"))
-      (sml/setup)
-      (column-number-mode)
-      )
-    )
+  (use-package spaceline :ensure t :init (progn (require 'spaceline-config) (spaceline-spacemacs-theme)))
 #+END_SRC
 
 *** yasnippet
 #+BEGIN_SRC emacs-lisp
   (use-package yasnippet
+    :diminish yas-minor-mode
     :ensure t
     :init
     (progn
@@ -710,8 +681,20 @@ Org-mode keybindings and settings, pretty sparse really.
                                  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
       )
     )
+#+END_SRC
 
+#+BEGIN_SRC emacs-lisp :tangle no
+(require 'ox-latex)
+ox-latex
 
+(unless (boundp 'org-latex-classes)
+  (setq org-latex-classes nil))
+nil
+
+(add-to-list 'org-latex-classes
+             '("article"
+               "\\documentclass{article}"
+               ("\\section{%s}" . "\\section*{%s}")))
 #+END_SRC
 
 *** flycheck
@@ -720,6 +703,7 @@ Flycheck for on the fly checking of code.
 
 #+BEGIN_SRC emacs-lisp
   (use-package flycheck
+    :diminish flycheck-mode
     :ensure t
     :init
     (custom-set-variables '(flycheck-indication-mode 'left-fringe))
@@ -759,6 +743,7 @@ Auto complete functionality is nice to have.
 
 #+BEGIN_SRC emacs-lisp
     (use-package auto-complete
+        :diminish auto-complete-mode
         :ensure t
         :init (progn (require 'auto-complete-config)
                      (ac-config-default)
@@ -772,6 +757,7 @@ Helpfully inserts matching parens, can be a pita too.
 
 #+BEGIN_SRC emacs-lisp
   (use-package smartparens
+    :diminish smartparens-mode
     :ensure t
     :config
     (add-hook 'prog-mode-hook 'smartparens-mode)
@@ -819,8 +805,24 @@ Desktop saving of session information handy to keep the same buffers between ses
     (interactive)
     (if (eq (desktop-owner) (emacs-pid))
         (desktop-save desktop-dirname)))
+#+END_SRC
 
-  (add-hook 'auto-save-hook 'desktop-save-in-desktop-dir)
+*** TODO super-save
+
+REMOVE ME && TODO IF THIS WORKS
+
+Saves buffers like with auto-save but on focus loss, when idle etc...
+
+#+BEGIN_SRC emacs-lisp
+  (use-package super-save
+    :diminish super-save-mode
+    :ensure t
+    :config (progn
+       (super-save-mode +1)
+       (setq super-save-auto-save-when-idle t)
+       (setq auto-save-default nil)
+    )
+  )
 #+END_SRC
 
 *** fic-mode
@@ -839,6 +841,7 @@ Highlight TODO/FIXME type messages in comments.
 
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
+    :diminish projectile-mode
     :ensure t
     :init (projectile-global-mode)
     )
@@ -848,6 +851,7 @@ Highlight TODO/FIXME type messages in comments.
 
 #+BEGIN_SRC emacs-lisp
   (use-package git-gutter
+    :diminish git-gutter-mode
     :ensure t
     :config
     (progn (global-git-gutter-mode t))
@@ -1036,7 +1040,6 @@ Need to make haskell source be all pretty.
                   (push '("forall" . ?∀) prettify-symbols-alist)
                   (push '("sqrt" . ?√) prettify-symbols-alist)
                   (push '("undefined" . ?⊥) prettify-symbols-alist)
-                  (push '("sqrt" . ?√) prettify-symbols-alist)
                   (prettify-symbols-mode)
                   )
                 )
@@ -1050,6 +1053,7 @@ Make undo more useful, and treelike.
 
 #+BEGIN_SRC emacs-lisp
   (use-package undo-tree
+    :diminish undo-tree-mode
     :ensure t
     :init
     (progn (global-undo-tree-mode))
@@ -1072,6 +1076,7 @@ Color variables for easy identification, its like a rainbow puked over everythin
 
 #+BEGIN_SRC emacs-lisp
   (use-package color-identifiers-mode
+    :diminish color-identifiers-mode
     :ensure t
     :config
     (add-hook 'prog-mode-hook 'color-identifiers-mode)
