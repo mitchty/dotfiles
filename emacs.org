@@ -1134,6 +1134,21 @@ Instead of text might as well get a decent mode hook going here.
   (use-package nix-mode :ensure t)
 #+END_SRC
 
+*** docker-mode
+
+#+BEGIN_SRC emacs-lisp
+  (use-package dockerfile-mode :defer t)
+#+END_SRC
+
+*** cscope
+
+#+BEGIN_SRC emacs-lisp
+  (use-package xcscope
+    :defer t
+    :init (progn (cscope-setup))
+    )
+#+END_SRC
+
 * mode related
 *** common defaults
 
