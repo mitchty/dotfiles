@@ -1054,6 +1054,42 @@ Need to make haskell source be all pretty.
     )
 #+END_SRC
 
+*** idris-mode
+
+#+BEGIN_SRC emacs-lisp
+  (use-package idris-mode
+    :ensure t
+    :config
+    (progn
+      (add-to-list 'completion-ignored-extensions ".ibc")
+      (add-hook 'idris-mode-hook'
+                (lambda ()
+                  (push '("()" . ?∅) prettify-symbols-alist)
+                  (push '("\\" . ?λ) prettify-symbols-alist)
+                  (push '("pi" . ?π) prettify-symbols-alist)
+                  (push '("=>" . ?⇒) prettify-symbols-alist)
+                  (push '("->" . ?→) prettify-symbols-alist)
+                  (push '("<-" . ?←) prettify-symbols-alist)
+                  (push '("<=" . ?≤) prettify-symbols-alist)
+                  (push '(">=" . ?≥) prettify-symbols-alist)
+                  (push '("==" . ?≡) prettify-symbols-alist)
+                  (push '("/=" . ?≢) prettify-symbols-alist)
+                  (push '("!!" . "‼") prettify-symbols-alist)
+                  (push '("&&" . ?∧) prettify-symbols-alist)
+                  (push '("||" . ?∨) prettify-symbols-alist)
+                  (push '("~>" . ?⇝) prettify-symbols-alist)
+                  (push '("-<" . ?↢) prettify-symbols-alist)
+                  (push '("not" . ?¬) prettify-symbols-alist)
+                  (push '("forall" . ?∀) prettify-symbols-alist)
+                  (push '("sqrt" . ?√) prettify-symbols-alist)
+                  (push '("undefined" . ?⊥) prettify-symbols-alist)
+                  (prettify-symbols-mode)
+                  )
+                )
+      )
+    )
+#+END_SRC
+
 *** undo-tree
 
 Make undo more useful, and treelike.
