@@ -37,11 +37,6 @@ _host=${_host:=${_uname_n}}
 #+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
 PATH="${PATH}:${HOME}/.cabal/bin"
 #+END_SRC
-** General
-#+BEGIN_SRC sh :tangle "tmp/.profile"
-PATH="${PATH}:${HOME}/bin:${HOME}/.local/bin"
-export PATH
-#+END_SRC
 
 * Functions
 ** General
@@ -380,4 +375,10 @@ alias m=mosh
 ** tmux
 #+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
 alias tl='tmux ls'
+#+END_SRC
+
+* Final PATH
+#+BEGIN_SRC sh :tangle "tmp/.profile"
+PATH="${PATH}:${HOME}/bin:${HOME}/.local/bin"
+export PATH
 #+END_SRC
