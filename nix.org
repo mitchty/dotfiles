@@ -8,12 +8,8 @@
 Nix user config.nix setup.
 
 #+BEGIN_SRC conf :tangle (when (eq nix-p t) "tmp/.nixpkgs/config.nix")
-let
-  pkgs = import <nixpkgs> {};
-in
-{
-  packageOverrides = pkgs: with pkgs;
-  let in rec {
+{ pkgs }: {
+  packageOverrides = super: let pkgs = super.pkgs; in with pkgs; rec {
     custom-pybugz = with python34Packages; buildPythonPackage rec {
       name = "pybugz-${version}";
       version = "0.13";
@@ -79,6 +75,7 @@ in
         graphviz-nox
         haskellPackages.ShellCheck
         haskellPackages.bake
+        haskellPackages.cabal-install
         haskellPackages.cabal-dependency-licenses
         haskellPackages.ghc-core
         haskellPackages.ghc-mod

@@ -659,6 +659,7 @@ Org-mode keybindings and settings, pretty sparse really.
     :config
     (progn
       (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+      (when window-system
       (let* ((variable-tuple (cond ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
                                    ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
                                    ((x-list-fonts "Verdana")         '(:font "Verdana"))
@@ -676,6 +677,7 @@ Org-mode keybindings and settings, pretty sparse really.
                                 `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
                                 `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
                                 `(org-document-title ((t (,@headline ,@variable-tuple :height 1.5 :underline nil))))))
+	)
       (font-lock-add-keywords 'org-mode
                               '(("^ +\\([-*]\\) "
                                  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
@@ -914,7 +916,7 @@ So I write gooder. Me fail English? Thats unpossible.
 
 Compress down python configuration a bit.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package python
     :commands python-mode
     :mode ("\\.py\\'" . python-mode)
@@ -1304,6 +1306,6 @@ Load this up last to allow for local customization if needed and to keep from cu
 #+END_SRC
 
 * Load any local definitions
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 (load-file "~/.emacs.d/local.el")
 #+END_SRC

@@ -117,7 +117,7 @@ General git configuration split out into sections mostly.
 [http]
   postBuffer = 209715200
 #+END_SRC
-** push
+q** push
 #+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
 [push]
   default = simple
