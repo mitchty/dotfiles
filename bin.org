@@ -186,8 +186,10 @@ my $lookup = $input;
 
 if ( $lookup =~ /\d+[.]\d+[.]\d+[.]\d+/smx ) {
   $lookup = ( gethostbyaddr inet_aton($lookup), AF_INET )[0];
-  die "Error: Unable to reverse lookup ip $input.\n" if ( $lookup eq q{} );
 }
+
+die "Error: Unable to reverse lookup ip $input.\n"
+  if ( !(defined $lookup) or $lookup eq q{} );
 
 my $ipv4 = gethostbyname $lookup;
 
