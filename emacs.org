@@ -984,12 +984,19 @@ Need to make haskell source be all pretty.
     :ensure t
     :config
     (progn
+      (use-package intero
+        :ensure t
+        :config
+        (progn
+          (add-hook 'haskell-mode-hook 'intero-mode)
+          )
+        )
       (use-package hindent
         :if (executable-find "hindent")
         :ensure t
         :config
         (progn
-          (add-hook 'haskell-mode-hook #'hindent-mode)
+          (add-hook 'haskell-mode-hook 'hindent-mode)
           )
         )
       (use-package flycheck-haskell :ensure t)
@@ -1006,11 +1013,9 @@ Need to make haskell source be all pretty.
         :config
         (progn
           (autoload 'ghc-init "ghc" nil t)
-          (autoload 'ghc-debug "ghc" nil t)
+           (autoload 'ghc-debug "ghc" nil t)
           (add-hook 'haskell-mode-hook (lambda ()
-                                         (ghc-init)
-                                         )
-                    )
+                                         (ghc-init)))
           )
         )
       (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
