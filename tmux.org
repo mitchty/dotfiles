@@ -10,7 +10,7 @@
 
 Tmux configuration. Pretty boring in most ways.
 
-#+BEGIN_SRC conf :tangle (tangle/file "tmux.conf" (bound-and-true-p tmux-p))
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   # Setup vi mode by default
   set-window-option -g mode-keys vi
   set-window-option -g aggressive-resize on
@@ -147,7 +147,7 @@ Tmux configuration. Pretty boring in most ways.
 
 Only set xclip for x setup.
 
-#+BEGIN_SRC conf :tangle (tangle/file (and (bound-and-true-p tmux-p) (bound-and-true x-p)))
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (and (bound-and-true-p tmux-p) (bound-and-true-p x-p)))
   bind C-p run "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
   bind C-y run "tmux save-buffer - | xclip -i"
 #+END_SRC

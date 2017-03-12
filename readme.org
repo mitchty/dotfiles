@@ -41,7 +41,7 @@ you try to edit the source block.
 
 #+BEGIN_SRC emacs-lisp :tangle no
   (defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
-  (defun tangle/file (file p) (if (bound-and-true-p p) (concat "tmp/" file) "no"))
+  (defun tangle/file (file p) (if (eval p) (concat "tmp/" file) "no"))
 #+END_SRC
 
 This is also all the "magique" that this whole stupid repo entails.

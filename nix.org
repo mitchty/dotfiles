@@ -11,7 +11,7 @@
 
 Nix user config.nix setup.
 
-#+BEGIN_SRC conf :tangle (tangle/file ".nixpkgs/config.nix" (bound-and-true-p nix-p))
+#+BEGIN_SRC conf :mkdirp yes :tangle (tangle/file ".nixpkgs/config.nix" (bound-and-true-p nix-p))
   let
     pkgs = import <nixpkgs> {};
   in

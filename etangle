@@ -5,7 +5,7 @@
 (require 'org)
 
 (defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
-(defun tangle/file (file p) (if (bound-and-true-p p) (concat "tmp/" file) "no"))
+(defun tangle/file (file p) (if (eval p) (concat "tmp/" file) "no"))
 
 (if (getenv "USEROPTS")
     (dolist (fnam (split-string (getenv "USEROPTS") ":"))
