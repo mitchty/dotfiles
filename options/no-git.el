@@ -1,0 +1,1 @@
+(setq git-p nil)

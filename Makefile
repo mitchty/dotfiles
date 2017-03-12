@@ -1,6 +1,5 @@
 # Makefile is here to make it possible to use this whole shebang
 # outside of emacs.
-.PHONY: tangle tangle-next
 DEST:=$(HOME)
 LAST:=$(shell cat .last || echo 0)
 NEXT:=$(shell l=$(LAST); ((l=l+1)); echo $$l)
@@ -8,7 +7,10 @@ NEXTGEN:=$(PWD)/generation/$(NEXT)
 LASTGEN:=$(PWD)/generation/$(LAST)
 TANGLERS:=$(shell ls -d *.org)
 GEN:=$(LAST)
-OPTIONS:=
+OPTS:=
+HOST:=$(shell uname -n)
+USEROPTS:=$(OPTS):$(HOST)
+NAME:=default
 
 INSTALLDIRS=tmp $(NEXTGEN) $(LASTGEN) generation/$(GEN)
 
@@ -27,6 +29,7 @@ diff: generation/$(GEN)
 
 next: diff
 
+.PHONY: tangle-next
 tangle-next:
 	$(MAKE) tangle
 	$(MAKE) generation
@@ -38,12 +41,17 @@ copy:
 	cd $(PWD)/generation/$(GEN) && find . -type f -exec rm -f $(DEST)/{} \;
 	cd $(PWD)/generation/$(GEN) && cp -r . $(DEST)
 
+.PHONY: tangle
 tangle: tmp
-	/usr/bin/env emacs --script ./etangle $(TANGLERS)
-	@echo
+	USEROPTS=$(USEROPTS) /usr/bin/env emacs --script ./etangle $(TANGLERS)
 
 clean:
 	-rm -fr tmp
 
 nuke: clean
 	-rm -fr .last generation
+
+.PHONY: option
+option:
+	echo "(setq $(NAME)-p t)" > options/$(NAME).el
+	echo "(setq $(NAME)-p nil)" > options/no-$(NAME).el

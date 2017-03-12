@@ -3,7 +3,12 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no :tangle tmp/.profile
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :replace yes
+#+PROPERTY: header-args :tangle tmp/.profile
 
 ~/.profile setup in all its peculiarities.
 
@@ -22,7 +27,7 @@
 
 OSX uses hostname -s for getting hostname
 
-#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p macos-p))
 _host=$(hostname -s)
 #+END_SRC
 
@@ -34,7 +39,7 @@ _host=${_host:=${_uname_n}}
 
 * PATH
 ** haskell
-#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p haskell-p))
 PATH="${PATH}:${HOME}/.cabal/bin"
 #+END_SRC
 ** General
@@ -188,7 +193,7 @@ cconv()
 #+END_SRC
 
 ** git
-#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p git-p))
 maybe_git_repo()
 {
   # assume https if input doesn't contain a protocol
@@ -230,7 +235,7 @@ bb()
 }
 #+END_SRC
 ** haskell
-#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p haskell-p))
 hmap()
 {
   ghc -e "interact ($*)"
@@ -247,7 +252,7 @@ hmapw()
 }
 #+END_SRC
 ** nix
-#+BEGIN_SRC sh :tangle (when (eq nix-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p nix-p))
 mk_nix_shell()
 {
   cabal2nix --sha256="0" . \
@@ -289,7 +294,7 @@ nix-off() {
 
 Workaround stupid ssl crap with recent nix.
 
-#+BEGIN_SRC sh :tangle (when (and (eq nix-p t) (eq osx-p t)) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (and (bound-and-true-p nix-p) (bound-and-true-p macos-p)))
 if [ ! -e ${HOME}/.nonix ]; then
   SSL_CERT_FILE="${HOME}/.nix-profile/etc/ssl/certs/ca-bundle.crt"
   GIT_SSL_CAINFO=$SSL_CERT_FILE
@@ -298,7 +303,7 @@ if [ ! -e ${HOME}/.nonix ]; then
 fi
 #+END_SRC
 
-#+BEGIN_SRC sh :tangle (when (eq nix-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p nix-p))
 if [ ! -e ${HOME}/.nonix ]; then
   nix_env_setup
 fi
@@ -311,7 +316,7 @@ TODO Add linux ca-bundle detection
       set -xg SSL_CERT_FILE /etc/ssl/certs/ca-certificates.crt
 
 ** tmux
-#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p tmux-p))
 t()
 {
   if [ -z "$1" ]; then
@@ -324,7 +329,7 @@ t()
 }
 #+END_SRC
 ** x
-#+BEGIN_SRC sh :tangle (when (eq x-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p x-p))
 modmap()
 {
   [ -f "${HOME}/.Xmodmap" ] && xmodmap "${HOME}/.Xmodmap"
@@ -361,23 +366,23 @@ alias kille=emacsclient -e "(kill-emacs)"
 #+END_SRC
 
 ** osx
-#+BEGIN_SRC sh :tangle (when (eq osx-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p macos-p))
 alias o='open -a'
 #+END_SRC
 ** git
-#+BEGIN_SRC sh :tangle (when (eq git-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p git-p))
 alias g=git
 #+END_SRC
 ** haskell
-#+BEGIN_SRC sh :tangle (when (eq haskell-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p haskell-p))
 alias ghce="ghc -e ':l ~/.ghc.hs' -e"
 #+END_SRC
 ** mosh
-#+BEGIN_SRC sh :tangle (when (eq mosh-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p mosh-p))
 alias m=mosh
 #+END_SRC
 
 ** tmux
-#+BEGIN_SRC sh :tangle (when (eq tmux-p t) "tmp/.profile")
+#+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p tmux-p))
 alias tl='tmux ls'
 #+END_SRC

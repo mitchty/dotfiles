@@ -3,17 +3,21 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :replace yes
+#+PROPERTY: header-args :tangle-mode (identity #o755)
 
 ~/bin files and other shenanigans
 
 * ~/bin/cidr
-
 A stupid script I wrote ages ago to help me be lazy with cidr
 notation for stuff. Setup the wrong netmask a few times and
 you too, will wish for something similar.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/cidr :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/cidr
 #!/usr/bin/env perl
 #
 # Convert input ip/cidr|netmask|hexnetmask to useable network information.
@@ -159,7 +163,6 @@ foreach my $arg (@ARGV){
 #+END_SRC
 
 * ~/bin/dns
-
 Just a silly dns script that slighly mimics the old host utility
 of yore. Can also do reverse lookups.
 
@@ -171,7 +174,7 @@ $ dns 216.58.216.206
 ord31s21-in-f206.1e100.net is 216.58.216.206
 ord31s21-in-f206.1e100.net is also ord31s21-in-f206.1e100.net
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/dns :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/dns
 #!/usr/bin/env perl
 #
 # Stupid script to help with dns information. Solaris 9/8 lack the host utility.
@@ -211,10 +214,9 @@ exit 0;
 #+END_SRC
 
 * ~/bin/ts
-
 Stupid simple timestamp script that just takes input, and prefixes a timestamp to to output. Thats it.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ts :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/ts
 #!/usr/bin/env perl
 #
 # Timestamp stdin and then print to stdout and flush.
@@ -237,7 +239,6 @@ while(<STDIN>){
 #+END_SRC
 
 * ~/bin/diskhog
-
 Old script I wrote after I had to figure out where space was used and it was mostly all in a directory with a ton of small files.
 
 Written in anger. Not all that useful nominally.
@@ -264,7 +265,7 @@ $ diskhog -n 4 /tmp
 420.57k  /private/tmp/sysp.xml
 161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/diskhog :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/diskhog
 #!/usr/bin/env perl
 #
 # Find out who is hogging disk space and where.
@@ -419,7 +420,6 @@ if ($debug){
 #+END_SRC
 
 * ~/bin/ifinfo
-
 I don't remember now why I wrote this but its just a simpler view
 of interfaces on a system.
 
@@ -433,7 +433,7 @@ bridge100@1500   192.168.64.1/24    a:b:c:d:e:f
 
 Comes in slightly handy, no guarantees it parses ifconfig right tho.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ifinfo :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/ifinfo
 #!/usr/bin/env perl
 #
 # Because ifconfig output is... overly verbose.
@@ -649,33 +649,33 @@ if (scalar(@output) < 1){
 Mostly because I use iso8601 timestamps and its nice to use them
 generally without depending on gnu date.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/iso8601 :results replace :tangle-mode (identity #o755)
-#!/usr/bin/env perl
-#-*-mode: Perl; coding: utf-8;-*-
-use strict;
-use warnings;
-use POSIX qw(strftime);
-use Getopt::Long;
+#+BEGIN_SRC perl :tangle tmp/bin/iso8601
+  #!/usr/bin/env perl
+  #-*-mode: Perl; coding: utf-8;-*-
+  use strict;
+  use warnings;
+  use POSIX qw(strftime);
+  use Getopt::Long;
 
-my $short = 0;
-GetOptions('short' => \$short,
-	   's' => \$short
-	  );
+  my $short = 0;
+  GetOptions('short' => \$short,
+       's' => \$short
+      );
 
-my $now       = time;
-if ($short) {
-  print strftime('%Y%m%dT%H%M%SZ', (gmtime $now)) . "\n";
-} else {
-  print strftime('%Y-%m-%dT%H:%M:%SZ', (gmtime $now)) . "\n";
-}
-exit 0;
+  my $now       = time;
+  if ($short) {
+    print strftime('%Y%m%dT%H%M%SZ', (gmtime $now)) . "\n";
+  } else {
+    print strftime('%Y-%m-%dT%H:%M:%SZ', (gmtime $now)) . "\n";
+  }
+  exit 0;
 #+END_SRC
 
 * ~/bin/whoson
 
 Basically getent passwd $username/$uid to show who is on a system.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/whoson :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/whoson
 #!/usr/bin/env perl
 #
 # Because i'm lazy and sick of typing in getent passwd $someusername/uid
@@ -713,7 +713,7 @@ foreach my $user (keys %users){
 
 Silly wrapper perl script that makes it easier to get at the gecos string for a $user/$uid.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/gecos :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/gecos
 #!/usr/bin/env perl
 #
 # Dumb wrapper to get the gecos information from a uid/username.
@@ -735,7 +735,7 @@ foreach my $input (@ARGV){
 
 Stupid perl script to mimic hatimerun for systems that don't have it.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/hatimerun :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/hatimerun
 #!/usr/bin/env perl
 #
 # hatimerun in perl, sorta
@@ -804,7 +804,7 @@ if ($@){
 
 Silly perl based ptree alike implementation. Mad old code that should be avoided at all costs but it works and I'm not fixing it unless I need to.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/ptree.pl :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/ptree.pl
 #!/usr/bin/env perl
 #
 # ptree for linux/darwin/solaris. I got sick of ps and pstree on linux.
@@ -982,7 +982,7 @@ exit 0;
 
 Just find out if a port responds to anything tcp related or not.
 
-#+BEGIN_SRC perl :mkdirp yes :tangle tmp/bin/portchk :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC perl :tangle tmp/bin/portchk
 #!/usr/bin/env perl
 #
 # Dumb wrapper to get the gecos information from a uid/username.
@@ -1000,6 +1000,49 @@ foreach my $input (@ARGV){
 }
 #+END_SRC
 
+* ~/bin/nix-update
+
+More for nix on macos, but just merges NixOS/nipkgs origin/master to the current branch in a tmux window and watches it.
+
+#+BEGIN_SRC sh :tangle (tangle/file "bin/nix-update" (bound-and-true-p nix-p))
+  #!/usr/bin/env sh
+  #-*-mode: Shell-script; coding: utf-8;-*-
+  # File: tmux-nix.sh
+  # Copyright: 2017 Mitch Tishmack
+  # Description: instantiate tmux nix session
+  export script=$(basename "$0")
+  export dir=$(cd "$(dirname "$0")"; pwd)
+  export iam=${dir}/${script}
+  set -e
+
+  session=nix
+
+  cd ~/src/github.com/NixOS/nixpkgs
+
+  if ! tmux has-session -t ${session}; then
+    tmux new-session -d -s ${session} -n nix
+    tmux send-keys -t ${session}:0 'sleep 30
+  while true; do
+  blah=$(nix-env -iA --dry-run stdboth nixpkgs.default | grep /nix); echo "${blah}" | head -n $(echo "$LINES - 2" | bc); echo "${blah}" | grep -c /nix | ts
+  echo "${blah}" | grep /nix > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    sleep 60
+    clear
+  else
+    exit 0
+  fi
+  done
+  ' C-m
+    tmux split-window -v -t ${session}:0
+    tmux send-keys -t ${session}:0.1 'git fetch --all && git merge origin/master &&
+  time nix-env -iA nixpkgs.default && nix-env -u --leq && exit 0
+  ' C-m
+    tmux select-window -t ${session}:0
+  fi
+  tmux attach -t ${session}
+
+
+#+END_SRC
 * ~/bin/notify
 
 OSX only really, just fires off a notification when its ran.
@@ -1008,8 +1051,7 @@ Example:
 notify "some command" "not ok"
 
 First param is the message, second title of the notification.
-
-#+BEGIN_SRC sh :mkdirp yes :tangle (when (eq osx-p t) "tmp/bin/notify") :results replace :tangle-mode (identity #o755)
+#+BEGIN_SRC sh :tangle (tangle/file "bin/notify" (bound-and-true-p macos-p))
 #!/bin/sh
 message=${1:="no message"}
 title=''
@@ -1025,25 +1067,27 @@ osascript -e "${notification}"
 
 * ~/bin/today
 
-Stupid ruby script I wrote to highlight the week/day in a calendar.
+Stupid ruby script I wrote to highlight the week/day in a calendar. I don't remember why I wrote it.
 
-#+BEGIN_SRC ruby :mkdirp yes :tangle tmp/bin/today :results replace :tangle-mode (identity #o755)
-#!/usr/bin/env ruby
-cal, today, week_color, day_color, reset = %x(cal).split(%r(\n)), Time.now.day, %x(tput sgr0;tput setab 4;tput setaf 7), %x(tput sgr0; tput setab 0;tput setaf 7;tput bold), %x(tput sgr0)
-done=false
-cal.each do |line|
-  if done then
-    puts line
-    next
+TODO: why the hell is :mkdirp yes needed here but nowhere else?
+
+#+BEGIN_SRC ruby :tangle tmp/bin/today :mkdirp yes
+  #!/usr/bin/env ruby
+  cal, today, week_color, day_color, reset = %x(cal).split(%r(\n)), Time.now.day, %x(tput sgr0;tput setab 4;tput setaf 7), %x(tput sgr0; tput setab 0;tput setaf 7;tput bold), %x(tput sgr0)
+  done=false
+  cal.each do |line|
+    if done then
+      puts line
+      next
+    end
+    if(line =~ /^(.*\s+?)#{today}(\s+?.*)$/ or
+       line =~ /^(.*\s+?)#{today}$/ or
+       line =~ /^()#{today}(\s+?.*)$/ or
+       line =~ /^#{today}$/ ) then
+      puts "#{week_color}#{$1}#{day_color}#{today}#{week_color}#{$2}#{reset}"
+      done=true
+    else
+      puts line
+    end
   end
-  if(line =~ /^(.*\s+?)#{today}(\s+?.*)$/ or
-     line =~ /^(.*\s+?)#{today}$/ or
-     line =~ /^()#{today}(\s+?.*)$/ or
-     line =~ /^#{today}$/ ) then
-    puts "#{week_color}#{$1}#{day_color}#{today}#{week_color}#{$2}#{reset}"
-    done=true
-  else
-    puts line
-  end
-end
 #+END_SRC

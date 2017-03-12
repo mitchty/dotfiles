@@ -1,0 +1,1 @@
+(setq mosh-p t)

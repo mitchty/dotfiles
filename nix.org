@@ -3,154 +3,160 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :tangle tmp/.nixpkgs/config.nix :cache yes :padline no :mkdirp yes :comments no
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :replace yes
 
 Nix user config.nix setup.
 
-#+BEGIN_SRC conf :tangle (when (eq nix-p t) "tmp/.nixpkgs/config.nix")
-let
-  pkgs = import <nixpkgs> {};
-in
-{
-  packageOverrides = pkgs: with pkgs;
-  let in rec {
-    custom-pybugz = with python34Packages; buildPythonPackage rec {
-      name = "pybugz-${version}";
-      version = "0.13";
-      src = pkgs.fetchgit {
-        url = https://github.com/williamh/pybugz.git;
-        rev = "4dec396d43061c1def9aa19601c89c8aa00742b3";
-        sha256 = "1s21jma83cyynmv3696hbrgy0d3sq4j027iplhnw22q2237bk1xd";
+#+BEGIN_SRC conf :tangle (tangle/file ".nixpkgs/config.nix" (bound-and-true-p nix-p))
+  let
+    pkgs = import <nixpkgs> {};
+  in
+  {
+    packageOverrides = pkgs: with pkgs;
+    let in rec {
+      custom-pybugz = with python34Packages; buildPythonPackage rec {
+        name = "pybugz-${version}";
+        version = "0.13";
+        src = pkgs.fetchgit {
+          url = https://github.com/williamh/pybugz.git;
+          rev = "4dec396d43061c1def9aa19601c89c8aa00742b3";
+          sha256 = "1s21jma83cyynmv3696hbrgy0d3sq4j027iplhnw22q2237bk1xd";
+        };
+        # TODO: Fix this, something to do with how its using unittest
+        doCheck = false;
+        buildInputs = [ pkgs.glibcLocales ];
+        propagatedBuildInputs = [ six ];
       };
-      # TODO: Fix this, something to do with how its using unittest
-      doCheck = false;
-      buildInputs = [ pkgs.glibcLocales ];
-      propagatedBuildInputs = [ six ];
-    };
-    custom-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
-    custom-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
-    # 3 unit tests fail on both 27 pylint and 35 pylint, so ignore it
-    custom-pylint = python35Packages.pylint.override { doCheck = false; };
+      custom-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
+      custom-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
+      # 3 unit tests fail on both 27 pylint and 35 pylint, so ignore it
+#      custom-pylint = python35Packages.pylint.override { doCheck = false; };
 
-    custom-git = git.override {
-      pythonSupport = false;
-      svnSupport = true;
-      guiSupport = false;
-      sendEmailSupport = true;
-    };
+      custom-git = git.override {
+        pythonSupport = false;
+        svnSupport = true;
+        guiSupport = false;
+        sendEmailSupport = true;
+      };
 
-    default = buildEnv {
-      name = "default";
-      ignoreCollisions = true;
-      paths = [
-        ack
-        ansible
-        aria
-        aspell
-        aspellDicts.en
-        bazaarTools
-        cacert
-        clang
-        clang-analyzer
-        cloc
-        cscope
-        ctags
-        curl
-        custom-git
-        custom-pinentry
-        custom-pybugz
-        custom-pylint
-        custom-youtube-dl
-        diffutils
-        docbook5
-        duply
-        emacs
-        entr
-        gcc
-        gdbm
-        ghostscript
-        gist
-        gitAndTools.git-extras
-        gitAndTools.gitFull
-        gnumake
-        gnupg
-        gnupg1compat
-        gnutar
-        graphviz-nox
-        haskellPackages.ShellCheck
-        haskellPackages.bake
-        haskellPackages.cabal-dependency-licenses
-        haskellPackages.ghc-core
-        haskellPackages.ghc-mod
-        haskellPackages.hasktags
-        haskellPackages.hindent
-        haskellPackages.hoogle
-        haskellPackages.hspec
-        haskellPackages.idris
-        haskellPackages.intero
-        haskellPackages.network
-        haskellPackages.pandoc
-        haskellPackages.shake
-        haskellPackages.stack
-        htop
-        imagemagick
-        iperf
-        jq
-        keychain
-        lastpass-cli
-        less
-        llvm
-        mercurial
-        moreutils
-        mosh
-        multimarkdown
-        multitail
-        mutt
-        mr
-        nox
-        openssl
-        p7zip
-        patchutils
-        pbzip2
-        pigz
-        pixz
-        pkgconfig
-        poppler_utils
-        postgresql
-        pv
-        python27Packages.bugzilla
-        python27Packages.flake8
-        python27Packages.howdoi
-        python27Packages.pip
-        python27Packages.pyflakes
-        python27Packages.virtualenv
-        readline
-        rlwrap
-        rsync
-        rtags
-        gmp
-        silver-searcher
-        sloccount
-        sqlite
-        sshpass
-        subversionClient
-        texlive.combined.scheme-full
-        tmux
-        tree
-        unrar
-        unzip
-        upx
-        wakelan
-        watch
-        wget
-        xz
-# If I ever come up with some linux only stuff or figure out xhyve
-#      ] ++ stdenv.lib.optionals stdenv.isLinux [
-#      ] ++ stdenv.lib.optionals stdenv.isDarwin [
-#        xhyve
-      ];
+      default = buildEnv {
+        name = "default";
+        ignoreCollisions = true;
+        paths = [
+          ack
+          ansible
+          aria
+          aspell
+          aspellDicts.en
+          bazaarTools
+          cacert
+          clang
+          clang-analyzer
+          cloc
+          cscope
+          ctags
+          curl
+          custom-git
+          custom-pinentry
+          custom-pybugz
+#          custom-pylint
+          custom-youtube-dl
+          diffutils
+          docbook5
+          duply
+          emacs
+          entr
+          gcc
+          gdbm
+          ghostscript
+          gist
+          gitAndTools.git-extras
+          gitAndTools.gitFull
+          gnumake
+          gnupg
+          gnupg1compat
+          gnutar
+          graphviz-nox
+          haskellPackages.ShellCheck
+          haskellPackages.bake
+          haskellPackages.cabal-dependency-licenses
+          haskellPackages.ghc-core
+          haskellPackages.ghc-mod
+          haskellPackages.hasktags
+          haskellPackages.hindent
+          haskellPackages.hoogle
+          haskellPackages.hspec
+          haskellPackages.idris
+          haskellPackages.intero
+          haskellPackages.network
+          haskellPackages.pandoc
+          haskellPackages.shake
+          haskellPackages.stack
+          htop
+          imagemagick
+          iperf
+          jq
+          keychain
+          lastpass-cli
+          less
+          llvm
+          mercurial
+          moreutils
+          mosh
+          multimarkdown
+          multitail
+          mutt
+          munge
+          mr
+          nox
+          openssl
+          p7zip
+          patchutils
+          pbzip2
+          pigz
+          pixz
+          pkgconfig
+          poppler_utils
+          postgresql
+          pv
+          python27Packages.bugzilla
+          python27Packages.flake8
+          python27Packages.howdoi
+          python27Packages.pip
+          python27Packages.pyflakes
+          python27Packages.virtualenv
+          readline
+          rlwrap
+          rsync
+          rtags
+          gmp
+          silver-searcher
+          sloccount
+          sqlite
+          sshpass
+          subversionClient
+          texlive.combined.scheme-full
+          tmux
+          tree
+          unrar
+          unzip
+          upx
+          wakelan
+          watch
+          wget
+          xz
+          zlib
+  # If I ever come up with some linux only stuff or figure out xhyve
+  #      ] ++ stdenv.lib.optionals stdenv.isLinux [
+  #      ] ++ stdenv.lib.optionals stdenv.isDarwin [
+  #        xhyve
+        ];
+      };
     };
-  };
-  allowUnfree = true;
-}
+    allowUnfree = true;
+  }
 #+END_SRC

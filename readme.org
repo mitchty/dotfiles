@@ -21,15 +21,34 @@ my dotfiles in one logical file that can build itself.
 
 So now if you want to look at my dotfiles, they're all in here. With one
 caveat that my emacs configuration is not. That is still separate. Mostly
-because it is large enough that it can be on its own.
+because it is large enough that it can stand on its own.
 
 * Use/Abuse
 
-Use of this setup is simple. There really is one step in general:
+Use of this setup is somewhat simple or straightforward.
+
+There really is one step in general:
 
 #+BEGIN_SRC sh :tangle no
   make
 #+END_SRC
+
+** Emacs functions to add to init.el
+
+For all this to work in emacs so you can edit source blocks you'll need
+add the following two functions otherwise you'll get an error every time
+you try to edit the source block.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  (defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
+  (defun tangle/file (file p) (if (bound-and-true-p p) (concat "tmp/" file) "no"))
+#+END_SRC
+
+This is also all the "magique" that this whole stupid repo entails.
+
+But how would you control how things get exported? Well that is done
+via files with simple *(setq predicate-p t)* lines inside them. These
+are all the *options/name.el* files comprise of.
 
 But lets say you want to export things to another directory than $HOME. No
 worries, just specify DEST:
@@ -38,21 +57,90 @@ worries, just specify DEST:
   make DEST=/some/other/directory
 #+END_SRC
 
-But wait, what if you want to export things for an os you're not using? No
-worries, just copy options.el to name.el and specify that as OPTIONS too:
+But wait, what if you want to export things for an os you're not using?
+
+Easy, just create a couple options files like so:
 
 #+BEGIN_SRC sh :tangle no
-  make DEST=/some/other/directory OPTIONS=osx
+name=option
+echo "(setq ${name}-p t)" > options/${name}.el
+echo "(setq ${name}-p nil)" > options/no-${name}.el
+#+END_SRC
+
+And then provide the *name* (without the .el extension) to make via *OPTS*:
+
+#+BEGIN_SRC sh :tangle no
+  make DEST=/some/other/directory OPTS=macos
+#+END_SRC
+
+This lets you customize things to a ludicrous degree at runtime like so:
+
+#+BEGIN_SRC sh :tangle no
+  make OPTS=no-nix:linux:tmux:git:no-zsh
+#+END_SRC
+
+Etc...
+
+I wouldn't do this exactly, while you could, thats just too much to need to
+remember to type. The simplest way to do things is to just create an
+*options/$(uname -n).el* file with all the options you need defined. Note that
+in the or *BEGIN_SRC* lines you can use elisp to control when/how something should or
+should not get tangled.
+
+Example use of tangle/file, note the final option is just elisp and we just
+use *bound-and-true-p* to detect if we have a predicate or not.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  (tangle/file "some/file/name" (bound-and-true-p macos-p))
+  (tangle/file "some/file/name" (bound-and-true-p foo-p))
+  (tangle/file "some/file/name" (and (bound-and-true-p first-p) (bound-and-true-p second-p)))
+#+END_SRC
+
+By default the makefile will add an option with the name of the system its
+running on's *uname -n*. To override this behavior use the *USEROPTS* variable
+instead, or invoke things with a null *HOST* like so:
+
+#+BEGIN_SRC sh :tangle no
+  make HOST=
 #+END_SRC
 
 Want to copy a specific generation to somewhere else? Or maybe you tested
-installing to some DEST, and want to copy that to $HOME? No worries:
+installing to some *DEST*, and want to copy that to *$HOME*? No worries:
 
 #+BEGIN_SRC sh :tangle no
   make copy GEN=N
 #+END_SRC
 
 Where N is the generation you want to copy.
+
+Note, to ensure this doesn't by default overwrite hand edited files, a
+diff is run across the files that would be copied to and what the tangled
+version contains.
+
+Example, I've commented out some .gitignore lines in *~/.gitignore* manually
+and then tried to tangle a new generation over the top.
+
+#+BEGIN_SRC sh :tangle no
+./ddiff /Users/me/src/github.com/mitchty/dotfiles/generation/291 /Users/me
+--- .gitignore  2017-03-04 12:49:17.000000000 -0600
++++ /Users/me/.gitignore 2017-03-04 14:00:24.000000000 -0600
+@@ -8,6 +8,6 @@
+ *.pyc
+ *.rbc
+ *.elc
+-*.swp
+-*.[oa]
+-*.hi
++#*.swp
++#*.[oa]
++#*.hi
+differences between /Users/me/src/github.com/mitchty/dotfiles/generation/291 and /Users/me
+#+END_SRC
+
+This is an attempt to ensure that we don't accidentally overwrite files that may
+have customizations on it.
+
+To force it just run *make copy GEN=N* with *N* as the number to force a copy for.
 
 ** How does it work?
 
@@ -69,8 +157,6 @@ remove that way. BUT that sounds janky and error prone. Removal of
 files is the users job, not this setup.
 
 ** Explanation of what is happening
-
-The file [[file:defaults.el][defaults.el]] controls predicates that change how files get tangled to files.
 
 This allows me to tangle files that would be useful for linux/bsd/etc...
 without affecting the existing files.
@@ -97,16 +183,16 @@ Should be easy enough to either clone this repo or copy things to a new repo
 and hack in what you need. Your call.
 
 But, say you have a heading, take .profile as an example, under an org mode
-heading you would just add:
+heading you would just add to your *BEGIN_SRC* definition like so:
 
-#+BEGIN_SRC org :tangle no
-  :PROPERTIES:
-  :header-args: :tangle tmp/.profile :comments no :padline no :cache yes :mkdirp yes
-  :END:
+#+BEGIN_SRC text :tangle no
+  #+BEGIN_SRC sh :tangle .profile
+  stuff
+  #+END_SRC
 #+END_SRC
 
-Then any source blocks for that heading will go to tmp/.profile. Its important
-that you put everything into ./tmp! This is used to generate things before a
+Then any source blocks for that heading will go to *tmp/.profile*. Its important
+that you put everything into *tmp*! This is used to generate things before a
 generation is built. It gives the Makefile a chance to know if the tangling
 worked or not.
 
@@ -114,12 +200,10 @@ But lets say you don't need to have lots of sub headings, or even control
 a file in multiple subparts that have predicates to control things.
 
 Pretty simple, just add a source block like normal:
-#+BEGIN_SRC org :tangle no
-  ,#+BEGIN_SRC conf :tangle tmp/.example.conf
+#+BEGIN_SRC text :tangle no
+  #+BEGIN_SRC conf :tangle tmp/.example.conf
   put contents here!
-  ,#+END_SRC
-
-
+  #+END_SRC
 #+END_SRC
 
 * External Tanglers
@@ -149,7 +233,7 @@ Language specific
 | perl    | [[file:perl.org][perl.org]]    |
 
 * TODO
-- [ ] Figure out some way to make code blocks editable with :tangle, it sucks not being able to edit blocks as they are.
+- [X] Figure out some way to make code blocks editable with :tangle, it sucks not being able to edit blocks as they are.
 - [ ] Need to have some way to autocleanup old generations. Rm works for now so meh.
 - [ ] Need to add the ability to detect that make is generating a pointless new generation. Aka generation N and generation N-1 are the same, just leave N and don't increment.
 - [ ] Maybe checksum file contents somehow and use that?

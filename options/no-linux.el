@@ -1,0 +1,1 @@
+(setq linux-p nil)

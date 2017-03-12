@@ -1,0 +1,1 @@
+(setq emacs-p t)

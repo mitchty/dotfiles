@@ -1,0 +1,1 @@
+(setq nix-p t)

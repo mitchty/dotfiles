@@ -4,12 +4,18 @@
 (require 'org-install)
 (require 'org)
 
-(load-file "./tangle.el")
+(defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
+(defun tangle/file (file p) (if (bound-and-true-p p) (concat "tmp/" file) "no"))
 
-(load-defaults-or-options)
+(if (getenv "USEROPTS")
+    (dolist (fnam (split-string (getenv "USEROPTS") ":"))
+      (if (not (member fnam '("" nil)))
+          (load-file (concat "./options/" fnam ".el"))
+        ))
+  )
 
 ;; Iterate through all the files given and tangle them
 (dolist
     (file command-line-args-left)
-  (princ file)
+  (print (format "tangling: %s" file))
   (org-babel-tangle-file file))

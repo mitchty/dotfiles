@@ -2,19 +2,19 @@
 #+AUTHOR: Mitch Tishmack
 #+STARTUP: hidestars
 #+STARTUP: odd
-#+BABEL: :cache yes
-#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :replace yes
 
 X related configuration, nothing overly huge to be honest just stupid configuration.
 
 * ~/.Xdefaults
-:PROPERTIES:
-:header-args: :tangle (when (eq x-p t) "tmp/.Xdefaults") :comments no :padline no :cache yes :mkdirp yes
-:END:
 
 X defaults, just urxvt for the moment. Slightly linux/bsd only but not really.
 
-#+BEGIN_SRC conf
+#+BEGIN_SRC conf (tangle/file ".Xdefaults" (bound-and-true-p x-p))
 ! urxvt generalish stuff
 !
 urxvt*termName:                 rxvt-256color
@@ -35,30 +35,24 @@ urxvt*allowWindowOps:           true
 #+END_SRC
 
 * ~/.Xmodmap
-:PROPERTIES:
-:header-args: :tangle (when (eq x-p t) "tmp/.Xmodmap") :comments no :padline no :cache yes :mkdirp yes
-:END:
 
 Swap around left/right clicks basically.
 
-#+BEGIN_SRC conf :tangle (when (not (and (eq x-p t) (eq osx-p t))) "tmp/.Xmodmap")
+#+BEGIN_SRC conf :tangle (tangle/file ".Xmodmap" (not (and (bound-and-true-p x-p) (bound-and-true-p macos-p))))
 pointer = 3 2 1 4 5
 #+END_SRC
 
 OSX is odd/inverted cause reasons (who cares why).
 
-#+BEGIN_SRC conf :tangle (when (and (eq x-p t) (eq osx-p t)) "tmp/.Xmodmap")
+#+BEGIN_SRC conf :tangle (tangle/file ".Xmodmap" (and (bound-and-true-p x-p) (bound-and-true-p macos-p)))
 pointer = 1 2 3 4 5
 #+END_SRC
 
 * ~/.Xresources
-:PROPERTIES:
-:header-args: :tangle (when (eq x-p t) "tmp/.Xresources") :comments no :padline no :cache yes :mkdirp yes
-:END:
 
 I can't remember why I did all this effort. But I'll remove it some year I bet.
 
-#+BEGIN_SRC conf
+#+BEGIN_SRC conf :tangle (tangle/file ".Xresources" (bound-and-true-p x-p))
 #define brightblack     #ffffff
 #define normblack       #f9f9f9
 #define normgreen       #00cc33

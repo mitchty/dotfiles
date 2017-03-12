@@ -1,0 +1,1 @@
+(setq perl-p t)

@@ -3,29 +3,22 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :tangle tmp/.emacs.d/init.el :cache yes :padline no :mkdirp yes :comments no
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :results replace
+#+PROPERTY: header-args :tangle tmp/.emacs.d/init.el
 
 * prelude
 
 Startup related tasks/setup that might be used later on.
 
-*** tangle functions
-
-Duplicated from tangle.el just to make using org easier.
-
-TODO: make this stuff work sanely in emacs org mode and
-via external tangling. Not tangled for now.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-  (defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
-  (defun tangle/file (p file) (if (bound-and-true-p p) (concat "tmp/" file) "no"))
-#+END_SRC
-
 *** emacs package setup
 
 Setup the builtin emacs package manager.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle tmp/.emacs.d/init.el :mkdirp yes
   (require 'package)
   (package-initialize)
 #+END_SRC
@@ -36,6 +29,18 @@ Add in the standard package archive urls.
   (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
   (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
+#+END_SRC
+
+*** tangle functions
+
+Duplicated from tangle.el just to make using org easier.
+
+TODO: make this stuff work sanely in emacs org mode and
+via external tangling. Not tangled for now.
+
+#+BEGIN_SRC emacs-lisp
+  (defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
+  (defun tangle/file (file p) (if (bound-and-true-p p) (concat "tmp/" file) "no"))
 #+END_SRC
 
 *** emacs gc speedup
@@ -717,7 +722,7 @@ setups.
 
 Not tangled into the config intentionally.
 
-#+BEGIN_SRC emacs-lisp :tangle=no
+#+BEGIN_SRC emacs-lisp :tangle no
   (defun pkg-config-add-lib-cflags (pkg-config-lib)
     "This function will add necessary header file path of a
   specified by `pkg-config-lib' to `flycheck-clang-include-path', which make it

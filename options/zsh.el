@@ -1,0 +1,1 @@
+(setq zsh-p t)
