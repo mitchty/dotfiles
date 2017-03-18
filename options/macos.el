@@ -1,0 +1,1 @@
+(setq macos-p t)

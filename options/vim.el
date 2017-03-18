@@ -1,0 +1,1 @@
+(setq vim-p t)

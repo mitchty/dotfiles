@@ -2,12 +2,15 @@
 #+AUTHOR: Mitch Tishmack
 #+STARTUP: hidestars
 #+STARTUP: odd
-#+BABEL: :cache yes
-#+PROPERTY: header-args :cache yes :padline no :mkdirp yes :comments no :tangle tmp/.vimrc
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :replace yes
 
 What remains of my days from being a vim user.
 
-#+BEGIN_SRC conf :tangle tmp/.vimrc :results replace
+#+BEGIN_SRC conf :tangle tmp/.vimrc
 set nocompatible
 set backspace=indent,eol,start
 set history=50 " keep 50 lines of command line history

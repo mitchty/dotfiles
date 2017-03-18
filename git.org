@@ -3,41 +3,42 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :cache yes :padline no :comments no
+#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :padline no
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :comments no
+#+PROPERTY: header-args :replace yes
 
 General git configuration split out into sections mostly.
 
 * ~/.gitconfig
-:PROPERTIES:
-:header-args: :tangle tmp/.gitconfig :comments no :padline no :cache yes :mkdirp yes
-:END:
 ** pager
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[pager]
-  color = true
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [pager]
+    color = true
 #+END_SRC
 ** color
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[color]
-  status = auto
-  diff = auto
-  branch = auto
-[color "status"]
-  added = green
-  changed = blue
-  untracked = red
-[color "branch"]
-  current = green
-  local = blue
-  remote = red
-[color "diff"]
-  meta = blue bold
-  frag = black reverse
-  old = red reverse
-  new = green reverse
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [color]
+    status = auto
+    diff = auto
+    branch = auto
+  [color "status"]
+    added = green
+    changed = blue
+    untracked = red
+  [color "branch"]
+    current = green
+    local = blue
+    remote = red
+  [color "diff"]
+    meta = blue bold
+    frag = black reverse
+    old = red reverse
+    new = green reverse
 #+END_SRC
 ** alias
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [alias]
     begin = !git init && git commit --allow-empty -m 'Initial empty commit'
     up = !git pull --rebase && git push
@@ -76,7 +77,7 @@ General git configuration split out into sections mostly.
     churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort -r | awk 'BEGIN {print "count,file"} {print $1 "," $2}' | egrep -v '^\\s+$'
     # help the gc a bit and get a bit more space back for a local clone
     trim = !git reflog expire --expire=now --all && git gc --prune=now
-    # default remote
+    # default remote, note depends on the repo having been git cloned
     defremote = !git branch -rvv | egrep 'HEAD' | awk '{print $1}' | sed -e 's|/HEAD||g'
     # short sha
     short = rev-parse --short
@@ -84,75 +85,74 @@ General git configuration split out into sections mostly.
     bcs = log --pretty="%H" --first-parent --no-merges
     find-merge = !sh -c "commit=$0 && branch=${1:-HEAD} && (git rev-list $commit..$branch --ancestry-path | cat -n; git rev-list $commit..$branch --first-parent | cat -n) | sort -k2 | uniq -f1 -d | sort -n | tail -1 | cut -f2"
     show-merge = !sh -c "merge=$(git find-merge $0 $1) && [ -n \"$merge\" ] && git show $merge"
+    # My defremote hack depends on $remote/HEAD to point to somewhere
+    # which it may not if the git repo wasn't cloned
+    fixhead = !sh -c "rem=${0:-origin} && branch=${1:-master} && git symbolic-ref refs/remotes/$rem/HEAD refs/remotes/$rem/${branch}"
     # push branch while setting the upstream to the default remote
     pbr = !git push --set-upstream $(git defremote) $(git bn)
     p = !sh -c 'git branch ${1:-$(git defremote)}pr$0@$(iso8601 -s) $(git ls-remote -q ${1:-$(git defremote)} | grep refs/pull-requests/$0/from | cut -c1-8)'
-    # kinda/sorta git pull -r without the git pull nonsense
-    cleanmerged = !sh -c "git branch --merged | grep -Ev '^(. master|\*)' | xargs -n1 git branch -d"
-    prune = !sh -c 'git cleanmerged; git fetch -p; git trim'
+    # Pull all the commits missed from a git pull --depth N clone
+    unshallow = pull --unshallow
 #+END_SRC
 ** github
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[github]
-  user = mitchty
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [github]
+    user = mitchty
 #+END_SRC
 ** credential
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[credential]
-  helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [credential]
+    helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc
 #+END_SRC
 ** advice
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[advice]
-  statushints = false
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [advice]
+    statushints = false
 #+END_SRC
 ** gui
-#+BEGIN_SRC conf :tangle (tangle/file 'git-p ".gitconfig")
-[gui]
-  fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
-  fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [gui]
+    fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
+    fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
 #+END_SRC
 ** http
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[http]
-  postBuffer = 209715200
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [http]
+    postBuffer = 209715200
 #+END_SRC
-q** push
-#+BEGIN_SRC conf :tangle (when (eq git-p t) "tmp/.gitconfig")
-[push]
-  default = simple
+** push
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [push]
+    default = simple
 #+END_SRC
 ** url rewrites
-#+BEGIN_SRC conf :tangle (tangle/file 'git-p ".gitconfig")
-[url "https://github.com/"]
-  insteadOf = git://github.com/
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [url "https://github.com/"]
+    insteadOf = git://github.com/
 #+END_SRC
 ** username/email
-#+BEGIN_SRC conf :tangle (tangle/file 'git-p ".gitconfig")
-[user]
-  name = Mitch Tishmack
-  email = mitch.tishmack@gmail.com
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [user]
+    name = Mitch Tishmack
+    email = mitch.tishmack@gmail.com
 #+END_SRC
 
 * ~/.gitignore
-:PROPERTIES:
-:header-args: :tangle tmp/.gitignore :comments no :padline no :cache yes :mkdirp yes
-:END:
 
 Common crap/build artifacts that git should always ignore.
 
-#+BEGIN_SRC conf :tangle no
-.*~
-*~
-.\#*
-\#*
-\#*\#
-.\#*\#
-.DS_Store
-*.pyc
-*.rbc
-*.elc
-*.swp
-*.[oa]
-*.hi
+#+BEGIN_SRC conf :tangle (tangle/file ".gitignore" (bound-and-true-p git-p))
+  .*~
+  ,*~
+  .\#*
+  \#*
+  \#*\#
+  .\#*\#
+  .DS_Store
+  ,*.pyc
+  ,*.rbc
+  ,*.elc
+  ,*.swp
+  ,*.[oa]
+  ,*.hi
 #+END_SRC
