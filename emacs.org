@@ -566,6 +566,7 @@ Make git not ass to use. At least in emacs. magit is the best git interface... i
 
 #+BEGIN_SRC emacs-lisp
   (use-package magit
+    :diminish magit-mode
     :ensure t
     :commands (magit-init
                magit-status
@@ -640,20 +641,38 @@ Org-mode keybindings and settings, pretty sparse really.
       '(org-hide-leading-stars t)
       '(org-hide-emphasis-markers t)
       '(org-confirm-babel-evaluate nil)
+      '(org-capture-templates
+        '(("t" "Todo" entry (file+headline "~/src/bitbucket.org/mitchty/org/gtd.org" "Tasks")
+           "* TODO %?\n  %i\n  %a")
+          ("n" "Note" entry (file+datetree "~/src/bitbucket.org/mitchty/org/notes.org")
+           "* %?\nRandom Note entered on %U\n  %i\n  %a")
+          ("m" "Todo from email" entry (file+headline "~/src/bitbucket.org/mitchty/org/gtd.org" "INBOX")
+           "* TODO %?, Link: %a")
+          ("u" "Url" entry (file+headline "~/src/bitbucket.org/mitchty/org/urls.org" "Urls")
+           "* %u\n\n %i" :prepend t)
+           ))
       )
-     (org-babel-do-load-languages
-      'org-babel-load-languages
-      '(
-        (emacs-lisp . t)
-        (sh . t)
-        (haskell . t)
-        (latex . t)
-        (ditaa . t)
-        (perl . t)
-        (python . t)
-        (C . t)
-        )
-      )
+
+     ;; typing stuff like the mode for a snippet is for chumps
+     (add-to-list 'org-structure-template-alist '("el" "#+BEGIN_SRC emacs-lisp\n?\n#+END_SRC" ""))
+     (add-to-list 'org-structure-template-alist '("hs" "#+BEGIN_SRC haskell\n?\n#+END_SRC" ""))
+     (add-to-list 'org-structure-template-alist '("pl" "#+BEGIN_SRC perl\n?\n#+END_SRC" ""))
+     (add-to-list 'org-structure-template-alist '("py" "#+BEGIN_SRC python\n?\n#+END_SRC" ""))
+     (add-to-list 'org-structure-template-alist '("sh" "#+BEGIN_SRC sh\n?\n#+END_SRC" ""))
+
+     (org-babel-do-load-languages 'org-babel-load-languages
+                                  (append org-babel-load-languages
+                                          '(
+                                            (C . t)
+                                            (ditaa . t)
+                                            (emacs-lisp . t)
+                                            (haskell . t)
+                                            (latex . t)
+                                            (perl . t)
+                                            (python . t)
+                                            (ruby  . t)
+                                            (sh . t)
+                                            )))
      (add-hook 'after-init-hook (lambda () (org-reload)))
      )
    )
@@ -986,15 +1005,17 @@ Need to make haskell source be all pretty.
 
 #+BEGIN_SRC emacs-lisp
   (use-package haskell-mode
+    :diminish haskell-mode
     :ensure t
     :config
     (progn
-      (use-package intero
+      (use-package dante
         :ensure t
         :config
         (progn
-          (add-hook 'haskell-mode-hook 'intero-mode)
+          (add-hook 'haskell-mode-hook 'dante-mode)
           )
+        :diminish dante-mode
         )
       (use-package hindent
         :if (executable-find "hindent")
@@ -1003,6 +1024,7 @@ Need to make haskell source be all pretty.
         (progn
           (add-hook 'haskell-mode-hook 'hindent-mode)
           )
+        :diminish hindent-mode
         )
       (use-package flycheck-haskell :ensure t)
       (use-package flycheck-hdevtools
