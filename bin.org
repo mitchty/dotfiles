@@ -17,7 +17,7 @@ A stupid script I wrote ages ago to help me be lazy with cidr
 notation for stuff. Setup the wrong netmask a few times and
 you too, will wish for something similar.
 
-#+BEGIN_SRC perl :tangle tmp/bin/cidr
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/cidr:padline no
 #!/usr/bin/env perl
 #
 # Convert input ip/cidr|netmask|hexnetmask to useable network information.
@@ -174,7 +174,7 @@ $ dns 216.58.216.206
 ord31s21-in-f206.1e100.net is 216.58.216.206
 ord31s21-in-f206.1e100.net is also ord31s21-in-f206.1e100.net
 
-#+BEGIN_SRC perl :tangle tmp/bin/dns
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/dns
 #!/usr/bin/env perl
 #
 # Stupid script to help with dns information. Solaris 9/8 lack the host utility.
@@ -218,7 +218,7 @@ exit 0;
 * ~/bin/ts
 Stupid simple timestamp script that just takes input, and prefixes a timestamp to to output. Thats it.
 
-#+BEGIN_SRC perl :tangle tmp/bin/ts
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/ts
 #!/usr/bin/env perl
 #
 # Timestamp stdin and then print to stdout and flush.
@@ -267,7 +267,7 @@ $ diskhog -n 4 /tmp
 420.57k  /private/tmp/sysp.xml
 161.17k  /private/tmp/KSOutOfProcessFetcher.12572.ppfIhqX0vjaTSb8AJYobDV7Cu68=
 
-#+BEGIN_SRC perl :tangle tmp/bin/diskhog
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/diskhog
 #!/usr/bin/env perl
 #
 # Find out who is hogging disk space and where.
@@ -435,7 +435,7 @@ bridge100@1500   192.168.64.1/24    a:b:c:d:e:f
 
 Comes in slightly handy, no guarantees it parses ifconfig right tho.
 
-#+BEGIN_SRC perl :tangle tmp/bin/ifinfo
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/ifinfo
 #!/usr/bin/env perl
 #
 # Because ifconfig output is... overly verbose.
@@ -651,7 +651,7 @@ if (scalar(@output) < 1){
 Mostly because I use iso8601 timestamps and its nice to use them
 generally without depending on gnu date.
 
-#+BEGIN_SRC perl :tangle tmp/bin/iso8601
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/iso8601
   #!/usr/bin/env perl
   #-*-mode: Perl; coding: utf-8;-*-
   use strict;
@@ -677,7 +677,7 @@ generally without depending on gnu date.
 
 Basically getent passwd $username/$uid to show who is on a system.
 
-#+BEGIN_SRC perl :tangle tmp/bin/whoson
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/whoson
 #!/usr/bin/env perl
 #
 # Because i'm lazy and sick of typing in getent passwd $someusername/uid
@@ -715,7 +715,7 @@ foreach my $user (keys %users){
 
 Silly wrapper perl script that makes it easier to get at the gecos string for a $user/$uid.
 
-#+BEGIN_SRC perl :tangle tmp/bin/gecos
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/gecos
 #!/usr/bin/env perl
 #
 # Dumb wrapper to get the gecos information from a uid/username.
@@ -737,7 +737,7 @@ foreach my $input (@ARGV){
 
 Stupid perl script to mimic hatimerun for systems that don't have it.
 
-#+BEGIN_SRC perl :tangle tmp/bin/hatimerun
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/hatimerun
 #!/usr/bin/env perl
 #
 # hatimerun in perl, sorta
@@ -806,7 +806,7 @@ if ($@){
 
 Silly perl based ptree alike implementation. Mad old code that should be avoided at all costs but it works and I'm not fixing it unless I need to.
 
-#+BEGIN_SRC perl :tangle tmp/bin/ptree.pl
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/ptree.pl
 #!/usr/bin/env perl
 #
 # ptree for linux/darwin/solaris. I got sick of ps and pstree on linux.
@@ -984,7 +984,7 @@ exit 0;
 
 Just find out if a port responds to anything tcp related or not.
 
-#+BEGIN_SRC perl :tangle tmp/bin/portchk
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/portchk
 #!/usr/bin/env perl
 #
 # Dumb wrapper to get the gecos information from a uid/username.
@@ -1006,7 +1006,7 @@ foreach my $input (@ARGV){
 
 More for nix on macos, but just merges NixOS/nipkgs origin/master to the current branch in a tmux window and watches it.
 
-#+BEGIN_SRC sh :tangle (tangle/file "bin/nix-update" (bound-and-true-p nix-p))
+#+BEGIN_SRC sh :padline no :tangle (tangle/file "bin/nix-update" (bound-and-true-p nix-p))
   #!/usr/bin/env sh
   #-*-mode: Shell-script; coding: utf-8;-*-
   # File: tmux-nix.sh
@@ -1053,7 +1053,7 @@ Example:
 notify "some command" "not ok"
 
 First param is the message, second title of the notification.
-#+BEGIN_SRC sh :tangle (tangle/file "bin/notify" (bound-and-true-p macos-p))
+#+BEGIN_SRC sh :padline no :tangle (tangle/file "bin/notify" (bound-and-true-p macos-p))
 #!/bin/sh
 message=${1:="no message"}
 title=''
@@ -1073,7 +1073,7 @@ Stupid ruby script I wrote to highlight the week/day in a calendar. I don't reme
 
 TODO: why the hell is :mkdirp yes needed here but nowhere else?
 
-#+BEGIN_SRC ruby :tangle tmp/bin/today :mkdirp yes
+#+BEGIN_SRC ruby :padline no :tangle tmp/bin/today :mkdirp t
   #!/usr/bin/env ruby
   cal, today, week_color, day_color, reset = %x(cal).split(%r(\n)), Time.now.day, %x(tput sgr0;tput setab 4;tput setaf 7), %x(tput sgr0; tput setab 0;tput setaf 7;tput bold), %x(tput sgr0)
   done=false
