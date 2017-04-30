@@ -8,7 +8,10 @@ LASTGEN:=$(PWD)/generation/$(LAST)
 TANGLERS:=$(shell ls -d *.org)
 GEN:=$(LAST)
 OPTS:=
-HOST:=$(shell uname -n)
+# OSX uses hostname -s for the "stable" hostname
+# uname -n can return dhcp addresses, which aren't
+# stable.
+HOST=$(shell echo "$$(hostname -s || uname -n)")
 USEROPTS:=$(OPTS):$(HOST)
 NAME:=default
 
@@ -31,11 +34,13 @@ next: diff
 
 .PHONY: tangle-next
 tangle-next:
+	@echo Tangling for hostname $(HOST)
 	$(MAKE) tangle
 	$(MAKE) generation
 	$(MAKE) next
 	$(MAKE) copy GEN=$(NEXT)
 	@echo $(NEXT) > .last
+	@echo Tangled for hostname $(HOST)
 
 copy:
 	cd $(PWD)/generation/$(GEN) && find . -type f -exec rm -f $(DEST)/{} \;
