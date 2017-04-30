@@ -11,22 +11,12 @@
 
 Nix user config.nix setup.
 
-#+BEGIN_SRC conf :mkdirp yes :tangle (tangle/file ".nixpkgs/config.nix" (bound-and-true-p nix-p))
-  let
-    pkgs = import <nixpkgs> {};
-  in
+#+BEGIN_SRC conf :padline no :mkdirp yes :tangle (tangle/file ".nixpkgs/config.nix" (bound-and-true-p nix-p))
   {
     packageOverrides = pkgs: with pkgs;
     let in rec {
       custom-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
       custom-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
-
-      custom-git = git.override {
-        pythonSupport = false;
-        svnSupport = true;
-        guiSupport = false;
-        sendEmailSupport = true;
-      };
 
       default = buildEnv {
         name = "default";
@@ -44,7 +34,6 @@ Nix user config.nix setup.
           cscope
           ctags
           curl
-          custom-git
           custom-pinentry
           custom-youtube-dl
           diffutils
@@ -58,25 +47,21 @@ Nix user config.nix setup.
           gist
           gitAndTools.git-extras
           gitAndTools.gitFull
+          gmp
           gnumake
           gnupg
           gnupg1compat
           gnutar
+          gnutls
           graphviz-nox
           haskellPackages.ShellCheck
-          haskellPackages.bake
           haskellPackages.cabal-dependency-licenses
-          haskellPackages.ghc-core
           haskellPackages.ghc-mod
           haskellPackages.hasktags
           haskellPackages.hindent
-          haskellPackages.hoogle
           haskellPackages.hspec
           haskellPackages.idris
-          haskellPackages.intero
           haskellPackages.pandoc
-          haskellPackages.shake
-          haskellPackages.stack
           htop
           imagemagick
           iperf
@@ -88,11 +73,11 @@ Nix user config.nix setup.
           mercurial
           moreutils
           mosh
+          mr
           multimarkdown
           multitail
-          mutt
           munge
-          mr
+          mutt
           nox
           openssl
           p7zip
@@ -106,19 +91,19 @@ Nix user config.nix setup.
           python27Packages.howdoi
           python27Packages.pip
           python27Packages.pyflakes
+          python27Packages.pylint
           python27Packages.virtualenv
           rlwrap
           rsync
           rtags
-          gmp
           silver-searcher
           sloccount
           sqlite
           sshpass
+          stack
           texlive.combined.scheme-full
           tmux
           tree
-          unrar
           unzip
           upx
           wakelan
