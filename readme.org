@@ -5,29 +5,29 @@
 #+BABEL: :cache yes
 #+PROPERTY: header-args :tangle yes :cache yes :comments no :padline no
 
-In the long long ago (2015), I used xstow and update-dotdee to construct my
-dotfiles from tiny pieces of files.
+In the third age of my dotfile setup (2015), I used xstow and update-dotdee to
+construct my dotfiles from tiny pieces of files as a sort of mini templating
+engine.
 
-I have since evolved to this setup. Originally the intention was to make it
-easy for me to compile dotfiles based on certain parameters. Aka, my dotfiles
-are the same for x, y, and z, whatever those are, but for certain cases z
-should have one section be different or added etc... as the case may be.
+I have since evolved to this setup. Originally the intention was to make it easy
+for me to compile dotfiles based on certain parameters. Aka, my dotfiles are the
+same for x, y, and z, whatever those are, but for certain cases z should have
+one section be different or added etc... as the case may be.
 
 Aka it was just a glorified program or templating system.
 
-Since I already use org-mode to build my emacs configuration,
-why not just do the same for the dotfiles. Bonus, now I can have ALL
-my dotfiles in one logical file that can build itself.
+Since I already use org-mode to build my emacs configuration, why not just do
+the same for the dotfiles. Bonus, now I can have ALL my dotfiles in one logical
+file that can build itself.
 
-So now if you want to look at my dotfiles, they're all in here. With one
-caveat that my emacs configuration is not. That is still separate. Mostly
-because it is large enough that it can stand on its own.
+So now if you want to look at my dotfiles, they're all in here. With one caveat
+that my emacs configuration is not. That is still separate. Mostly because it is
+large enough that it can stand on its own.
 
 * Use/Abuse
 
-Use of this setup is somewhat simple or straightforward.
-
-There really is one step in general:
+Use of this setup is somewhat simple or straightforward. There really is one
+step in general:
 
 #+BEGIN_SRC sh :tangle no
   make
@@ -35,9 +35,9 @@ There really is one step in general:
 
 ** Emacs functions to add to init.el
 
-For all this to work in emacs so you can edit source blocks you'll need
-add the following two functions otherwise you'll get an error every time
-you try to edit the source block.
+For all this to work in emacs so you can edit source blocks you'll need add the
+following two functions otherwise you'll get an error every time you try to edit
+the source block.
 
 #+BEGIN_SRC emacs-lisp :tangle no
   (defun tangle/yn (p) (if (bound-and-true-p p) "yes" "no"))
@@ -46,9 +46,9 @@ you try to edit the source block.
 
 This is also all the "magique" that this whole stupid repo entails.
 
-But how would you control how things get exported? Well that is done
-via files with simple *(setq predicate-p t)* lines inside them. These
-are all the *options/name.el* files comprise of.
+But how would you control how things get exported? Well that is done via files
+with simple *(setq predicate-p t)* lines inside them. These are all the
+*options/name.el* files comprise of.
 
 But lets say you want to export things to another directory than $HOME. No
 worries, just specify DEST:
@@ -67,6 +67,12 @@ echo "(setq ${name}-p t)" > options/${name}.el
 echo "(setq ${name}-p nil)" > options/no-${name}.el
 #+END_SRC
 
+Or, more easily/lazily using the option makefile target:
+
+#+BEGIN_SRC sh :tangle no
+make option NAME=predicate-name-without-p
+#+END_SRC
+
 And then provide the *name* (without the .el extension) to make via *OPTS*:
 
 #+BEGIN_SRC sh :tangle no
@@ -83,12 +89,12 @@ Etc...
 
 I wouldn't do this exactly, while you could, thats just too much to need to
 remember to type. The simplest way to do things is to just create an
-*options/$(uname -n).el* file with all the options you need defined. Note that
-in the or *BEGIN_SRC* lines you can use elisp to control when/how something should or
+*options/$(uname -n).el* file with all the options you need defined. Note that in
+the or *BEGIN_SRC* lines you can use elisp to control when/how something should or
 should not get tangled.
 
-Example use of tangle/file, note the final option is just elisp and we just
-use *bound-and-true-p* to detect if we have a predicate or not.
+Example use of tangle/file, note the final option is just elisp and we just use
+*bound-and-true-p* to detect if we have a predicate or not.
 
 #+BEGIN_SRC emacs-lisp :tangle no
   (tangle/file "some/file/name" (bound-and-true-p macos-p))
@@ -113,12 +119,12 @@ installing to some *DEST*, and want to copy that to *$HOME*? No worries:
 
 Where N is the generation you want to copy.
 
-Note, to ensure this doesn't by default overwrite hand edited files, a
-diff is run across the files that would be copied to and what the tangled
-version contains.
+Note, to ensure this doesn't by default overwrite hand edited files, a diff is
+run across the files that would be copied to and what the tangled version
+contains.
 
-Example, I've commented out some .gitignore lines in *~/.gitignore* manually
-and then tried to tangle a new generation over the top.
+Example, I've commented out some .gitignore lines in *~/.gitignore* manually and
+then tried to tangle a new generation over the top.
 
 #+BEGIN_SRC sh :tangle no
 ./ddiff /Users/me/src/github.com/mitchty/dotfiles/generation/291 /Users/me
@@ -138,28 +144,28 @@ differences between /Users/me/src/github.com/mitchty/dotfiles/generation/291 and
 #+END_SRC
 
 This is an attempt to ensure that we don't accidentally overwrite files that may
-have customizations on it.
+have manual customizations in them.
 
-To force it just run *make copy GEN=N* with *N* as the number to force a copy for.
+To forcibly overwrite the files just run *make copy GEN=N* with *N* as the number to
+force overwriting the destination files.
 
 ** How does it work?
 
-It is really rather simple, the [[file:Makefile][Makefile]] isn't that complex. Look at that
-for details.
+It is really rather simple, the [[file:Makefile][Makefile]] isn't that complex. Look at that for
+details.
 
-This isn't intended to cover everything. This could be considered a template
-for how you could setup your files in a similar way. Look at this org mode
-file for details.
+This isn't intended to cover everything. This could be considered a template for
+how you could setup your files in a similar way. Look at this org mode file for
+details.
 
-NOTE: Removal of files is YOUR job, not this tools. One could
-theoretically look at what changed between two generations and
-remove that way. BUT that sounds janky and error prone. Removal of
-files is the users job, not this setup.
+NOTE: Removal of files is YOUR job, not this tools. One could theoretically look
+at what changed between two generations and remove that way. BUT that sounds
+janky and error prone. Removal of files is the users job, not this setup.
 
 ** Explanation of what is happening
 
-This allows me to tangle files that would be useful for linux/bsd/etc...
-without affecting the existing files.
+This allows me to tangle files that would be useful for linux/bsd/etc... without
+affecting the existing files.
 
 The general idea is this (look at Makefile for details):
 - increment generation count from last generation
@@ -173,14 +179,14 @@ The general idea is this (look at Makefile for details):
 - Update last with current generation.
 
 Note, the destination can be anywhere, not just $HOME. This allows one to
-compile/tangle files that can then be trivially rsynced to remote machines,
-or to tar/xz the files as needed. The key here is emacs is only required
-to generate config files, not necessarily to use them.
+compile/tangle files that can then be trivially rsynced to remote machines, or
+to tar/xz the files as needed. The key here is emacs is only required to
+generate config files, not necessarily to use them.
 
 ** How would I use this?
 
-Should be easy enough to either clone this repo or copy things to a new repo
-and hack in what you need. Your call.
+Should be easy enough to either clone this repo or copy things to a new repo and
+hack in what you need. Your call.
 
 But, say you have a heading, take .profile as an example, under an org mode
 heading you would just add to your *BEGIN_SRC* definition like so:
@@ -196,8 +202,8 @@ that you put everything into *tmp*! This is used to generate things before a
 generation is built. It gives the Makefile a chance to know if the tangling
 worked or not.
 
-But lets say you don't need to have lots of sub headings, or even control
-a file in multiple subparts that have predicates to control things.
+But lets say you don't need to have lots of sub headings, or even control a file
+in multiple subparts that have predicates to control things.
 
 Pretty simple, just add a source block like normal:
 #+BEGIN_SRC text :tangle no
