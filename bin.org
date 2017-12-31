@@ -1018,14 +1018,19 @@ More for nix on macos, but just merges NixOS/nipkgs origin/master to the current
   set -e
 
   session=nix
+  PKGS=${PKGS:-nixpkgs}
 
-  cd ~/src/github.com/NixOS/nixpkgs
+  if "${PKGS}" != "nixpkgs"; then
+    cd ~/src/github.com/NixOS/nixpkgs/${PKGS}
+  else
+    cd ~/src/github.com/NixOS/nixpkgs
+  fi
 
   if ! tmux has-session -t ${session}; then
     tmux new-session -d -s ${session} -n nix
     tmux send-keys -t ${session}:0 'sleep 30
   while true; do
-  blah=$(nix-env -iA --dry-run stdboth nixpkgs.default | grep /nix); echo "${blah}" | head -n $(echo "$LINES - 2" | bc); echo "${blah}" | grep -c /nix | ts
+  blah=$(nix-env -f "<${PKGS}>" -iA --dry-run stdboth default | grep /nix); echo "${blah}" | head -n $(echo "$LINES - 2" | bc); echo "${blah}" | grep -c /nix | ts
   echo "${blah}" | grep /nix > /dev/null 2>&1
   if [ $? -eq 0 ]; then
     sleep 60
@@ -1036,14 +1041,12 @@ More for nix on macos, but just merges NixOS/nipkgs origin/master to the current
   done
   ' C-m
     tmux split-window -v -t ${session}:0
-    tmux send-keys -t ${session}:0.1 'git fetch --all && git merge origin/master &&
-  time nix-env -iA nixpkgs.default && nix-env -u --leq && exit 0
+    tmux send-keys -t ${session}:0.1 'git fetch --all && git short HEAD > last-$(iso8601) && git rebase --autostash origin/staging &&
+  time nix-env -f "<${PKGS}>" -iA default && nix-env -f "<${PKGS}>" -u --leq && exit 0
   ' C-m
     tmux select-window -t ${session}:0
   fi
   tmux attach -t ${session}
-
-
 #+END_SRC
 * ~/bin/notify
 
