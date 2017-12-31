@@ -24,6 +24,9 @@ Tmux configuration. Pretty boring in most ways.
   set-window-option -g window-status-fg black
   set-window-option -g window-status-current-bg white
 
+  # Selection highlight color
+  set-window-option -g mode-style bg=red,fg=black
+
   # Status line options
   set-option -g status-bg black
   set-option -g status-fg colour7
