@@ -10,7 +10,8 @@
 (if (getenv "USEROPTS")
     (dolist (fnam (split-string (getenv "USEROPTS") ":"))
       (if (not (member fnam '("" nil)))
-          (load-file (concat "./options/" fnam ".el"))
+          (if (file-readable-p (concat "./options/" fnam ".el"))
+              (load-file (concat "./options/" fnam ".el")))
         ))
   )
 
