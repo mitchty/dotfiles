@@ -17,7 +17,7 @@ A stupid script I wrote ages ago to help me be lazy with cidr
 notation for stuff. Setup the wrong netmask a few times and
 you too, will wish for something similar.
 
-#+BEGIN_SRC perl :padline no :tangle tmp/bin/cidr:padline no
+#+BEGIN_SRC perl :padline no :tangle tmp/bin/cidr
 #!/usr/bin/env perl
 #
 # Convert input ip/cidr|netmask|hexnetmask to useable network information.
