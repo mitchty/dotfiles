@@ -1242,7 +1242,6 @@ TODO: fixme
   (add-hook 'python-mode-hook
             '(lambda ()
                (flycheck-select-checker 'python-flake8)
-               (flycheck-select-checker 'python-pylint)
                )
             )
 
