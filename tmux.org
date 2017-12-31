@@ -151,3 +151,20 @@ Only set xclip for x setup.
   bind C-p run "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
   bind C-y run "tmux save-buffer - | xclip -i"
 #+END_SRC
+
+Testing of battery stuff, defaults in general.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (and (bound-and-true-p tmux-p) (bound-and-true-p testing-p)))
+  set-option -g status-right-length 21
+  set-option -g status-right "#{battery_status_fg}#{battery_remain} #{battery_icon}#[fg=white] %a %H:%M:%S"
+  set-option -g @batt_charged_icon "✓"
+  run-shell ~/src/github.com/tmux-plugins/tmux-battery/battery.tmux
+#+END_SRC
+
+And for macos, differ in that the battery charged icon is utf-8 really. TODO: do I need this really?
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (and (bound-and-true-p testing-p) (bound-and-true-p tmux-p) (bound-and-true-p macos-p)))
+  set-option -g status-right-length 20
+  set-option -g status-right "#{battery_remain} #{battery_icon} %a %H:%M:%S"
+  run-shell ~/src/github.com/tmux-plugins/tmux-battery/battery.tmux
+#+END_SRC
