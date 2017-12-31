@@ -118,9 +118,6 @@ Tmux configuration. Pretty boring in most ways.
   # Non confirming kill pane plskthxbai
   bind-key x kill-pane
 
-  # In case something I run exits straight away, i'd like to know about it.
-  set-option -g set-remain-on-exit on
-
   # Lets change the prefix key so we don't clobber emacs back one char key
   unbind-key C-b
 
