@@ -22,11 +22,10 @@ Nix user config.nix setup.
         name = "default";
         ignoreCollisions = true;
         paths = [
-          ack
           aria
           aspell
           aspellDicts.en
-          bazaarTools
+          cabal-install
           cacert
           clang
           clang-analyzer
@@ -41,7 +40,6 @@ Nix user config.nix setup.
           duply
           emacs
           entr
-          gcc
           gdbm
           ghostscript
           gist
@@ -55,12 +53,10 @@ Nix user config.nix setup.
           gnutls
           graphviz-nox
           haskellPackages.ShellCheck
-          haskellPackages.cabal-dependency-licenses
           haskellPackages.ghc-mod
           haskellPackages.hasktags
           haskellPackages.hindent
           haskellPackages.hspec
-          haskellPackages.idris
           haskellPackages.pandoc
           htop
           imagemagick
@@ -74,11 +70,8 @@ Nix user config.nix setup.
           moreutils
           mosh
           mr
-          multimarkdown
           multitail
           munge
-          mutt
-          nox
           openssl
           p7zip
           patchutils
@@ -98,7 +91,6 @@ Nix user config.nix setup.
           rtags
           silver-searcher
           sloccount
-          sqlite
           sshpass
           stack
           texlive.combined.scheme-full
