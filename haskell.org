@@ -19,18 +19,3 @@ Ghci setup, mostly just cosmetics.
 :set prompt "λ "
 :set +t
 #+END_SRC
-
-* ~/.ghc.hs
-
-What to automatically have loaded into ghci sessions.
-
-#+BEGIN_SRC haskell :tangle tmp/.ghc.hs
-import Control.Applicative
-import Control.Monad
-import Data.Monoid
-import Data.Maybe
-import Data.List
-import Data.Bool
-import qualified Data.Set as S
-import qualified Data.Map as M
-#+END_SRC
