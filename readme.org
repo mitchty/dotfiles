@@ -17,12 +17,9 @@ one section be different or added etc... as the case may be.
 Aka it was just a glorified program or templating system.
 
 Since I already use org-mode to build my emacs configuration, why not just do
-the same for the dotfiles. Bonus, now I can have ALL my dotfiles in one logical
-file that can build itself.
+the same for the dotfiles.
 
-So now if you want to look at my dotfiles, they're all in here. With one caveat
-that my emacs configuration is not. That is still separate. Mostly because it is
-large enough that it can stand on its own.
+So now if you want to look at my dotfiles, they're all here.
 
 * Use/Abuse
 
