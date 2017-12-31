@@ -8,10 +8,10 @@ LASTGEN:=$(PWD)/generation/$(LAST)
 TANGLERS:=$(shell ls -d *.org)
 GEN:=$(LAST)
 OPTS:=
-# OSX uses hostname -s for the "stable" hostname
-# uname -n can return dhcp addresses, which aren't
-# stable.
-HOST=$(shell echo "$$(hostname -s || uname -n)")
+# OSX uses scutil --get ComputerName
+# uname -n && hostname -s can return dhcp addresses
+# which aren't stable.
+HOST=$(shell echo "$$(scutil --get ComputerName || uname -n)")
 USEROPTS:=$(OPTS):$(HOST)
 NAME:=default
 
