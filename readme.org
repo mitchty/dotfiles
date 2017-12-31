@@ -155,9 +155,31 @@ This isn't intended to cover everything. This could be considered a template for
 how you could setup your files in a similar way. Look at this org mode file for
 details.
 
-NOTE: Removal of files is YOUR job, not this tools. One could theoretically look
-at what changed between two generations and remove that way. BUT that sounds
-janky and error prone. Removal of files is the users job, not this setup.
+** Removal of files between generations
+
+Removal of files is ultimately *YOUR* job. However... to make it possible to
+remove things if desired a bit easier you can run this makefile target with the
+*OLD* and *NEW* variables set:
+
+#+BEGIN_SRC sh :tangle no
+make removed OLD=generation NEW=generation
+#+END_SRC
+
+This will list all the files/directories recursively not in *OLD* compared to *NEW*.
+
+Example:
+
+#+BEGIN_SRC sh :tangle no
+$ make removed OLD=40 NEW=470
+.Xdefaults
+.Xresources
+.ghc.hs
+escp
+essh
+flushdns
+tomod
+towip
+#+END_SRC
 
 ** Explanation of what is happening
 
