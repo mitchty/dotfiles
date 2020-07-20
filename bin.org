@@ -3,11 +3,11 @@
 #+STARTUP: hidestars
 #+STARTUP: odd
 #+BABEL: :cache yes
-#+PROPERTY: header-args :cache yes
+#+PROPERTY: header-args :cache t
 #+PROPERTY: header-args :padline no
-#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args :mkdirp t
 #+PROPERTY: header-args :comments no
-#+PROPERTY: header-args :replace yes
+#+PROPERTY: header-args :replace t
 #+PROPERTY: header-args :tangle-mode (identity #o755)
 
 ~/bin files and other shenanigans
@@ -1006,7 +1006,7 @@ foreach my $input (@ARGV){
 
 More for nix on macos, but just merges NixOS/nipkgs origin/master to the current branch in a tmux window and watches it.
 
-#+BEGIN_SRC sh :padline no :tangle (tangle/file "bin/nix-update" (bound-and-true-p nix-p))
+#+BEGIN_SRC sh :padline no :tangle (tangle/file "bin/nix-update" (bound-and-true-p nix-p)) :mkdirp t
   #!/usr/bin/env sh
   #-*-mode: Shell-script; coding: utf-8;-*-
   # File: tmux-nix.sh
@@ -1095,4 +1095,22 @@ TODO: why the hell is :mkdirp yes needed here but nowhere else?
       puts line
     end
   end
+#+END_SRC
+* ~/bin/close
+
+macos only, simple wrapper around osascript to send close to a gui application so I don't have to use the mouse/trackpad cause I'm lazy af.
+
+#+BEGIN_SRC sh :padline no :tangle (tangle/file "bin/close" (bound-and-true-p macos-p))
+#!/bin/sh
+
+if [ -z "${1}" ]; then
+  printf "usage: close app_name\n  no application to close provided\n"
+  exit 1
+fi
+
+osascript <<END
+tell application "${1}"
+    quit
+end tell
+END
 #+END_SRC

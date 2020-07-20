@@ -311,6 +311,33 @@ Typing out *yes* or *no* is stupid.
   (fset 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
+Disable the stupid prompt added in 23.2 that asks if you want to kill a buffer with a process attached. Yes, obviously, shut up and do it.
+
+#+BEGIN_SRC emacs-lisp
+  (setq kill-buffer-query-functions
+    (remq 'process-kill-buffer-query-function
+           kill-buffer-query-functions))
+#+END_SRC
+
+TESTING tooltip mode
+
+Puts all tooltips in the echo arear.
+
+#+BEGIN_SRC emacs-lisp
+  (tooltip-mode -1)
+  (custom-set-variables
+    '(tooltip-use-echo-area t))
+#+END_SRC
+
+TESTING redisplay
+
+Have emacs not redraw the display before processing input events.
+
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables
+    '(redisplay-dont-pause t))
+#+END_SRC
+
 *** osx specific
 
 **** no yes-or-no gui windows
@@ -384,11 +411,14 @@ Also have the scratch buffer be empty instead of have the derp message I never r
 
 *** fonts
 
-List of fonts in order of preference.
+List of fonts in order of preference. Set preferred font list when we're in a
+gui emacs session.
 
 #+BEGIN_SRC emacs-lisp
   (defvar my/gui-fonts
     '(
+      "ComicCode"
+      "Comic Code"
       "PragmataPro"
       "Pragmata Pro" ;; Seems to register differently on osx than X
       "Source Code Pro"
@@ -396,14 +426,9 @@ List of fonts in order of preference.
       "Monaco"
       )
     )
-#+END_SRC
-
-Set preferred font list when we're in a gui emacs session.
-
-#+BEGIN_SRC emacs-lisp
   (with-no-warnings
     (when window-system
-      (if (find-font  (font-spec :name (car my/gui-fonts)))
+      (if (find-font (font-spec :name (car my/gui-fonts)))
           (progn (set-frame-font (car my/gui-fonts))
                  (set-face-attribute 'default nil :height 180))
         (progn (set-gui-font (cdr my/gui-fonts))))
@@ -432,6 +457,17 @@ Set preferred font list when we're in a gui emacs session.
 * packages
 
 All the packages I use.
+
+*** editorconfig
+
+If editorconfig is around use it.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package editorconfig
+    :ensure t
+    :config
+    (editorconfig-mode 1))
+#+END_SRC
 
 *** tramp
 
@@ -628,7 +664,6 @@ Org-mode keybindings and settings, pretty sparse really.
 
 #+BEGIN_SRC emacs-lisp
   (use-package org
-    :ensure org-plus-contrib
     :bind (("C-c a" . org-agenda)
            ("C-c b" . org-iswitchb)
            ("C-c c" . org-capture)
@@ -674,8 +709,8 @@ Org-mode keybindings and settings, pretty sparse really.
                                             (sh . t)
                                             )))
      (add-hook 'after-init-hook (lambda () (org-reload)))
-     )
-   )
+    )
+  )
   (use-package org-bullets
     :ensure t
     :init
@@ -700,13 +735,26 @@ Org-mode keybindings and settings, pretty sparse really.
                                 `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.25))))
                                 `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
                                 `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
-                                `(org-document-title ((t (,@headline ,@variable-tuple :height 1.5 :underline nil))))))
-	)
+                                `(org-document-title ((t (,@headline ,@variable-tuple :height 1.5 :underline nil)))))))
       (font-lock-add-keywords 'org-mode
                               '(("^ +\\([-*]\\) "
                                  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
       )
     )
+  (use-package org-roam
+        :hook
+        (after-init . org-roam-mode)
+        :init
+        (custom-set-variables '(org-roam-directory "~/.emacs.d"))
+        :bind (:map org-roam-mode-map
+                (("C-c n l" . org-roam)
+                 ("C-c n f" . org-roam-find-file)
+                 ("C-c n j" . org-roam-jump-to-index)
+                 ("C-c n b" . org-roam-switch-to-buffer)
+                 ("C-c n g" . org-roam-graph))
+                :map org-mode-map
+                (("C-c n i" . org-roam-insert))))
+  (use-package ob-async)
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp :tangle no
@@ -767,7 +815,9 @@ Not tangled into the config intentionally.
 
 Auto complete functionality is nice to have.
 
-#+BEGIN_SRC emacs-lisp
+FIXME!
+
+#+BEGIN_SRC emacs-lisp :tangle no
     (use-package auto-complete
         :diminish auto-complete-mode
         :ensure t
@@ -865,7 +915,9 @@ Highlight TODO/FIXME type messages in comments.
 
 *** projectile
 
-#+BEGIN_SRC emacs-lisp
+FIXME!
+
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package projectile
     :diminish projectile-mode
     :ensure t
@@ -936,6 +988,12 @@ So I write gooder. Me fail English? Thats unpossible.
   (use-package writegood-mode :ensure t)
 #+END_SRC
 
+*** rust-mode
+
+#+BEGIN_SRC emacs-lisp
+  (use-package rust-mode :commands rust-mode :mode ("\\*.rs\\'" . rust-mode)
+    :ensure t)
+#+END_SRC
 *** python-mode
 
 Compress down python configuration a bit.
@@ -947,24 +1005,6 @@ Compress down python configuration a bit.
     :ensure t
     :init
     (progn
-      (use-package jedi
-        :ensure t
-        :init
-        (progn
-          (jedi:install-server)
-          )
-        :config
-        (progn
-          (custom-set-variables
-           '(jedi:complete-on-dot t)
-           '(jedi:install-imenu t)
-           )
-          )
-        :bind
-        (("M-." . jedi:goto-definition)
-         ("M-," . jedi:goto-definition-pop-marker)
-         )
-        )
       (use-package company-anaconda
         :ensure t
         :config
@@ -983,7 +1023,6 @@ Compress down python configuration a bit.
     (progn
       (add-hook 'python-mode-hook'
                 (lambda ()
-                  (jedi:setup)
                   (push '("lambda" . ?λ) prettify-symbols-alist)
                     (push '("<=" . ?≤) prettify-symbols-alist)
                     (push '(">=" . ?≥) prettify-symbols-alist)
@@ -1123,10 +1162,9 @@ Make undo more useful, and treelike.
 
 #+BEGIN_SRC emacs-lisp
   (use-package undo-tree
-    :diminish undo-tree-mode
     :ensure t
     :init
-    (progn (global-undo-tree-mode))
+    (global-undo-tree-mode)
     :config
     (progn (defadvice undo-tree-visualize (around undo-tree-split-side-by-side activate)
              "Split undo-tree side-by-side"
@@ -1142,7 +1180,8 @@ Make undo more useful, and treelike.
 
 *** color-identifiers-mode
 
-Color variables for easy identification, its like a rainbow puked over everything opened in prog-mode-hook.
+Color variables for easy identification, its like a rainbow puked over
+everything opened in prog-mode-hook.
 
 #+BEGIN_SRC emacs-lisp
   (use-package color-identifiers-mode
@@ -1153,12 +1192,38 @@ Color variables for easy identification, its like a rainbow puked over everythin
     )
 #+END_SRC
 
-*** nix-mode
+*** idle-highlight-mode
+
+Highlight a variable when you're selecting it, helps in reviewing code to see
+where it exists.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package idle-highlight-mode
+    :diminish idle-highlight-mode
+    :ensure t
+    :config
+    (add-hook 'prog-mode-hook 'idle-highlight-mode)
+    )
+#+END_SRC
+
+*** nix
 
 Instead of text might as well get a decent mode hook going here.
 
 #+BEGIN_SRC emacs-lisp
+  (use-package nixos-options :ensure t)
+  (use-package company-nixos-options :ensure t)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package nix-mode :ensure t)
+
+(setq flycheck-command-wrapper-function
+        (lambda (command) (apply 'nix-shell-command (nix-current-sandbox) command))
+      flycheck-executable-find
+        (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
+(add-to-list 'company-backends 'company-nixos-options)
+
 #+END_SRC
 
 *** docker-mode
@@ -1186,7 +1251,6 @@ Common mode defaults I think are sensible.
 #+BEGIN_SRC emacs-lisp
   (add-hook 'prog-mode-hook
         '(lambda ()
-           (auto-complete-mode) ;; can't get this to work with use-package easily
            (interactive)
            (hl-line-mode)
            (whitespace-mode)

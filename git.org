@@ -13,11 +13,16 @@ General git configuration split out into sections mostly.
 
 * ~/.gitconfig
 ** pager
+
+All pager, all the time, always use color with it too.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [pager]
     color = true
 #+END_SRC
+
 ** color
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [color]
     status = auto
@@ -38,6 +43,9 @@ General git configuration split out into sections mostly.
     new = green reverse
 #+END_SRC
 ** alias
+
+Aliases so I can be lay zee.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [alias]
     begin = !git init && git commit --allow-empty -m 'Initial empty commit'
@@ -64,78 +72,160 @@ General git configuration split out into sections mostly.
     effit = reset --hard
     bn = rev-parse --abbrev-ref HEAD
     cp = log --no-merges --cherry --graph --oneline
-    # What commits differ between branches, note, equivalent commits are omitted.
-    # Use this with three dot operator aka master...origin/master
-    cpd = log --no-merges --left-right --graph --cherry-pick --oneline
-    # Same as ^ only equivalent commits are listed with a = sign.
-    cmd = log --no-merges --left-right --graph --cherry-mark --oneline
-    # git update with submodule update
-    sup = !git pull --rebase && git submodule update --init --recursive
+    short = rev-parse --short
     # git clone with submodules
     sc = !git clone --recursive $1
-    # what files are getting updated a lot descending output
-    churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort -r | awk 'BEGIN {print "count,file"} {print $1 "," $2}' | egrep -v '^\\s+$'
-    # help the gc a bit and get a bit more space back for a local clone
-    trim = !git reflog expire --expire=now --all && git gc --prune=now
+    # git update with submodule update
+    sup = !git pull --rebase && git submodule update --init --recursive
+    wtl = worktree list
+    wtp = worktree prune
+    wta = worktree add
+    wtr = "!git worktree list --porcelain | grep -B2 \"branch refs/heads/$1\" | head -n1 | sed -e 's|worktree ||' #"
+    nwt = "!git worktree add $(git gr)@$1 $1 #"
+    bwt = "!git branch $1 ${2:-HEAD} && git nwt $1 #"
+    gr = "!git rev-parse --absolute-git-dir | sed -e 's|/[.]git.*||' #"
+    # Pull all the commits missed from a git pull --depth N clone
+    unshallow = pull --unshallow
+    # Set the origin to not allow pushing, to be on the safe side.
+    nopush = remote set-url --push origin no_push
     # default remote, note depends on the repo having been git cloned
     defremote = !git branch -rvv | egrep 'HEAD' | awk '{print $1}' | sed -e 's|/HEAD||g'
-    # short sha
-    short = rev-parse --short
-    # branch commits on lhs compared to rhs, use via g bcs $(g bn) ^other/branch
-    bcs = log --pretty="%H" --first-parent --no-merges
-    find-merge = !sh -c "commit=$0 && branch=${1:-HEAD} && (git rev-list $commit..$branch --ancestry-path | cat -n; git rev-list $commit..$branch --first-parent | cat -n) | sort -k2 | uniq -f1 -d | sort -n | tail -1 | cut -f2"
-    show-merge = !sh -c "merge=$(git find-merge $0 $1) && [ -n \"$merge\" ] && git show $merge"
+    # push branch while setting the upstream to the default remote
+    pbr = !git push --set-upstream $(git defremote) $(git bn)
+    # ^ but forcefully
+    fpbr = !git push --set-upstream --force $(git defremote) $(git bn)
+    # what files are getting updated a lot descending output
+    churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort -r | awk 'BEGIN {print "count,file"} {print $1 "," $2}' | grep -Ev '^\\s+$'
     # My defremote hack depends on $remote/HEAD to point to somewhere
     # which it may not if the git repo wasn't cloned
     fixhead = !sh -c "rem=${0:-origin} && branch=${1:-master} && git symbolic-ref refs/remotes/$rem/HEAD refs/remotes/$rem/${branch}"
-    # push branch while setting the upstream to the default remote
-    pbr = !git push --set-upstream $(git defremote) $(git bn)
-    p = !sh -c 'git branch ${1:-$(git defremote)}pr$0@$(iso8601 -s) $(git ls-remote -q ${1:-$(git defremote)} | grep refs/pull-requests/$0/from | cut -c1-8)'
-    # Pull all the commits missed from a git pull --depth N clone
-    unshallow = pull --unshallow
 #+END_SRC
+
+Some aliases to help with determining which commit(s) are(n't) present in the
+left/right hand branch.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [alias]
+    cpd = log --no-merges --left-right --graph --cherry-pick --oneline
+    cmd = log --no-merges --left-right --graph --cherry-mark --oneline
+    bcs = log --pretty="%H" --first-parent --no-merges
+#+END_SRC
+
+Some helpers for pruning a git repo or maintentance of things that has come in
+handy over the years.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [alias]
+    # kinda/sorta git pull -r without the git pull nonsense
+    # cleanmerged = !sh -c "git branch --merged | grep -Ev '^(. master|\*)' | xargs -n1 git branch -d"
+    # help the gc a bit and get a bit more space back for a local clone
+    trim = !git reflog expire --expire=now --all && git gc --prune=now
+    prune = !sh -c 'git cleanmerged; git fetch -p; git trim'
+    # I don't remember what I used these for tbh, future mitch figure it out.
+    find-merge = !sh -c "commit=$0 && branch=${1:-HEAD} && (git rev-list $commit..$branch --ancestry-path | cat -n; git rev-list $commit..$branch --first-parent | cat -n) | sort -k2 | uniq -f1 -d | sort -n | tail -1 | cut -f2"
+    show-merge = !sh -c "merge=$(git find-merge $0 $1) && [ -n \"$merge\" ] && git show $merge"
+#+END_SRC
+
+#+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
+  [alias]
+    rembranch = !sh -xc "remote=${1:-origin} && git ls-remote --symref -q $remote HEAD | head -n1 | awk '{print $2}' | sed -e 's|refs/heads/||'"
+    merged-remote = !sh -c 'remote=${0:-origin} && git branch --all --merged remotes/$remote/master | grep remotes/$remote | grep -E --invert-match \"(master|HEAD)\" | cut -d \"/\" -f 3-'
+    merged-local = !sh -c 'git branch --all --merged master | grep -E --invert-match \"(master|HEAD|remotes/)\" | cut -b 3-'
+    merged = !sh -c "remote=${0:-origin}; printf 'remote branches: %s\n' $remote >&2; git merged-remote $remote; printf 'local branches\n' >&2 && git merged-local"
+#+END_SRC
+
 ** github
+
+My username for github.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [github]
     user = mitchty
 #+END_SRC
+
 ** credential
+
+Use a gpg encrypted .netrc file.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [credential]
     helper = netrc -v -f ~/.netrc.gpg -f ~/.netrc
 #+END_SRC
+
 ** advice
+
+Shut up already, I don't need hints.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [advice]
     statushints = false
 #+END_SRC
+
 ** gui
+
+If I ever use the stupid gui, make it a little less derp.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [gui]
     fontui = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
     fontdiff = -family Monaco -size 8 -weight normal -slant roman -underline 0 -overstrike 0
 #+END_SRC
+
 ** http
+
+Make large git repos work better by increasing the post buffer.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [http]
     postBuffer = 209715200
 #+END_SRC
+
 ** push
+
+Forgot why this was here, some version git changed the default push behavior.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [push]
     default = simple
 #+END_SRC
+
 ** url rewrites
+
+Don't use git:// (ssh) to connect to github.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [url "https://github.com/"]
     insteadOf = git://github.com/
 #+END_SRC
+
 ** username/email
+
+Default username and email to use if not overridden. Note, this only applies to
+where I actually do any commits.
+
+My layout is ~/src/domain/... Not all domains might end up getting thrown in
+here. Adjust what username/email gets used. Git 2.13+ only. Mostly for work
+related stuff.
+
+TODO: Switch to my domain from google garbage for email.
+
 #+BEGIN_SRC conf :tangle (tangle/file ".gitconfig" (bound-and-true-p git-p))
   [user]
     name = Mitch Tishmack
     email = mitch.tishmack@gmail.com
 #+END_SRC
+
+This silly text is here to make git merges easier for private branches. I got
+sick of resolving silly merge conflicts. Let the fuzz detection figure it out.
+
+HUNK PADDING
+HUNK PADDING
+HUNK PADDING
+
+
+END HUNK PADDING
+END HUNK PADDING
+END HUNK PADDING
 
 * ~/.gitignore
 

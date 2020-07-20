@@ -8,64 +8,158 @@
 #+PROPERTY: header-args :comments no
 #+PROPERTY: header-args :replace yes
 
-Tmux configuration. Pretty boring in most ways.
+Tmux configuration
+
+Use vi mode for tmux keybindings. Means if we start emacs up, no conflicts for
+keybinds. Also set aggressive resize so our panes resize somewhat sanely with
+multiple clients.
 
 #+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
-  # Setup vi mode by default
   set-window-option -g mode-keys vi
   set-window-option -g aggressive-resize on
+#+END_SRC
 
-  # Force zsh to be a login shell
+Use the only shell that matters for our login shell. Set our TERM to
+xterm-256color as well.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   set-option -g default-command 'zsh -l'
   set-option -g default-terminal 'xterm-256color'
+#+END_SRC
 
-  # Status line options, mainly coloring
-  set-window-option -g window-status-bg colour6
-  set-window-option -g window-status-fg black
-  set-window-option -g window-status-current-bg white
+Status line options. For the status line we want the selected window tabish
+thing to be white background and black foreground.
 
-  # Selection highlight color
-  set-window-option -g mode-style bg=red,fg=black
+Use the default coloring which is white on black. Helps make the current tab
+rather obvious from color alone ignoring the * character.
 
-  # Status line options
-  set-option -g status-bg black
-  set-option -g status-fg colour7
+Additionally, setup the status lines so we have a mostly minimal setup on what
+is displayed. Try to keep things as minimal as possible.
+
+Also note the status-interval is 7 seconds long, this is intentional as it
+ensures that any skew on waking up/updating isn't visible. Yes I'm weird in that
+if I specify 5 and don't get things updated every 0-4 seconds it annoys me.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
+  set-window-option -g window-status-current-style bg=white,fg=black
+  set-window-option -g window-status-style default
+  set-option -g window-status-format '#I #W#F'
+  set-option -g window-status-current-format '#I:#W#{?window_zoomed_flag, 🔍,}'
+  set-option -g status-style bg=black,fg=colour7
+  set-option -g status-interval 7
   set-option -g status-left-length 24
   set-option -g status-left ''
+#+END_SRC
+
+Right status just with Day HH:MM:SS to the right.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   set-option -g status-right-length 13
   set-option -g status-right "%a %H:%M:%S"
-  set-option -g status-interval 7
+#+END_SRC
 
-  # Pane border options, mimics the status line coloring
-  set-option -g pane-border-bg colour15
-  set-option -g pane-border-fg colour82
-  set-option -g pane-active-border-bg colour15
-  set-option -g pane-active-border-fg colour2
+Right status with battery shenanigans. Only present on macos for now.
 
-  # Alert related things
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
+  set-option -g status-right-length 20
+  set-option -g @batt_remain_minimal true
+  set-option -g @batt_icon_status_charged ' '
+  set-option -g @batt_icon_status_charging '↑'
+  set-option -g @batt_icon_status_discharging '↓'
+  set-option -g @batt_icon_status_unknown '?'
+  set-option -g @batt_color_status_primary_discharging colour9
+  set-option -g status-right "#{battery_color_fg}#{battery_icon_status}#[default] #{battery_color_charge_bg}#{battery_remain}#[default] %a %H:%M:%S"
+
+  run-shell ~/src/github.com/tmux-plugins/tmux-battery/battery.tmux
+#+END_SRC
+
+The highlight style is how tmux renders selected text. Black on red is what I
+use to make it obvious what is being selected.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
+  set-window-option -g mode-style bg=red,fg=black
+#+END_SRC
+
+Pane border options, mostly an attempt to mimic/ape the status line setup.
+
+Intent is we want to know what pane we're selected into, however we only set the
+foreground so that if we are on a white on black, or black on white or some
+other scheme we don't have a gaudy background for the panes.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
+  set-option -g pane-border-style fg=colour7
+  set-option -g pane-active-border-style fg=colour2
+#+END_SRC
+
+TTY alert character stuff. Much like a phone, don't make a sound. Leave that
+kinda gaudy sound beeps to boomers.
+
+Basically flash the message/status bar with a black on white message.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   set-option -g visual-activity on
   set-option -g visual-bell on
-  set-option -g message-bg colour7
-  set-option -g message-fg black
+  set-option -g message-style bg=colour7,fg=black
+#+END_SRC
 
-  # Pass through the window title and display it automatically on changes.
+Use the window title if available and update it if it changes. Aka, in
+iterm2/Terminal.app on macos generally this is set to the active command or
+shell.
+
+Can rename it to something else if we want as well.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   set-option -g set-titles on
   set-option -g set-titles-string '#T'
   set-window-option -g automatic-rename on
+#+END_SRC
 
-  # Key rebinding to make things more au naturalle
+Custom key rebindings.
+
+PREFIX + R = Reload tmux configuration.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   bind-key R \
     source-file ~/.tmux.conf \;\
-    display 'reloaded tmux config'
+    display 'reloaded ~/.tmux.conf'
+#+END_SRC
 
-  # Log pane output to a file, save with an iso8601 datestamp
+Note, this uses tmux 2.9 syntax now. Which is annoying af, used to be able to
+just modify the fg/bg independently but now if you set the current style fg, it
+presumes default for everything *GRRRR*.
+
+So if you have to care about the background have to check that as well. Current
+strategy here is to dump out the window options and look for
+window-status-current-style and yoink the existing bg if present.
+
+Essentially the foreground is changed to green when logging this pane.
+Background is set to red when synchronizing. That's about it.
+
+PREFIX + o = L*o*g pane output to a file.
+Saved with the iso8601 command for the name. Also change the foreground text to
+green so we know we're logging.
+
+# FIXME
+
+#+BEGIN_SRC conf :tangle no
   bind-key o \
     pipe-pane -o "cat >> $HOME/tmux-`iso8601`.log" \;\
-    set-window-option window-status-current-fg green \;
+    if-shell \
+      "tmux show-window-options | grep 'window-status-current-style' | grep fg=green'" \
+        "set-window-option
+        "display 'stopping logging pane output'
+    set-window-option window-status-current-style fg=green
+#+END_SRC
 
+PREFIX + O = St*O*p logging pane output. Also reset the fg color back to default.
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
   bind-key O \
     pipe-pane \;\
-    set-window-option window-status-current-fg default \;
+    set-window-option window-status-current-style default \;
+#+END_SRC
+
+#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (bound-and-true-p tmux-p))
 
   bind-key N new-session -t default
 
@@ -78,14 +172,12 @@ Tmux configuration. Pretty boring in most ways.
   bind-key s \
     if-shell \
       "tmux show-window-options | grep 'synchronize-panes on'" \
-        "set-window-option window-status-current-bg colour7; \
-        set-window-option pane-active-border-fg colour2; \
-        set-window-option pane-active-border-bg colour15; \
+        "set-window-option window-status-current-style bg=white,fg=black; \
+        set-window-option pane-active-border-style bg=colour15,fg=colour2; \
         set-window-option synchronize-panes off; \
         display 'synchronization off'" \
-        "set-window-option window-status-current-bg red; \
-        set-window-option pane-active-border-fg red; \
-        set-window-option pane-active-border-bg colour15; \
+        "set-window-option window-status-current-style bg=red,fg=black; \
+        set-window-option pane-active-border-style bg=colour15,fg=red; \
         set-window-option synchronize-panes on; \
         display 'synchronizing'"
 
@@ -93,12 +185,11 @@ Tmux configuration. Pretty boring in most ways.
   # something else that set synchronization.
   if-shell \
     "tmux show-window-options | grep 'synchronize-panes on' || /bin/true" \
-    "set-window-option window-status-current-bg red; \
-    set-window-option pane-active-border-fg yellow; \
-    set-window-option pane-active-border-bg red"
+    "set-window-option window-status-current-style bg=red; \
+    set-window-option pane-active-border-style bg=red,fg=black"
 
   # Setup splits to be less annoying
-  bind-key \ split-window -h
+  bind-key \\ split-window -h
   bind-key - split-window -v
 
   # vi keybindings for pane navigation
@@ -145,26 +236,9 @@ Tmux configuration. Pretty boring in most ways.
         display 'Mouse modes on'"
 #+END_SRC
 
-Only set xclip for x setup.
+Only set xclip for when x is in use
 
 #+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (and (bound-and-true-p tmux-p) (bound-and-true-p x-p)))
   bind C-p run "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
   bind C-y run "tmux save-buffer - | xclip -i"
-#+END_SRC
-
-Testing of battery stuff, defaults in general.
-
-#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (and (bound-and-true-p tmux-p) (bound-and-true-p testing-p)))
-  set-option -g status-right-length 21
-  set-option -g status-right "#{battery_status_fg}#{battery_remain} #{battery_icon}#[fg=white] %a %H:%M:%S"
-  set-option -g @batt_charged_icon "✓"
-  run-shell ~/src/github.com/tmux-plugins/tmux-battery/battery.tmux
-#+END_SRC
-
-And for macos, differ in that the battery charged icon is utf-8 really. TODO: do I need this really?
-
-#+BEGIN_SRC conf :tangle (tangle/file ".tmux.conf" (and (bound-and-true-p testing-p) (bound-and-true-p tmux-p) (bound-and-true-p macos-p)))
-  set-option -g status-right-length 20
-  set-option -g status-right "#{battery_remain} #{battery_icon} %a %H:%M:%S"
-  run-shell ~/src/github.com/tmux-plugins/tmux-battery/battery.tmux
 #+END_SRC

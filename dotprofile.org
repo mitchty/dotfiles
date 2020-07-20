@@ -188,46 +188,90 @@ cconv()
 #+END_SRC
 
 ** git
+
+General clone into ~/src/TLD/some/dir from a git uri function.
+
+Tries to strip out miscellany that we don't need from the uri. Also allows
+wrapper functions that simplify usage.
+
+Note the gh and bb wrappers which make it easy to get repos from github and bitbucket.
+
+Usage is simply:
+
+try_git some_uri optional_branch_if_not_master
+
+The gh wrapper wraps this and simplifies usage by setting up the uri as https so
+we can do the following example:
+
+gh user/repo maybe_branch
+
+This checks out something from https://github.com/user/repo.git to
+~/src/github.com/user/repo
+
+This also makes for a somewhat easy way to cd into the dir as well without
+push/popd. The bb wrapper behaves the same.
+
+Presuming using the bare try_git function, the dir in ~/src/TLD is simply
+what comes after the tld.
+
+Example:
+
+try_git git://example.tld/some/random/path.git checks out to
+~/src/example.tld/some/random/path
+
 #+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p git-p))
-maybe_git_repo()
-{
-  # assume https if input doesn't contain a protocol
-  proto=https
-  destination=${HOME}/src
-  echo "${1}" | grep '://' > /dev/null 2>&1
-  [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
-  git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
-  rrepo="${proto}://${git_dir}"
+  try_git()
+  {
+    # assume https if input doesn't contain a protocol
+    proto=https
+    destination=${HOME}/src
+    branch="${2:-master}"
 
-  # strip user@, :NNN, and .git from input uri's
-  repo="${destination}/"$(echo "${git_dir}" |
-    sed -e 's/\.git$//g' |
-    sed -e 's|.*\@||g' |
-    sed -e 's|\:[[:digit:]]\{1,\}\/|/|g' |
-    tr -d '~')
+    echo "${1}" | grep '://' > /dev/null 2>&1
+    [ $? = 0 ] && proto=$(echo "${1}" | sed -e 's|[:]\/\/.*||g')
+    git_dir=$(echo "${1}" | sed -e 's|.*[:]\/\/||g')
+    rrepo="${proto}://${git_dir}"
 
-  if [ ! -d "${repo}" ]; then
-    git ls-remote "${rrepo}" > /dev/null 2>&1
-    if [ $? = 0 ]; then
-      mkdir -p "${repo}"
-      echo "git clone ${rrepo} ${repo}"
-      git clone --recursive "${rrepo}" "${repo}"
-    else
-      echo "${rrepo} doesn't look to be a git repository"
+    # strip user@, :NNN, and .git from input uri's
+    repo="${destination}/"$(echo "${git_dir}" |
+      sed -e 's/\.git$//g' |
+      sed -e 's|.*\@||g' |
+      sed -e 's|\:[[:digit:]]\{1,\}\/|/|g' |
+      tr -d '~')
+
+    if [ ! -d "${repo}" ]; then
+      if git ls-remote "${rrepo}" > /dev/null 2>&1; then
+        mkdir -p "${repo}"
+        echo "git clone ${rrepo} ${repo}"
+        git clone --recursive "${rrepo}" "${repo}"
+      else
+        echo "${rrepo} doesn't look to be a git repository"
+      fi
     fi
-  fi
-  [ -d "${repo}" ] && cd "${repo}"
-}
 
-gh()
-{
-  maybe_git_repo "https://github.com/${1}"
-}
+    if [ "${branch}" != "master" ]; then
+      wtdir="${repo}@${branch}"
+      if [ -d "${wtdir}" ]; then
+        cd "${wtdir}"
+      else
+        if git branch -r --list 'origin/*' | grep -E "^\s+origin/${branch}$" > /dev/null 2>&1; then
+          git worktree add ${repo}@${branch} ${branch} && cd "${wtdir}"
+        fi
+      fi
+    else
+      [ -d "${repo}" ] && cd "${repo}"
+    fi
+  }
 
-bb()
-{
-  maybe_git_repo "https://bitbucket.org/${1}"
-}
+  gh()
+  {
+    try_git "https://github.com/${1}" "${2:-master}"
+  }
+
+  bb()
+  {
+    try_git "https://bitbucket.org/${1}" "${2:-master}"
+  }
 #+END_SRC
 ** haskell
 #+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p haskell-p))
@@ -256,27 +300,10 @@ mk_nix_shell()
           > shell.nix;
 }
 
-nix_env_setup()
+# TODO: any of this useful to keep around?
+nr()
 {
-  # The nix installer put something like this into the .profile.
-  # BAD INSTALLER NO COOKIE!
-  if [ -e ${HOME}/.nix-profile/etc/profile.d/nix.sh ]; then
-      . ${HOME}/.nix-profile/etc/profile.d/nix.sh;
-      export NIX_PATH=nixpkgs=${HOME}/src/github.com/NixOS/nixpkgs:staging=${HOME}/src/github.com/NixOS/nixpkgs/staging
-      export NIX_CFLAGS_COMPILE="-idirafter /usr/include"
-      export NIX_CFLAGS_LINK="-L/usr/lib"
-      export PKG_CONFIG_PATH="~/.nix-profile/lib/pkgconfig"
-
-      NIX_GHC=$(type -p ghc > /dev/null 2>&1)
-      if [ -n "$NIX_GHC" ]; then
-          eval $(grep export "$NIX_GHC")
-      fi
-  fi
-
-  nr()
-  {
-    nix-shell --run "$(echo $@)"
-  }
+  nix-shell --run "$(echo $@)"
 }
 
 nix-on() {
@@ -299,9 +326,15 @@ if [ ! -e ${HOME}/.nonix ]; then
 fi
 #+END_SRC
 
+The nix installer adds this which I don't want, $HOME is fully prefixed in what is added.
+
+#+BEGIN_SRC sh :tangle no
+if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . $HOME/.nix-profile/etc/profile.d/nix.sh # added by Nix installer
+#+END_SRC
+
 #+BEGIN_SRC sh :tangle (tangle/file ".profile" (bound-and-true-p nix-p))
-if [ ! -e ${HOME}/.nonix ]; then
-  nix_env_setup
+if [ ! -e ${HOME}/.nonix ] && [ -e ~/.nix-profile/etc/profile.d/nix.sh ]; then
+  source ~/.nix-profile/etc/profile.d/nix.sh
 fi
 #+END_SRC
 

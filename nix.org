@@ -15,7 +15,7 @@ Nix user config.nix setup.
   {
     packageOverrides = pkgs: with pkgs;
     let in rec {
-      custom-pinentry = pinentry.override { gtk2 = null; qt4 = null; ncurses = null; };
+      custom-pinentry = pinentry.override { gtk2 = null; ncurses = null; };
       custom-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
 
       default = buildEnv {
@@ -25,10 +25,8 @@ Nix user config.nix setup.
           aria
           aspell
           aspellDicts.en
-          cabal-install
           cacert
           clang
-          clang-analyzer
           cloc
           cscope
           ctags
@@ -37,48 +35,37 @@ Nix user config.nix setup.
           custom-youtube-dl
           diffutils
           docbook5
-          duply
           emacs
           entr
-          gdbm
-          ghostscript
           gist
           gitAndTools.git-extras
           gitAndTools.gitFull
           gmp
           gnumake
-          gnupg
-          gnupg1compat
           gnutar
           gnutls
+          googler
           graphviz-nox
           haskellPackages.ShellCheck
-          haskellPackages.ghc-mod
-          haskellPackages.hasktags
-          haskellPackages.hindent
-          haskellPackages.hspec
           haskellPackages.pandoc
           htop
           imagemagick
           iperf
           jq
           keychain
-          lastpass-cli
           less
           llvm
           mercurial
           moreutils
           mosh
           mr
-          multitail
-          munge
+          ncdu
           openssl
           p7zip
           patchutils
           pbzip2
-          pigz
-          pixz
-          pkgconfig
+          pkg-config
+          ponysay
           pv
           python27Packages.flake8
           python27Packages.howdoi
@@ -86,15 +73,18 @@ Nix user config.nix setup.
           python27Packages.pyflakes
           python27Packages.pylint
           python27Packages.virtualenv
+          restic
+          ripgrep
           rlwrap
           rsync
           rtags
+          shfmt
           silver-searcher
           sloccount
           sshpass
-          stack
-          texlive.combined.scheme-full
+          texlive.combined.scheme-basic
           tmux
+          transcrypt
           tree
           unzip
           upx
@@ -102,7 +92,7 @@ Nix user config.nix setup.
           watch
           wget
           xz
-          zlib
+          yq
   # If I ever come up with some linux only stuff or figure out xhyve
   #      ] ++ stdenv.lib.optionals stdenv.isLinux [
   #      ] ++ stdenv.lib.optionals stdenv.isDarwin [
