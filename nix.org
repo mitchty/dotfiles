@@ -15,7 +15,8 @@ Nix user config.nix setup.
   {
     packageOverrides = pkgs: with pkgs;
     let in rec {
-      custom-pinentry = pinentry.override { gtk2 = null; ncurses = null; };
+      # TODO: do I still care about this?
+      # custom-pinentry = pinentry.override { gtk2 = null; ncurses = null; };
       custom-youtube-dl = python27Packages.youtube-dl.override { pandoc = null; };
 
       default = buildEnv {
@@ -25,13 +26,14 @@ Nix user config.nix setup.
           aria
           aspell
           aspellDicts.en
-          cacert
+          # TODO: New installs have this conflict with another package, still neeeded?
+          # cacert
           clang
           cloc
           cscope
           ctags
           curl
-          custom-pinentry
+          # custom-pinentry
           custom-youtube-dl
           diffutils
           docbook5

@@ -49,8 +49,11 @@ tangle-next:
 	$(MAKE) generation
 	$(MAKE) next
 	$(MAKE) copy GEN=$(NEXT)
-	@echo $(NEXT) > .last
+	$(MAKE) set-last NEXT=$(NEXT)
 	@echo Tangled for hostname $(HOST)
+
+set-last:
+	@echo $(NEXT) > .last
 
 copy:
 	cd $(PWD)/generation/$(GEN) && find . -type f -exec rm -f $(DEST)/{} \;

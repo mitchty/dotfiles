@@ -414,26 +414,27 @@ Also have the scratch buffer be empty instead of have the derp message I never r
 List of fonts in order of preference. Set preferred font list when we're in a
 gui emacs session.
 
-#+BEGIN_SRC emacs-lisp
-  (defvar my/gui-fonts
-    '(
-      "ComicCode"
-      "Comic Code"
-      "PragmataPro"
-      "Pragmata Pro" ;; Seems to register differently on osx than X
-      "Source Code Pro"
-      "Menlo"
-      "Monaco"
+#+BEGIN_SRC emacs-lisp :tangle no
+    (defvar my/gui-fonts
+      '(
+        "ComicCode"
+        "Comic Code"
+        "PragmataPro"
+        "Pragmata Pro" ;; Seems to register differently on osx than X
+        "Source Code Pro"
+        "Menlo"
+        "Monaco"
+        )
       )
-    )
-  (with-no-warnings
-    (when window-system
-      (if (find-font (font-spec :name (car my/gui-fonts)))
-          (progn (set-frame-font (car my/gui-fonts))
-                 (set-face-attribute 'default nil :height 180))
-        (progn (set-gui-font (cdr my/gui-fonts))))
-      )
-    )
+   (with-no-warnings
+     (when window-system
+       (if (find-font (font-spec :name (car my/gui-fonts)))
+           (progn (set-frame-font (car my/gui-fonts))
+                  (set-face-attribute 'default nil :height 180))
+         (when (eq system-type 'darwin)
+      (progn (set-gui-font (cdr my/gui-fonts))))
+       )
+     )
 #+END_SRC
 
 *** tty
@@ -658,7 +659,7 @@ Highlight matching ()'s []'s etc...
     )
 #+END_SRC
 
-*** org-mode
+*** org-mode and ob
 
 Org-mode keybindings and settings, pretty sparse really.
 
@@ -685,29 +686,18 @@ Org-mode keybindings and settings, pretty sparse really.
            "* TODO %?, Link: %a")
           ("u" "Url" entry (file+headline "~/src/bitbucket.org/mitchty/org/urls.org" "Urls")
            "* %u\n\n %i" :prepend t)
-           ))
-      )
+           )))
 
      ;; typing stuff like the mode for a snippet is for chumps
      (add-to-list 'org-structure-template-alist '("el" "#+BEGIN_SRC emacs-lisp\n?\n#+END_SRC" ""))
      (add-to-list 'org-structure-template-alist '("hs" "#+BEGIN_SRC haskell\n?\n#+END_SRC" ""))
      (add-to-list 'org-structure-template-alist '("pl" "#+BEGIN_SRC perl\n?\n#+END_SRC" ""))
      (add-to-list 'org-structure-template-alist '("py" "#+BEGIN_SRC python\n?\n#+END_SRC" ""))
+     (add-to-list 'org-structure-template-alist '("rb" "#+BEGIN_SRC ruby\n?\n#+END_SRC" ""))
+     ;; LATER
+     ;; (add-to-list 'org-structure-template-alist '("rs" "#+BEGIN_SRC rust\n?\n#+END_SRC" ""))
      (add-to-list 'org-structure-template-alist '("sh" "#+BEGIN_SRC sh\n?\n#+END_SRC" ""))
 
-     (org-babel-do-load-languages 'org-babel-load-languages
-                                  (append org-babel-load-languages
-                                          '(
-                                            (C . t)
-                                            (ditaa . t)
-                                            (emacs-lisp . t)
-                                            (haskell . t)
-                                            (latex . t)
-                                            (perl . t)
-                                            (python . t)
-                                            (ruby  . t)
-                                            (sh . t)
-                                            )))
      (add-hook 'after-init-hook (lambda () (org-reload)))
     )
   )
@@ -741,20 +731,51 @@ Org-mode keybindings and settings, pretty sparse really.
                                  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
       )
     )
-  (use-package org-roam
-        :hook
-        (after-init . org-roam-mode)
-        :init
-        (custom-set-variables '(org-roam-directory "~/.emacs.d"))
-        :bind (:map org-roam-mode-map
-                (("C-c n l" . org-roam)
-                 ("C-c n f" . org-roam-find-file)
-                 ("C-c n j" . org-roam-jump-to-index)
-                 ("C-c n b" . org-roam-switch-to-buffer)
-                 ("C-c n g" . org-roam-graph))
-                :map org-mode-map
-                (("C-c n i" . org-roam-insert))))
-  (use-package ob-async)
+#+END_SRC
+
+Note ob is a builtin not really an external package.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ob
+    :custom (org-confirm-babel-evaluate nil)
+    :after org
+    :config
+    (use-package ob-async :defer 10) ;; For whatever reason not deferring causes issues.
+    (org-babel-do-load-languages 'org-babel-load-languages
+                                 (append org-babel-load-languages
+                                         '(
+                                           (C . t)
+                                           (calc . t)
+                                           (ditaa . t)
+                                           (emacs-lisp . t)
+                                           (haskell . t)
+                                           (latex . t)
+                                           (perl . t)
+                                           (python . t)
+                                           (ruby  . t)
+                                           ;; (rust . t)
+                                           (shell . t)
+                                           )))
+    :hook ((org-babel-after-execute . org-display-inline-images)))
+#+END_SRC
+
+
+#+BEGIN_SRC emacs-lisp :tangle no
+   (use-package org-roam
+         :after org
+         :defer 10
+         :hook
+         (after-init . org-roam-mode)
+         :init
+         (custom-set-variables '(org-roam-directory "~/.emacs.d"))
+         :bind (:map org-roam-mode-map
+                 (("C-c n l" . org-roam)
+                  ("C-c n f" . org-roam-find-file)
+                  ("C-c n j" . org-roam-jump-to-index)
+                  ("C-c n b" . org-roam-switch-to-buffer)
+                  ("C-c n g" . org-roam-graph))
+                 :map org-mode-map
+                 (("C-c n i" . org-roam-insert))))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp :tangle no
